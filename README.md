@@ -2,6 +2,29 @@
 
 Aplicación web de finanzas personales, lista para GitHub Pages.
 
+## Refactor v4 — lo nuevo
+
+- **Abonos/retiros con doble contabilidad**: al abonar a un bolsillo, meta o
+  CDT ahora eliges obligatoriamente una cuenta de origen. Cada abono/retiro
+  se guarda como dos movimientos enlazados por un `transferencia_id`, así que
+  el saldo de la cuenta y el del recurso siempre cuadran. Si la cuenta de
+  origen no alcanza a cubrir el abono, aparece una advertencia antes de
+  confirmar.
+- **Todo editable, todo recalculable**: los saldos de cuentas, bolsillos,
+  metas y CDT ya no se guardan como números sueltos — se calculan sumando
+  sus movimientos. Por eso cualquier movimiento del historial (ingreso,
+  gasto, abono o retiro) se puede editar, duplicar o eliminar, y los saldos
+  se recalculan solos.
+- **Categorías libres**: los campos de categoría ahora son de texto libre
+  con sugerencias (autocompletado) basadas en lo que ya has escrito antes,
+  en vez de una lista cerrada.
+- **Paleta y accesibilidad**: nueva paleta de bajo contraste para lecturas
+  largas, botones y campos con altura mínima de 48px para el pulgar, y las
+  barras de gastos por categoría ahora tienen un color distinto por
+  categoría (generado automáticamente a partir del texto).
+- **Alertas de CDT escalonadas**: aviso a 30, 15 y 5 días antes del
+  vencimiento, con más urgencia entre más cerca esté la fecha.
+
 ## Qué se corrigió en esta versión
 
 1. **Ícono "G" genérico** → el `manifest.json` apuntaba a `./icons/icon-192.png` y
