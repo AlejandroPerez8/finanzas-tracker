@@ -65,7 +65,9 @@ export function amortizacion(monto, nCuotas, tasaEA) {
   }
   const i = tasaMensual(tasaEA);
   const valorCuota =
-    i === 0 ? Math.ceil(capitalInicial / nCuotas) : Math.round((capitalInicial * i) / (1 - Math.pow(1 + i, -nCuotas)));
+    i === 0
+      ? Math.ceil(capitalInicial / nCuotas)
+      : Math.round((capitalInicial * i) / (1 - Math.pow(1 + i, -nCuotas)));
   const tabla = [];
   let saldo = capitalInicial;
   let totalIntereses = 0;
@@ -127,7 +129,12 @@ export function alertasTarjeta(tarjeta, saldo, opciones = {}) {
   const diasPago = diasEntre(hoy, limitePago);
   const nombre = tarjeta.alias || `*${tarjeta.ultimos4 ?? ''}`;
   if (diasCorte >= 0 && diasCorte <= 3) {
-    alertas.push({ tipo: 'corte', nivel: 'info', dias: diasCorte, mensaje: `${nombre}: corte en ${diasCorte} día(s).` });
+    alertas.push({
+      tipo: 'corte',
+      nivel: 'info',
+      dias: diasCorte,
+      mensaje: `${nombre}: corte en ${diasCorte} día(s).`,
+    });
   }
   const yaPagado = cicloActual?.pagado && cicloActual.fechaLimitePago === limitePago;
   if (saldo > 0 && !yaPagado && [7, 3, 1, 0].includes(diasPago)) {
@@ -135,21 +142,45 @@ export function alertasTarjeta(tarjeta, saldo, opciones = {}) {
       tipo: 'limite_pago',
       nivel: diasPago <= 1 ? 'urgente' : 'aviso',
       dias: diasPago,
-      mensaje: diasPago === 0 ? `${nombre}: hoy es el límite de pago.` : `${nombre}: límite de pago en ${diasPago} día(s).`,
+      mensaje:
+        diasPago === 0
+          ? `${nombre}: hoy es el límite de pago.`
+          : `${nombre}: límite de pago en ${diasPago} día(s).`,
     });
   }
   if (cicloActual && !cicloActual.pagado && cicloActual.fechaLimitePago < hoy) {
-    alertas.push({ tipo: 'minimo_no_cubierto', nivel: 'urgente', mensaje: `${nombre}: venció el pago sin cubrir el mínimo.` });
+    alertas.push({
+      tipo: 'minimo_no_cubierto',
+      nivel: 'urgente',
+      mensaje: `${nombre}: venció el pago sin cubrir el mínimo.`,
+    });
   }
   const uso = utilizacion(tarjeta, saldo);
   if (uso.color === 'rojo') {
-    alertas.push({ tipo: 'utilizacion', nivel: 'aviso', mensaje: `${nombre}: utilización del ${uso.porcentaje} % del cupo.` });
+    alertas.push({
+      tipo: 'utilizacion',
+      nivel: 'aviso',
+      mensaje: `${nombre}: utilización del ${uso.porcentaje} % del cupo.`,
+    });
   }
   const cuota = aEntero(tarjeta.cuotaManejo);
   if (cuota > 0 && diasCorte >= 0 && diasCorte <= 3) {
-    alertas.push({ tipo: 'cuota_manejo', nivel: 'info', mensaje: `${nombre}: cuota de manejo próxima por $${cuota.toLocaleString('es-CO')}.` });
+    alertas.push({
+      tipo: 'cuota_manejo',
+      nivel: 'info',
+      mensaje: `${nombre}: cuota de manejo próxima por $${cuota.toLocaleString('es-CO')}.`,
+    });
   }
   return alertas;
+}
+
+/** Ciclo vigente: el de corte más reciente que no sea futuro, sin importar el orden de registro. */
+export function cicloVigente(ciclos, tarjetaId, hoy = diaBogota()) {
+  return (
+    ciclos
+      .filter((c) => c.tarjetaId === tarjetaId && c.fechaCorte <= hoy)
+      .sort((a, b) => b.fechaCorte.localeCompare(a.fechaCorte))[0] ?? null
+  );
 }
 
 /**
@@ -159,7 +190,17 @@ export function alertasTarjeta(tarjeta, saldo, opciones = {}) {
 export function actualizarCiclos(ciclos, transacciones, tarjetaId) {
   return ciclos.map((c) => {
     if (c.tarjetaId !== tarjetaId || c.pagado) return c;
-    const pagos = transacciones.reduce((s, t) => (t.type === 'pago_tarjeta' && t.tarjetaId === tarjetaId && t.estado !== 'descartado' && t.estado !== 'pendiente_revision' && t.date >= c.fechaCorte ? s + aEntero(t.amount) : s), 0);
+    const pagos = transacciones.reduce(
+      (s, t) =>
+        t.type === 'pago_tarjeta' &&
+        t.tarjetaId === tarjetaId &&
+        t.estado !== 'descartado' &&
+        t.estado !== 'pendiente_revision' &&
+        t.date >= c.fechaCorte
+          ? s + aEntero(t.amount)
+          : s,
+      0,
+    );
     return pagos >= aEntero(c.pagoMinimo) ? { ...c, pagado: true } : c;
   });
 }

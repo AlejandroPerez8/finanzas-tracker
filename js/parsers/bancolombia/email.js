@@ -9,7 +9,9 @@ export function recortarCorreo(texto) {
   const inicio = n.search(/bancolombia\s*(?::|le informa)/i);
   if (inicio < 0) return '';
   const cuerpo = n.slice(inicio);
-  const fin = cuerpo.search(/esto es un mensaje automatico|tu seguridad es nuestra|tus gastos tienen nombre/i);
+  const fin = cuerpo.search(
+    /esto es un mensaje automatico|tu seguridad es nuestra|tus gastos tienen nombre/i,
+  );
   return fin > 0 ? cuerpo.slice(0, fin).trim() : cuerpo;
 }
 

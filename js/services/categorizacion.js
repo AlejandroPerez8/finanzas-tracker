@@ -30,7 +30,7 @@ export function categorizar(comercio, tipo, reglas = [], diccionario = {}) {
     // Coincidencia por palabras completas: "EXITO CALLE 80" encuentra "EXITO". La más larga gana.
     let mejor = null;
     for (const nombre of Object.keys(diccionario)) {
-      if ((` ${clave} `).includes(` ${nombre} `) && (!mejor || nombre.length > mejor.length)) mejor = nombre;
+      if (` ${clave} `.includes(` ${nombre} `) && (!mejor || nombre.length > mejor.length)) mejor = nombre;
     }
     if (mejor) return { categoria: diccionario[mejor], fuente: 'diccionario' };
   }
@@ -42,5 +42,8 @@ export function categorizar(comercio, tipo, reglas = [], diccionario = {}) {
 export function aprender(reglas, comercio, categoria) {
   const comercioNormalizado = normalizarComercio(comercio);
   if (!comercioNormalizado || !categoria) return reglas;
-  return [...reglas.filter((r) => r.comercioNormalizado !== comercioNormalizado), { comercioNormalizado, categoria, origen: 'usuario' }];
+  return [
+    ...reglas.filter((r) => r.comercioNormalizado !== comercioNormalizado),
+    { comercioNormalizado, categoria, origen: 'usuario' },
+  ];
 }

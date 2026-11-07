@@ -24,10 +24,10 @@
 | 01 Fixtures | opencode, DeepSeek 4.1 Flash | 114 casos utilizables | JSON truncado en un caso, recuperado por programa. Sus formatos no verificados son plausibles, no reales |
 | 02 Comercios | agy, Gemini 4 Argon | 452 comercios | Revisión de muestra; sin cambios |
 | 03 Revisión cruzada | agy, Gemini 4 Argon | 12 hallazgos reales, todos corregidos con pruebas | Ninguno era falso |
-| 03 Revisión cruzada | opencode, DeepSeek 4.1 Flash | Sin salida: el proceso terminó vacío | Se relanzó con alcance menor (brief 06) |
+| 03 Revisión cruzada | opencode, DeepSeek 4.1 Flash | Sin salida: el proceso terminó vacío | Se relanzó con otro alcance (brief 06) |
 | 04 Guía | agy, Gemini 3.8 Flash | Borrador | Reescrita en buena parte: afirmaba que los datos no pasan por terceros, usaba hora local con `Z`, sugería WhatsApp para el token y citaba menús inexistentes |
 | 05 CSS | opencode, DeepSeek 4.1 Flash | Base de componentes | Tarjeta con proporción fija que recortaba contenido y filas mal distribuidas; corregidas |
-| 06 Revisión de pantallas | opencode, DeepSeek 4.1 Flash | Ver abajo | |
+| 06 Revisión de pantallas | opencode, DeepSeek 4.1 Flash | 17 hallazgos: 12 corregidos (doble toque, token malo que reemplazaba al bueno, validación de extractos, ciclo vigente, entre otros) | 1 ya estaba corregido; 3 sin cambio por ser falsos o correctos (`rate` sí es el campo del CDT, dividir ya valida, conservar la categoría previa es lo esperado); "+1 cuota" sin mover dinero queda como decisión documentada |
 
 Los agentes solo imprimieron texto, sin acceso de escritura, y nunca recibieron tokens ni datos reales.
 

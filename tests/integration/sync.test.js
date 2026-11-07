@@ -9,8 +9,10 @@ import { saldoCuenta } from '../../js/domain/movimientos.js';
 
 const leer = (r) => JSON.parse(readFileSync(new URL(r, import.meta.url), 'utf8'));
 const registro = crearRegistro(leer('../../js/parsers/bancolombia/patrones.json'));
-const PAGO = 'Bancolombia: Pagaste $5,500.00 a COMUNICACION CELULAR COMCEL S desde tu producto 1234 el 05/11/2026 07:02:40.';
-const TRANSF = 'Bancolombia: Recibiste una transferencia por $116,500 de PERSONA EJEMPLO en tu cuenta **1234, el 01/11/2026 a las 14:23.';
+const PAGO =
+  'Bancolombia: Pagaste $5,500.00 a COMUNICACION CELULAR COMCEL S desde tu producto 1234 el 05/11/2026 07:02:40.';
+const TRANSF =
+  'Bancolombia: Recibiste una transferencia por $116,500 de PERSONA EJEMPLO en tu cuenta **1234, el 01/11/2026 a las 14:23.';
 const FECHA = '2026-11-07T07:58:12-05:00';
 
 async function escenario(t, opciones = {}) {
@@ -31,7 +33,10 @@ test('un mensaje llega, se guarda y solo entonces se confirma', async (t) => {
   e.estado.agregar('gmail', 'g1', FECHA, PAGO);
   e.estado.agregar('gmail', 'g2', FECHA, TRANSF);
   const orden = [];
-  const r = await sincronizar({ ...e, guardar: async () => orden.push(`guardar:${e.estado.peticionesAck.length}`) });
+  const r = await sincronizar({
+    ...e,
+    guardar: async () => orden.push(`guardar:${e.estado.peticionesAck.length}`),
+  });
   assert.equal(r.nuevos, 2);
   assert.equal(r.confirmados, 1);
   assert.equal(r.pendientes, 1);
@@ -44,7 +49,15 @@ test('un mensaje llega, se guarda y solo entonces se confirma', async (t) => {
 test('si guardar falla no se confirma, y el reintento no duplica', async (t) => {
   const e = await escenario(t);
   e.estado.agregar('gmail', 'g1', FECHA, PAGO);
-  await assert.rejects(sincronizar({ ...e, guardar: async () => { throw new Error('disco lleno'); } }), /disco lleno/);
+  await assert.rejects(
+    sincronizar({
+      ...e,
+      guardar: async () => {
+        throw new Error('disco lleno');
+      },
+    }),
+    /disco lleno/,
+  );
   assert.equal(e.estado.peticionesAck.length, 0);
   // Simula la recarga: el cursor en memoria no llegó a persistirse.
   e.datos.settings.sync.cursor = null;
@@ -57,7 +70,9 @@ test('si guardar falla no se confirma, y el reintento no duplica', async (t) => 
 test('tras un guardado fallido, la siguiente sincronización no confirma nada sin guardar', async (t) => {
   const e = await escenario(t);
   e.estado.agregar('gmail', 'g1', FECHA, PAGO);
-  const falla = async () => { throw new Error('disco lleno'); };
+  const falla = async () => {
+    throw new Error('disco lleno');
+  };
   await assert.rejects(sincronizar({ ...e, guardar: falla }));
   await assert.rejects(sincronizar({ ...e, guardar: falla }));
   assert.equal(e.estado.peticionesAck.length, 0);
@@ -69,7 +84,12 @@ test('tras un guardado fallido, la siguiente sincronización no confirma nada si
 test('un ack fallido se reintenta en la siguiente sincronización', async (t) => {
   const e = await escenario(t);
   e.estado.agregar('gmail', 'g1', FECHA, PAGO);
-  const fallando = { ...e.cliente, ack: async () => { throw new ErrorSync('red', true); } };
+  const fallando = {
+    ...e.cliente,
+    ack: async () => {
+      throw new ErrorSync('red', true);
+    },
+  };
   await assert.rejects(sincronizar({ ...e, cliente: fallando, guardar: async () => {} }));
   assert.deepEqual(e.datos.settings.sync.ackPendientes, ['r_000001']);
   await sincronizar({ ...e, guardar: async () => {} });
@@ -80,7 +100,11 @@ test('un ack fallido se reintenta en la siguiente sincronización', async (t) =>
 
 test('SMS por POST y correo del mismo movimiento quedan como uno', async (t) => {
   const e = await escenario(t);
-  const res = await fetch(e.url, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ token: TOKEN_MOCK, source: 'sms', receivedAt: FECHA, text: PAGO }) });
+  const res = await fetch(e.url, {
+    method: 'POST',
+    headers: { 'content-type': 'text/plain' },
+    body: JSON.stringify({ token: TOKEN_MOCK, source: 'sms', receivedAt: FECHA, text: PAGO }),
+  });
   assert.equal((await res.json()).ok, true);
   e.estado.agregar('gmail', 'g1', FECHA, PAGO);
   const r = await sincronizar({ ...e, guardar: async () => {} });
@@ -91,7 +115,8 @@ test('SMS por POST y correo del mismo movimiento quedan como uno', async (t) => 
 
 test('paginación: procesa varios lotes', async (t) => {
   const e = await escenario(t);
-  for (let i = 0; i < 7; i++) e.estado.agregar('gmail', `g${i}`, FECHA, PAGO.replace('5,500.00', `${i + 1},000.00`));
+  for (let i = 0; i < 7; i++)
+    e.estado.agregar('gmail', `g${i}`, FECHA, PAGO.replace('5,500.00', `${i + 1},000.00`));
   const r = await sincronizar({ ...e, guardar: async () => {}, limite: 3 });
   assert.equal(r.nuevos, 7);
   assert.equal(e.estado.filas.filter((f) => f.estado === 'nuevo').length, 0);
@@ -109,21 +134,33 @@ test('entradas maliciosas o inválidas se rechazan', async (t) => {
   assert.equal(validarItem({ ...ok, textoRelevante: 5 }), null);
   assert.equal(validarItem({ ...ok, receivedAt: 'ayer' }), null);
   const e = await escenario(t);
-  const cliente = { pendientes: async () => ({ cursor: '1', items: [{ rowId: 'mal mal' }] }), ack: async () => assert.fail('no debe confirmar inválidos') };
+  const cliente = {
+    pendientes: async () => ({ cursor: '1', items: [{ rowId: 'mal mal' }] }),
+    ack: async () => assert.fail('no debe confirmar inválidos'),
+  };
   const r = await sincronizar({ ...e, cliente, guardar: async () => {} });
   assert.equal(r.invalidos, 1);
 });
 
 test('sin conexión no llama al servidor', async (t) => {
   const e = await escenario(t);
-  const r = await sincronizar({ ...e, cliente: null, guardar: async () => assert.fail(), enLinea: () => false });
+  const r = await sincronizar({
+    ...e,
+    cliente: null,
+    guardar: async () => assert.fail(),
+    enLinea: () => false,
+  });
   assert.equal(r.estado, 'offline');
 });
 
 test('cliente: ping, token incorrecto, reintentos, HTML y tiempo agotado', async (t) => {
   const e = await escenario(t);
   assert.equal((await e.cliente.probar()).ok, true);
-  const malo = crearCliente({ url: e.url, token: 'x'.repeat(32), esperar: async () => assert.fail('no reintenta') });
+  const malo = crearCliente({
+    url: e.url,
+    token: 'x'.repeat(32),
+    esperar: async () => assert.fail('no reintenta'),
+  });
   await assert.rejects(malo.probar(), (err) => err.codigo === 'unauthorized');
   e.estado.fallarProximas = 2;
   assert.equal((await e.cliente.probar()).ok, true);
@@ -131,17 +168,51 @@ test('cliente: ping, token incorrecto, reintentos, HTML y tiempo agotado', async
   await assert.rejects(e.cliente.probar(), (err) => err.codigo === 'servidor');
   e.estado.fallarProximas = 0;
 
-  const f = (texto, status = 200) => async () => new Response(texto, { status });
-  const con = (fn, extra = {}) => crearCliente({ url: e.url, token: TOKEN_MOCK, fetch: fn, esperar: async () => {}, reintentos: 1, ...extra });
-  await assert.rejects(con(f('<html>Iniciar sesión</html>')).probar(), (err) => err.codigo === 'respuesta_html' && !err.reintentable);
+  const f =
+    (texto, status = 200) =>
+    async () =>
+      new Response(texto, { status });
+  const con = (fn, extra = {}) =>
+    crearCliente({
+      url: e.url,
+      token: TOKEN_MOCK,
+      fetch: fn,
+      esperar: async () => {},
+      reintentos: 1,
+      ...extra,
+    });
+  await assert.rejects(
+    con(f('<html>Iniciar sesión</html>')).probar(),
+    (err) => err.codigo === 'respuesta_html' && !err.reintentable,
+  );
   await assert.rejects(con(f('5')).probar(), (err) => err.codigo === 'respuesta_invalida');
-  await assert.rejects(con(f('{"ok":false,"error":"rate_limited"}')).probar(), (err) => err.codigo === 'rate_limited');
+  await assert.rejects(
+    con(f('{"ok":false,"error":"rate_limited"}')).probar(),
+    (err) => err.codigo === 'rate_limited',
+  );
   await assert.rejects(con(f('{"ok":false,"error":"raro"}')).probar(), /raro/);
-  await assert.rejects(con(f('{"ok":true,"items":"no"}')).pendientes(), (err) => err.codigo === 'respuesta_invalida');
-  await assert.rejects(con(async () => { throw new TypeError('sin red'); }).probar(), (err) => err.codigo === 'red');
-  const colgado = (_u, { signal }) => new Promise((_, rej) => signal.addEventListener('abort', () => rej(Object.assign(new Error('x'), { name: 'AbortError' }))));
-  await assert.rejects(con(colgado, { timeoutMs: 5, reintentos: 0 }).probar(), (err) => err.codigo === 'timeout');
-  assert.throws(() => crearCliente({ url: 'http://evil.example/exec', token: TOKEN_MOCK }), /script.google.com/);
+  await assert.rejects(
+    con(f('{"ok":true,"items":"no"}')).pendientes(),
+    (err) => err.codigo === 'respuesta_invalida',
+  );
+  await assert.rejects(
+    con(async () => {
+      throw new TypeError('sin red');
+    }).probar(),
+    (err) => err.codigo === 'red',
+  );
+  const colgado = (_u, { signal }) =>
+    new Promise((_, rej) =>
+      signal.addEventListener('abort', () => rej(Object.assign(new Error('x'), { name: 'AbortError' }))),
+    );
+  await assert.rejects(
+    con(colgado, { timeoutMs: 5, reintentos: 0 }).probar(),
+    (err) => err.codigo === 'timeout',
+  );
+  assert.throws(
+    () => crearCliente({ url: 'http://evil.example/exec', token: TOKEN_MOCK }),
+    /script.google.com/,
+  );
   assert.throws(() => crearCliente({ url: e.url, token: 'corto' }), /32/);
 });
 
@@ -161,5 +232,8 @@ test('mock: contrato de errores', async (t) => {
   const post = async (body) => (await fetch(e.url, { method: 'POST', body })).json();
   assert.equal((await post('no json')).error, 'bad_request');
   assert.equal((await post(JSON.stringify({ token: 'x', source: 'sms', text: 'a' }))).error, 'unauthorized');
-  assert.equal((await post(JSON.stringify({ token: TOKEN_MOCK, source: 'x', text: 'a' }))).error, 'bad_request');
+  assert.equal(
+    (await post(JSON.stringify({ token: TOKEN_MOCK, source: 'x', text: 'a' }))).error,
+    'bad_request',
+  );
 });

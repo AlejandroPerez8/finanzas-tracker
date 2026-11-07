@@ -24,7 +24,10 @@ export function buscarCandidatoManual(mov, transacciones) {
 export function paresPorConciliar(transacciones) {
   return transacciones
     .filter((t) => t.conciliarCon && t.estado === 'pendiente_revision')
-    .map((ingerido) => ({ ingerido, manual: transacciones.find((t) => t.id === ingerido.conciliarCon) ?? null }))
+    .map((ingerido) => ({
+      ingerido,
+      manual: transacciones.find((t) => t.id === ingerido.conciliarCon) ?? null,
+    }))
     .filter((par) => par.manual);
 }
 

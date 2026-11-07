@@ -59,7 +59,8 @@ function asociar(parseado, regla, datos) {
     const digitosCuenta = tarjeta ? null : ultimos4;
     const porUltimos = digitosCuenta ? cuentasBanco.find((a) => a.ultimos4 === digitosCuenta) : null;
     // Con una sola cuenta se asume esa, salvo que tenga otros dígitos: sería una cuenta no registrada.
-    const unica = cuentasBanco.length === 1 && (!digitosCuenta || !cuentasBanco[0].ultimos4) ? cuentasBanco[0] : null;
+    const unica =
+      cuentasBanco.length === 1 && (!digitosCuenta || !cuentasBanco[0].ultimos4) ? cuentasBanco[0] : null;
     accountId = porUltimos?.id ?? unica?.id ?? null;
   }
   return { tarjetaId: usaTarjeta ? (tarjeta?.id ?? null) : null, accountId };
@@ -102,7 +103,13 @@ function decidirEstado(mov, parseado, ajustes, regla) {
   if (regla.siempreRevisar) return 'pendiente_revision';
   // Un movimiento con dos lados necesita ambos para no descuadrar ningún saldo.
   const dosLados = mov.type === 'pago_tarjeta' || mov.type === 'avance';
-  const asociado = dosLados ? mov.tarjetaId && mov.accountId : regla.efectivo ? mov.accountId && mov.cuentaDestinoId : regla.tarjeta ? mov.tarjetaId : mov.accountId || mov.tarjetaId;
+  const asociado = dosLados
+    ? mov.tarjetaId && mov.accountId
+    : regla.efectivo
+      ? mov.accountId && mov.cuentaDestinoId
+      : regla.tarjeta
+        ? mov.tarjetaId
+        : mov.accountId || mov.tarjetaId;
   const umbral = ajustes?.umbralAutoConfirmar ?? 0.9;
   const auto = ajustes?.autoConfirmar !== false;
   return auto && asociado && parseado.confianza >= umbral ? 'confirmado' : 'pendiente_revision';
@@ -117,7 +124,8 @@ function decidirEstado(mov, parseado, ajustes, regla) {
  */
 export function procesarMensaje(datos, entrada, contexto) {
   const yaVisto = datos.ingesta.find((i) => i.rowId === entrada.rowId);
-  if (yaVisto && yaVisto.estado !== 'error') return { resultado: 'repetido', movimientoId: yaVisto.movimientoId };
+  if (yaVisto && yaVisto.estado !== 'error')
+    return { resultado: 'repetido', movimientoId: yaVisto.movimientoId };
 
   const conservar = !!datos.settings.ingesta?.conservarTexto;
   const item = {
@@ -137,7 +145,10 @@ export function procesarMensaje(datos, entrada, contexto) {
     return { resultado: 'publicidad' };
   }
 
-  const parseado = contexto.registro.analizar(entrada.textoRelevante, { fuente: entrada.fuente, recibidoEn: entrada.recibidoEn });
+  const parseado = contexto.registro.analizar(entrada.textoRelevante, {
+    fuente: entrada.fuente,
+    recibidoEn: entrada.recibidoEn,
+  });
   if (!parseado) {
     item.estado = 'no_reconocido';
     // Se conserva aunque el ajuste esté apagado: sin el texto no se le puede enseñar a la app.
@@ -170,7 +181,8 @@ export function procesarMensaje(datos, entrada, contexto) {
     registrarDiferida(datos, mov, contexto.nuevoId);
   }
   item.movimientoId = mov.id;
-  const resultado = mov.estado === 'descartado' ? 'descartado' : mov.estado === 'confirmado' ? 'confirmado' : 'pendiente';
+  const resultado =
+    mov.estado === 'descartado' ? 'descartado' : mov.estado === 'confirmado' ? 'confirmado' : 'pendiente';
   return { resultado, movimientoId: mov.id };
 }
 
@@ -198,7 +210,8 @@ export function confirmar(datos, id, cambios = {}, contexto = {}) {
   const categoriaPrevia = mov.category;
   Object.assign(mov, cambios, { estado: 'confirmado' });
   delete mov.conciliarCon;
-  if (mov.category !== categoriaPrevia && mov.comercio) datos.reglas = aprender(datos.reglas, mov.comercio, mov.category);
+  if (mov.category !== categoriaPrevia && mov.comercio)
+    datos.reglas = aprender(datos.reglas, mov.comercio, mov.category);
   if (mov.type === 'expense' && mov.esCuota && mov.tarjetaId) {
     if (!contexto.nuevoId) throw new Error('Falta el generador de identificadores para la compra a cuotas');
     registrarDiferida(datos, mov, contexto.nuevoId);
@@ -224,10 +237,22 @@ export function dividir(datos, id, partes, nuevoId) {
   const mov = datos.transactions.find((t) => t.id === id);
   if (!mov) throw new Error('El movimiento ya no existe');
   const suma = partes.reduce((s, p) => s + aEntero(p.amount), 0);
-  if (partes.length < 2 || partes.some((p) => aEntero(p.amount) <= 0)) throw new Error('Cada parte debe tener un monto positivo');
+  if (partes.length < 2 || partes.some((p) => aEntero(p.amount) <= 0))
+    throw new Error('Cada parte debe tener un monto positivo');
   if (suma !== mov.amount) throw new Error('Las partes deben sumar el total del movimiento');
   // Las partes nuevas no tienen fuentes: el mensaje del banco queda ligado a la primera.
-  const nuevos = partes.slice(1).map((p) => ({ ...mov, id: nuevoId(), amount: aEntero(p.amount), category: p.category, divididoDe: mov.id, fuentes: [], esCuota: false, cuotaInfo: null }));
+  const nuevos = partes
+    .slice(1)
+    .map((p) => ({
+      ...mov,
+      id: nuevoId(),
+      amount: aEntero(p.amount),
+      category: p.category,
+      divididoDe: mov.id,
+      fuentes: [],
+      esCuota: false,
+      cuotaInfo: null,
+    }));
   mov.montoIngerido = mov.montoIngerido ?? mov.amount;
   mov.amount = aEntero(partes[0].amount);
   mov.category = partes[0].category;
@@ -245,10 +270,12 @@ export function proponerRegla(texto, tipo) {
   const ultimosRe = /\*{1,2}\d{4}\b/;
   if (!montoRe.test(base)) throw new Error('No encontré un monto en este mensaje');
   // Se conserva hasta el último dato útil: lo que sigue suele ser publicidad o teléfonos.
-  const fin = Math.max(...[montoRe, fechaRe, horaRe, ultimosRe].map((re) => {
-    const m = re.exec(base);
-    return m ? m.index + m[0].length : 0;
-  }));
+  const fin = Math.max(
+    ...[montoRe, fechaRe, horaRe, ultimosRe].map((re) => {
+      const m = re.exec(base);
+      return m ? m.index + m[0].length : 0;
+    }),
+  );
   const util = base.slice(0, fin);
   let regex = escapar(util);
   const reemplazar = (re, grupo) => {
@@ -263,7 +290,14 @@ export function proponerRegla(texto, tipo) {
   reemplazar(ultimosRe, '\\*{1,2}(?<ultimos4>\\d{4})');
   reemplazar(fechaRe, '(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)');
   reemplazar(horaRe, '(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)');
-  return { id: `usuario_${hashTexto(base)}`, tipo, confianza: 0.9, verificado: false, origen: 'usuario', regex: regex.replace(/^Bancolombia: ?/i, '') };
+  return {
+    id: `usuario_${hashTexto(base)}`,
+    tipo,
+    confianza: 0.9,
+    verificado: false,
+    origen: 'usuario',
+    regex: regex.replace(/^Bancolombia: ?/i, ''),
+  };
 }
 
 /** Borra textos de mensajes no reconocidos con más de N días. */

@@ -469,7 +469,16 @@ import { iniciarInterfaz } from './ui/principal.js';
     renderAll();
   });
 
+  let guardandoMovimiento = false;
   async function addTransaction(){
+    // Un doble toque no debe registrar dos veces el mismo movimiento.
+    if(guardandoMovimiento) return;
+    guardandoMovimiento = true;
+    try{ await registrarMovimiento(); }
+    catch(err){ showToast(err.message || 'No se pudo guardar'); }
+    finally{ guardandoMovimiento = false; }
+  }
+  async function registrarMovimiento(){
     const amountInput = document.getElementById('txAmount');
     const amount = aEntero(parseFloat(amountInput.value));
     if(!amount || amount<=0) return;

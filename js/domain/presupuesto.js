@@ -66,14 +66,27 @@ function saldoRecurso(transacciones, tipo, id) {
 export function patrimonio(datos) {
   const tx = datos.transactions;
   const cuentas = sumar(datos.accounts.map((a) => saldoCuenta(a, tx)));
-  const bolsillos = sumar(datos.pockets.map((p) => aEntero(p.startBalance) + saldoRecurso(tx, 'pocket', p.id)));
-  const metas = sumar(
-    datos.goals.map((g) => sumar((g.contributions || []).map((c) => c.amount)) + saldoRecurso(tx, 'goal', g.id)),
+  const bolsillos = sumar(
+    datos.pockets.map((p) => aEntero(p.startBalance) + saldoRecurso(tx, 'pocket', p.id)),
   );
-  const inversiones = sumar(datos.investments.map((i) => aEntero(i.amount) + saldoRecurso(tx, 'investment', i.id)));
-  const tarjetas = sumar((datos.tarjetas || []).filter((t) => t.estado !== 'cerrada').map((t) => Math.max(0, saldoTarjeta(t, tx))));
+  const metas = sumar(
+    datos.goals.map(
+      (g) => sumar((g.contributions || []).map((c) => c.amount)) + saldoRecurso(tx, 'goal', g.id),
+    ),
+  );
+  const inversiones = sumar(
+    datos.investments.map((i) => aEntero(i.amount) + saldoRecurso(tx, 'investment', i.id)),
+  );
+  const tarjetas = sumar(
+    (datos.tarjetas || []).filter((t) => t.estado !== 'cerrada').map((t) => Math.max(0, saldoTarjeta(t, tx))),
+  );
   const otrasDeudas = sumar((datos.deudas || []).map((d) => d.saldo));
   const activos = cuentas + bolsillos + metas + inversiones;
   const pasivos = tarjetas + otrasDeudas;
-  return { activos, pasivos, neto: activos - pasivos, desglose: { cuentas, bolsillos, metas, inversiones, tarjetas, otrasDeudas } };
+  return {
+    activos,
+    pasivos,
+    neto: activos - pasivos,
+    desglose: { cuentas, bolsillos, metas, inversiones, tarjetas, otrasDeudas },
+  };
 }

@@ -23,18 +23,39 @@ function ordenar(deudas, estrategia) {
  * @returns {{factible:boolean, motivo?:string, meses:number, intereses:number, fechaLibertad:string|null, serie:number[]}}
  */
 export function simular(deudas, { estrategia, presupuesto, mesInicio, soloMinimos = false }) {
-  const vivas = deudas.filter((d) => aEntero(d.saldo) > 0).map((d) => ({ ...d, saldo: aEntero(d.saldo), i: tasaMensual(d.tasaEA), pagoMinimo: aEntero(d.pagoMinimo) }));
+  const vivas = deudas
+    .filter((d) => aEntero(d.saldo) > 0)
+    .map((d) => ({
+      ...d,
+      saldo: aEntero(d.saldo),
+      i: tasaMensual(d.tasaEA),
+      pagoMinimo: aEntero(d.pagoMinimo),
+    }));
   const serie = [sumar(vivas.map((d) => d.saldo))];
   const tope = aEntero(presupuesto);
   if (!vivas.length) return { factible: true, meses: 0, intereses: 0, fechaLibertad: mesInicio, serie };
   if (tope < sumar(vivas.map((d) => d.pagoMinimo))) {
-    return { factible: false, motivo: 'El presupuesto no cubre los pagos mínimos', meses: 0, intereses: 0, fechaLibertad: null, serie };
+    return {
+      factible: false,
+      motivo: 'El presupuesto no cubre los pagos mínimos',
+      meses: 0,
+      intereses: 0,
+      fechaLibertad: null,
+      serie,
+    };
   }
   let meses = 0;
   let intereses = 0;
   while (vivas.some((d) => d.saldo > 0)) {
     if (meses >= MAX_MESES) {
-      return { factible: false, motivo: 'La deuda no se liquida: el presupuesto no alcanza a cubrir los intereses', meses, intereses, fechaLibertad: null, serie };
+      return {
+        factible: false,
+        motivo: 'La deuda no se liquida: el presupuesto no alcanza a cubrir los intereses',
+        meses,
+        intereses,
+        fechaLibertad: null,
+        serie,
+      };
     }
     let disponible = tope;
     for (const d of vivas) {
@@ -63,11 +84,19 @@ export function simular(deudas, { estrategia, presupuesto, mesInicio, soloMinimo
 /** Compara ambas estrategias contra pagar solo los mínimos. */
 export function compararEstrategias(deudas, presupuesto, mesInicio) {
   const minimos = sumar(deudas.filter((d) => aEntero(d.saldo) > 0).map((d) => d.pagoMinimo));
-  const base = simular(deudas, { estrategia: 'avalancha', presupuesto: minimos, mesInicio, soloMinimos: true });
+  const base = simular(deudas, {
+    estrategia: 'avalancha',
+    presupuesto: minimos,
+    mesInicio,
+    soloMinimos: true,
+  });
   const resultado = {};
   for (const estrategia of ['avalancha', 'bola_de_nieve']) {
     const r = simular(deudas, { estrategia, presupuesto, mesInicio });
-    resultado[estrategia] = { ...r, interesesAhorrados: r.factible && base.factible ? base.intereses - r.intereses : null };
+    resultado[estrategia] = {
+      ...r,
+      interesesAhorrados: r.factible && base.factible ? base.intereses - r.intereses : null,
+    };
   }
   return { ...resultado, soloMinimos: base };
 }
@@ -87,7 +116,13 @@ export function flujoCaja({ mesInicio, meses = 12, ingresoMensual = 0, recurrent
       if (fila) cuotas += fila.cuota;
     }
     const ingresos = aEntero(ingresoMensual);
-    salida.push({ mes: sumarMeses(mesInicio, k), ingresos, cuotas, recurrentes: totalRecurrentes, neto: ingresos - cuotas - totalRecurrentes });
+    salida.push({
+      mes: sumarMeses(mesInicio, k),
+      ingresos,
+      cuotas,
+      recurrentes: totalRecurrentes,
+      neto: ingresos - cuotas - totalRecurrentes,
+    });
   }
   return salida;
 }

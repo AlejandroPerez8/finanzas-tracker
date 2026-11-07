@@ -1,7 +1,25 @@
 /** Categorías base y normalización de nombres de comercio. */
 
-export const CATEGORIAS_GASTO = ['Alimentación', 'Transporte', 'Vivienda', 'Servicios', 'Entretenimiento', 'Salud', 'Educación', 'Deudas', 'Transferencias', 'Cobros bancarios', 'Otros'];
-export const CATEGORIAS_INGRESO = ['Salario', 'Freelance', 'Inversiones', 'Transferencias recibidas', 'Otros ingresos'];
+export const CATEGORIAS_GASTO = [
+  'Alimentación',
+  'Transporte',
+  'Vivienda',
+  'Servicios',
+  'Entretenimiento',
+  'Salud',
+  'Educación',
+  'Deudas',
+  'Transferencias',
+  'Cobros bancarios',
+  'Otros',
+];
+export const CATEGORIAS_INGRESO = [
+  'Salario',
+  'Freelance',
+  'Inversiones',
+  'Transferencias recibidas',
+  'Otros ingresos',
+];
 
 /** Texto en mayúsculas, sin tildes, signos ni sufijos societarios, para comparar comercios. */
 export function normalizarComercio(texto) {

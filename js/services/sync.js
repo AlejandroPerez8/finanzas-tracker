@@ -36,17 +36,34 @@ export function validarItem(item) {
   const { rowId, source, receivedAt, textoRelevante, messageId, senderTag } = item;
   if (typeof rowId !== 'string' || !RE_ROWID.test(rowId)) return null;
   if (!FUENTES.has(source)) return null;
-  if (typeof textoRelevante !== 'string' || !textoRelevante.trim() || textoRelevante.length > MAX_TEXTO) return null;
+  if (typeof textoRelevante !== 'string' || !textoRelevante.trim() || textoRelevante.length > MAX_TEXTO)
+    return null;
   if (typeof receivedAt !== 'string' || Number.isNaN(Date.parse(receivedAt))) return null;
-  return { rowId, source, receivedAt, textoRelevante, messageId: String(messageId ?? ''), senderTag: String(senderTag ?? '') };
+  return {
+    rowId,
+    source,
+    receivedAt,
+    textoRelevante,
+    messageId: String(messageId ?? ''),
+    senderTag: String(senderTag ?? ''),
+  };
 }
 
 /**
  * @param {{url:string, token:string, fetch?:Function, timeoutMs?:number, reintentos?:number, esperar?:(ms:number)=>Promise<void>}} opciones
  */
-export function crearCliente({ url, token, fetch: hacerFetch = (...a) => fetch(...a), timeoutMs = 20000, reintentos = 3, esperar = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
-  if (!urlValida(url)) throw new ErrorSync('url_invalida', false, 'La URL debe ser de script.google.com con HTTPS');
-  if (!token || token.length < 32) throw new ErrorSync('token_invalido', false, 'El token debe tener al menos 32 caracteres');
+export function crearCliente({
+  url,
+  token,
+  fetch: hacerFetch = (...a) => fetch(...a),
+  timeoutMs = 20000,
+  reintentos = 3,
+  esperar = (ms) => new Promise((r) => setTimeout(r, ms)),
+}) {
+  if (!urlValida(url))
+    throw new ErrorSync('url_invalida', false, 'La URL debe ser de script.google.com con HTTPS');
+  if (!token || token.length < 32)
+    throw new ErrorSync('token_invalido', false, 'El token debe tener al menos 32 caracteres');
 
   async function unaVez(params) {
     const q = new URLSearchParams({ ...params, token });
@@ -56,20 +73,30 @@ export function crearCliente({ url, token, fetch: hacerFetch = (...a) => fetch(.
     try {
       res = await hacerFetch(`${url}?${q}`, { redirect: 'follow', signal: ctl.signal });
     } catch (err) {
-      throw new ErrorSync(err.name === 'AbortError' ? 'timeout' : 'red', true, 'No se pudo conectar con el script');
+      throw new ErrorSync(
+        err.name === 'AbortError' ? 'timeout' : 'red',
+        true,
+        'No se pudo conectar con el script',
+      );
     } finally {
       clearTimeout(reloj);
     }
-    if (res.status === 429 || res.status >= 500) throw new ErrorSync('servidor', true, `El servidor respondió ${res.status}`);
+    if (res.status === 429 || res.status >= 500)
+      throw new ErrorSync('servidor', true, `El servidor respondió ${res.status}`);
     const cuerpo = await res.text();
     let json;
     try {
       json = JSON.parse(cuerpo);
     } catch {
       // Apps Script responde HTML cuando pide iniciar sesión o el despliegue cambió.
-      throw new ErrorSync('respuesta_html', false, 'El script respondió una página, no datos. Revisa que el despliegue sea "Cualquier usuario".');
+      throw new ErrorSync(
+        'respuesta_html',
+        false,
+        'El script respondió una página, no datos. Revisa que el despliegue sea "Cualquier usuario".',
+      );
     }
-    if (!json || typeof json !== 'object') throw new ErrorSync('respuesta_invalida', false, 'Respuesta no válida');
+    if (!json || typeof json !== 'object')
+      throw new ErrorSync('respuesta_invalida', false, 'Respuesta no válida');
     if (json.ok !== true) {
       const codigo = String(json.error ?? 'desconocido');
       throw new ErrorSync(codigo, codigo === 'internal' || codigo === 'rate_limited', mensajeError(codigo));
@@ -95,7 +122,8 @@ export function crearCliente({ url, token, fetch: hacerFetch = (...a) => fetch(.
     probar: () => llamar({ action: 'ping' }),
     async pendientes(cursor, limit = 50) {
       const json = await llamar({ action: 'pending', cursor: cursor ?? '', limit: String(limit) });
-      if (!Array.isArray(json.items)) throw new ErrorSync('respuesta_invalida', false, 'La lista de mensajes no es válida');
+      if (!Array.isArray(json.items))
+        throw new ErrorSync('respuesta_invalida', false, 'La lista de mensajes no es válida');
       return { cursor: typeof json.cursor === 'string' ? json.cursor : cursor, items: json.items };
     },
     ack: (ids) => llamar({ action: 'ack', ids: ids.join(',') }),
@@ -104,7 +132,12 @@ export function crearCliente({ url, token, fetch: hacerFetch = (...a) => fetch(.
 
 function mensajeError(codigo) {
   return (
-    { unauthorized: 'Token incorrecto o rotado', rate_limited: 'Demasiadas consultas; se reintentará', bad_request: 'Petición rechazada', internal: 'Error interno del script' }[codigo] ?? `Error del script: ${codigo}`
+    {
+      unauthorized: 'Token incorrecto o rotado',
+      rate_limited: 'Demasiadas consultas; se reintentará',
+      bad_request: 'Petición rechazada',
+      internal: 'Error interno del script',
+    }[codigo] ?? `Error del script: ${codigo}`
   );
 }
 
@@ -113,8 +146,24 @@ function mensajeError(codigo) {
  * @param {{cliente:object, datos:object, guardar:()=>Promise<void>, contexto:object, enLinea?:()=>boolean, limite?:number, maxLotes?:number}} p
  * @returns {Promise<{estado:'ok'|'offline', nuevos:number, confirmados:number, pendientes:number, noReconocidos:number, invalidos:number, duplicados:number}>}
  */
-export async function sincronizar({ cliente, datos, guardar, contexto, enLinea = () => true, limite = 50, maxLotes = 20 }) {
-  const resumen = { estado: 'ok', nuevos: 0, confirmados: 0, pendientes: 0, noReconocidos: 0, invalidos: 0, duplicados: 0 };
+export async function sincronizar({
+  cliente,
+  datos,
+  guardar,
+  contexto,
+  enLinea = () => true,
+  limite = 50,
+  maxLotes = 20,
+}) {
+  const resumen = {
+    estado: 'ok',
+    nuevos: 0,
+    confirmados: 0,
+    pendientes: 0,
+    noReconocidos: 0,
+    invalidos: 0,
+    duplicados: 0,
+  };
   if (!enLinea()) return { ...resumen, estado: 'offline' };
 
   const estado = (datos.settings.sync ??= { cursor: null, ackPendientes: [], ultima: null });
@@ -136,7 +185,11 @@ export async function sincronizar({ cliente, datos, guardar, contexto, enLinea =
         resumen.invalidos++;
         continue;
       }
-      const { resultado } = procesarMensaje(datos, { rowId: v.rowId, fuente: v.source, recibidoEn: v.receivedAt, textoRelevante: v.textoRelevante }, contexto);
+      const { resultado } = procesarMensaje(
+        datos,
+        { rowId: v.rowId, fuente: v.source, recibidoEn: v.receivedAt, textoRelevante: v.textoRelevante },
+        contexto,
+      );
       porConfirmar.push(v.rowId);
       if (resultado === 'repetido') continue;
       resumen.nuevos++;

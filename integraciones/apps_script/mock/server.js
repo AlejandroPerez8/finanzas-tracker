@@ -10,7 +10,14 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
-const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webmanifest': 'application/json' };
+const TIPOS = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.webmanifest': 'application/json',
+};
 export const TOKEN_MOCK = 'token-de-prueba-local-0123456789abcdef';
 
 /** Crea el servidor con estado propio, para que cada prueba quede aislada. */
@@ -23,7 +30,15 @@ export function crearMock({ token = TOKEN_MOCK, servirApp = false, limitePorMinu
     const existente = filas.find((f) => f.messageId === messageId);
     if (existente) return existente.rowId;
     const rowId = `r_${String(filas.length + 1).padStart(6, '0')}`;
-    filas.push({ rowId, source, messageId, receivedAt, senderTag: 'bancolombia', textoRelevante: textoRelevante.slice(0, 600), estado: 'nuevo' });
+    filas.push({
+      rowId,
+      source,
+      messageId,
+      receivedAt,
+      senderTag: 'bancolombia',
+      textoRelevante: textoRelevante.slice(0, 600),
+      estado: 'nuevo',
+    });
     return rowId;
   }
   estado.agregar = agregar;
@@ -51,13 +66,28 @@ export function crearMock({ token = TOKEN_MOCK, servirApp = false, limitePorMinu
           return json({ ok: false, error: 'bad_request' });
         }
         if (p.token !== token) return json({ ok: false, error: 'unauthorized' });
-        if (p.source !== 'sms' || typeof p.text !== 'string' || !p.text.trim()) return json({ ok: false, error: 'bad_request' });
-        return json({ ok: true, rowId: agregar('sms', `sms_${p.text}|${p.receivedAt}`, p.receivedAt ?? new Date().toISOString(), p.text) });
+        if (p.source !== 'sms' || typeof p.text !== 'string' || !p.text.trim())
+          return json({ ok: false, error: 'bad_request' });
+        return json({
+          ok: true,
+          rowId: agregar(
+            'sms',
+            `sms_${p.text}|${p.receivedAt}`,
+            p.receivedAt ?? new Date().toISOString(),
+            p.text,
+          ),
+        });
       }
       const q = url.searchParams;
       if (q.get('token') !== token) return json({ ok: false, error: 'unauthorized' });
       const accion = q.get('action');
-      if (accion === 'ping') return json({ ok: true, version: 1, serverTime: new Date().toISOString(), pendientes: filas.filter((f) => f.estado === 'nuevo').length });
+      if (accion === 'ping')
+        return json({
+          ok: true,
+          version: 1,
+          serverTime: new Date().toISOString(),
+          pendientes: filas.filter((f) => f.estado === 'nuevo').length,
+        });
       if (accion === 'pending') {
         const limite = Math.min(Math.max(Number(q.get('limit')) || 50, 1), 100);
         let i = Number(q.get('cursor')) || 0;

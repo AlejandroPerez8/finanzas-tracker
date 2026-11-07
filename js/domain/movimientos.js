@@ -44,7 +44,8 @@ export function efectoEnCuenta(t, cuentaId) {
   // Un cobro cargado a una tarjeta sube la deuda; no toca la cuenta aunque traiga accountId.
   if (TIPOS_GASTO.has(t.type) && t.tarjetaId) return 0;
   if (t.type === 'income' || t.type === 'withdraw_in' || t.type === 'avance') return monto;
-  if (TIPOS_GASTO.has(t.type) || ['transfer_out', 'pago_tarjeta', 'transferencia'].includes(t.type)) return -monto;
+  if (TIPOS_GASTO.has(t.type) || ['transfer_out', 'pago_tarjeta', 'transferencia'].includes(t.type))
+    return -monto;
   return 0;
 }
 

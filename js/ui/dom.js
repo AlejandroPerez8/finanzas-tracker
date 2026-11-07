@@ -48,25 +48,48 @@ export function campo(etiqueta, control) {
   return h('label', { class: 'campo', for: id }, h('span', { class: 'campo-etiqueta' }, etiqueta), control);
 }
 
-export const entradaMonto = (props = {}) => h('input', { type: 'number', inputmode: 'numeric', min: '0', step: '1000', ...props });
+export const entradaMonto = (props = {}) =>
+  h('input', { type: 'number', inputmode: 'numeric', min: '0', step: '1000', ...props });
 
 /** Selector a partir de pares `[valor, texto]`. */
 export function selector(opciones, seleccionado, props = {}) {
-  return h('select', props, opciones.map(([v, t]) => h('option', { value: v, selected: v === seleccionado }, t)));
+  return h(
+    'select',
+    props,
+    opciones.map(([v, t]) => h('option', { value: v, selected: v === seleccionado }, t)),
+  );
 }
 
 /** Estado vacío útil: dice qué pasa y qué hacer. */
-export const vacio = (titulo, texto) => h('div', { class: 'vacio' }, h('div', { class: 'vacio-titulo' }, titulo), h('div', { class: 'vacio-texto' }, texto));
+export const vacio = (titulo, texto) =>
+  h(
+    'div',
+    { class: 'vacio' },
+    h('div', { class: 'vacio-titulo' }, titulo),
+    h('div', { class: 'vacio-texto' }, texto),
+  );
 
-export const encabezado = (titulo, etiqueta) => h('div', { class: 'section-head' }, h('h2', {}, titulo), etiqueta ? h('span', { class: 'tag' }, etiqueta) : null);
+export const encabezado = (titulo, etiqueta) =>
+  h(
+    'div',
+    { class: 'section-head' },
+    h('h2', {}, titulo),
+    etiqueta ? h('span', { class: 'tag' }, etiqueta) : null,
+  );
 
 /** Ejecuta una acción de usuario y muestra cualquier error en lugar de perderlo. */
 export function seguro(fn, avisar) {
+  let enCurso = false;
   return async (...args) => {
+    // Un doble toque no debe registrar dos veces un pago.
+    if (enCurso) return;
+    enCurso = true;
     try {
       await fn(...args);
     } catch (err) {
       avisar(err.message || 'Ocurrió un error inesperado');
+    } finally {
+      enCurso = false;
     }
   };
 }
@@ -78,7 +101,17 @@ export function snackbar(mensaje, etiquetaAccion, accion) {
     'snackbar',
     h('span', {}, mensaje),
     accion
-      ? h('button', { class: 'snackbar-accion', onclick: async () => { el.classList.remove('show'); await accion(); } }, etiquetaAccion)
+      ? h(
+          'button',
+          {
+            class: 'snackbar-accion',
+            onclick: async () => {
+              el.classList.remove('show');
+              await accion();
+            },
+          },
+          etiquetaAccion,
+        )
       : null,
   );
   el.classList.add('show');
@@ -102,16 +135,54 @@ export function graficoLineas(series, etiquetaEje) {
   const maxY = Math.max(1, ...series.flatMap((s) => s.valores));
   const x = (i) => margen.izq + (i / maxX) * (ancho - margen.izq - margen.der);
   const y = (v) => margen.arr + (1 - v / maxY) * (alto - margen.arr - margen.aba);
-  const svg = svgEl('svg', { viewBox: `0 0 ${ancho} ${alto}`, class: 'grafico', role: 'img', 'aria-label': series.map((s) => `${s.nombre}: ${s.valores.length - 1} meses`).join('; ') });
-  svg.append(svgEl('line', { x1: margen.izq, x2: ancho - margen.der, y1: y(0), y2: y(0), stroke: 'var(--border)', 'stroke-width': 1 }));
-  const nota = svgEl('text', { x: ancho - margen.der, y: alto - 5, 'text-anchor': 'end', fill: 'var(--muted)', 'font-size': 10 });
+  const svg = svgEl('svg', {
+    viewBox: `0 0 ${ancho} ${alto}`,
+    class: 'grafico',
+    role: 'img',
+    'aria-label': series.map((s) => `${s.nombre}: ${s.valores.length - 1} meses`).join('; '),
+  });
+  svg.append(
+    svgEl('line', {
+      x1: margen.izq,
+      x2: ancho - margen.der,
+      y1: y(0),
+      y2: y(0),
+      stroke: 'var(--border)',
+      'stroke-width': 1,
+    }),
+  );
+  const nota = svgEl('text', {
+    x: ancho - margen.der,
+    y: alto - 5,
+    'text-anchor': 'end',
+    fill: 'var(--muted)',
+    'font-size': 10,
+  });
   nota.textContent = etiquetaEje;
   svg.append(nota);
   for (const s of series) {
     const puntos = s.valores.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-    const linea = svgEl('polyline', { points: puntos, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-dasharray': s.punteada ? '5 4' : 'none' });
+    const linea = svgEl('polyline', {
+      points: puntos,
+      fill: 'none',
+      stroke: s.color,
+      'stroke-width': 2,
+      'stroke-linejoin': 'round',
+      'stroke-dasharray': s.punteada ? '5 4' : 'none',
+    });
     svg.append(linea);
   }
-  const leyenda = h('div', { class: 'leyenda' }, series.map((s) => h('span', { class: 'leyenda-item' }, h('span', { class: `leyenda-marca${s.punteada ? ' punteada' : ''}`, style: `--color:${s.color}` }), s.nombre)));
+  const leyenda = h(
+    'div',
+    { class: 'leyenda' },
+    series.map((s) =>
+      h(
+        'span',
+        { class: 'leyenda-item' },
+        h('span', { class: `leyenda-marca${s.punteada ? ' punteada' : ''}`, style: `--color:${s.color}` }),
+        s.nombre,
+      ),
+    ),
+  );
   return h('figure', { class: 'figura' }, svg, leyenda);
 }

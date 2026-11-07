@@ -5,7 +5,13 @@ import { crearIngestaUI } from './ingesta.js';
 import { crearTarjetasUI } from './tarjetas.js';
 import { crearPanelUI } from './panel.js';
 
-const PESTANAS = [['inicio', 'Inicio', '⌂'], ['movimientos', 'Movs', '⇅'], ['tarjetas', 'Tarjetas', '▭'], ['ahorro', 'Ahorro', '◎'], ['mas', 'Más', '☰']];
+const PESTANAS = [
+  ['inicio', 'Inicio', '⌂'],
+  ['movimientos', 'Movs', '⇅'],
+  ['tarjetas', 'Tarjetas', '▭'],
+  ['ahorro', 'Ahorro', '◎'],
+  ['mas', 'Más', '☰'],
+];
 
 /** Carga patrones y diccionario; sin ellos, la app sigue funcionando sin reconocer mensajes. */
 async function cargarRecursos(ctx) {
@@ -15,23 +21,41 @@ async function cargarRecursos(ctx) {
       if (!r.ok) throw new Error(`${ruta}: ${r.status}`);
       return await r.json();
     } catch (err) {
-      ctx.datos().log.push({ nivel: 'error', mensaje: `No se pudo cargar ${ruta}: ${err.message}`, fecha: new Date().toISOString() });
+      ctx
+        .datos()
+        .log.push({
+          nivel: 'error',
+          mensaje: `No se pudo cargar ${ruta}: ${err.message}`,
+          fecha: new Date().toISOString(),
+        });
       return respaldo;
     }
   };
-  const [patrones, comercios] = await Promise.all([leer('./js/parsers/bancolombia/patrones.json', { patrones: [] }), leer('./data/comercios.json', {})]);
+  const [patrones, comercios] = await Promise.all([
+    leer('./js/parsers/bancolombia/patrones.json', { patrones: [] }),
+    leer('./data/comercios.json', {}),
+  ]);
   return { patrones, comercios };
 }
 
 function crearNavegacion(alCambiar) {
   let actual = 'inicio';
   const botones = new Map();
-  const nav = montar('navInferior', PESTANAS.map(([id, texto, icono]) => {
-    const badge = h('span', { class: 'nav-badge', hidden: true });
-    const boton = h('button', { class: 'nav-btn', 'aria-label': texto, onclick: () => ir(id) }, h('span', { 'aria-hidden': 'true' }, icono), h('span', {}, texto), badge);
-    botones.set(id, { boton, badge });
-    return boton;
-  }));
+  const nav = montar(
+    'navInferior',
+    PESTANAS.map(([id, texto, icono]) => {
+      const badge = h('span', { class: 'nav-badge', hidden: true });
+      const boton = h(
+        'button',
+        { class: 'nav-btn', 'aria-label': texto, onclick: () => ir(id) },
+        h('span', { 'aria-hidden': 'true' }, icono),
+        h('span', {}, texto),
+        badge,
+      );
+      botones.set(id, { boton, badge });
+      return boton;
+    }),
+  );
   function aplicar() {
     document.querySelectorAll('[data-tab]').forEach((el) => {
       el.classList.toggle('oculto-tab', el.dataset.tab !== actual);
@@ -48,7 +72,16 @@ function crearNavegacion(alCambiar) {
     alCambiar?.(id);
   }
   aplicar();
-  return { ir, nav, marcarInsignia: (id, n) => { const { badge, boton } = botones.get(id); badge.hidden = !n; badge.textContent = n > 99 ? '99+' : String(n); boton.setAttribute('aria-label', n ? `${id}: ${n} por revisar` : id); } };
+  return {
+    ir,
+    nav,
+    marcarInsignia: (id, n) => {
+      const { badge, boton } = botones.get(id);
+      badge.hidden = !n;
+      badge.textContent = n > 99 ? '99+' : String(n);
+      boton.setAttribute('aria-label', n ? `${id}: ${n} por revisar` : id);
+    },
+  };
 }
 
 /** Service Worker con actualización controlada por el usuario. */
@@ -56,18 +89,29 @@ function registrarServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   const avisar = (registro) => {
     const banner = document.getElementById('bannerVersion');
-    montar(banner, h('span', {}, 'Hay una versión nueva. '), h('button', { class: 'btn-ghost', onclick: () => registro.waiting?.postMessage('ACTUALIZAR') }, 'Actualizar'));
+    montar(
+      banner,
+      h('span', {}, 'Hay una versión nueva. '),
+      h(
+        'button',
+        { class: 'btn-ghost', onclick: () => registro.waiting?.postMessage('ACTUALIZAR') },
+        'Actualizar',
+      ),
+    );
     banner.classList.add('show');
   };
-  navigator.serviceWorker.register('./service-worker.js', { scope: './' }).then((registro) => {
-    if (registro.waiting) avisar(registro);
-    registro.addEventListener('updatefound', () => {
-      const nuevo = registro.installing;
-      nuevo?.addEventListener('statechange', () => {
-        if (nuevo.state === 'installed' && navigator.serviceWorker.controller) avisar(registro);
+  navigator.serviceWorker
+    .register('./service-worker.js', { scope: './' })
+    .then((registro) => {
+      if (registro.waiting) avisar(registro);
+      registro.addEventListener('updatefound', () => {
+        const nuevo = registro.installing;
+        nuevo?.addEventListener('statechange', () => {
+          if (nuevo.state === 'installed' && navigator.serviceWorker.controller) avisar(registro);
+        });
       });
-    });
-  }).catch((err) => console.warn('No se pudo registrar el Service Worker:', err));
+    })
+    .catch((err) => console.warn('No se pudo registrar el Service Worker:', err));
   // La primera instalación también cambia el controlador, pero ahí no hay nada que recargar.
   const habiaControlador = !!navigator.serviceWorker.controller;
   let recargando = false;
@@ -100,8 +144,18 @@ export async function iniciarInterfaz(interfaz, ctx) {
     panel.renderPresupuesto();
     panel.renderAjustes();
     nav.marcarInsignia('movimientos', ingesta.contarPendientes());
-    const comercios = [...new Set(datos.transactions.slice(-200).map((t) => t.comercio).filter(Boolean))];
-    montar('listaComercios', comercios.map((c) => h('option', { value: c })));
+    const comercios = [
+      ...new Set(
+        datos.transactions
+          .slice(-200)
+          .map((t) => t.comercio)
+          .filter(Boolean),
+      ),
+    ];
+    montar(
+      'listaComercios',
+      comercios.map((c) => h('option', { value: c })),
+    );
   };
 
   document.addEventListener('ir-a', (e) => nav.ir(e.detail));

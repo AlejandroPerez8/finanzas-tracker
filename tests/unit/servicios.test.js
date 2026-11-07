@@ -1,10 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { huella, esMismoMovimiento, comerciosParecidos, buscarDuplicado } from '../../js/services/deduplicacion.js';
+import {
+  huella,
+  esMismoMovimiento,
+  comerciosParecidos,
+  buscarDuplicado,
+} from '../../js/services/deduplicacion.js';
 import { categorizar, aprender } from '../../js/services/categorizacion.js';
-import { procesarMensaje, confirmar, descartar, dividir, proponerRegla, purgarTextos, hashTexto, registrarDiferida } from '../../js/services/ingesta.js';
-import { paresPorConciliar, vincular, mantenerSeparados, buscarCandidatoManual } from '../../js/services/conciliacion.js';
+import {
+  procesarMensaje,
+  confirmar,
+  descartar,
+  dividir,
+  proponerRegla,
+  purgarTextos,
+  hashTexto,
+  registrarDiferida,
+} from '../../js/services/ingesta.js';
+import {
+  paresPorConciliar,
+  vincular,
+  mantenerSeparados,
+  buscarCandidatoManual,
+} from '../../js/services/conciliacion.js';
 import { migrar, VERSION_ACTUAL } from '../../js/services/migraciones.js';
 import { exportable, validarCopia, cifrar, descifrar, estaCifrado } from '../../js/services/backup.js';
 import { agregados, promptReporte } from '../../js/services/reportes.js';
@@ -20,14 +39,23 @@ const diccionario = leer('../../data/comercios.json');
 const v4 = () => leer('../fixtures/export-v4-sintetico.json');
 
 function base(extra = {}) {
-  const { datos } = migrar({ accounts: [{ id: 'a', name: 'Ahorros', type: 'Ahorros', startBalance: 1000000, ultimos4: '1234' }], ...extra });
+  const { datos } = migrar({
+    accounts: [{ id: 'a', name: 'Ahorros', type: 'Ahorros', startBalance: 1000000, ultimos4: '1234' }],
+    ...extra,
+  });
   datos.accounts[0].ultimos4 = '1234';
   return datos;
 }
 let n = 0;
 const ctx = { registro, diccionario, nuevoId: () => `m${++n}` };
-const msg = (rowId, texto, fuente = 'gmail') => ({ rowId, fuente, recibidoEn: '2026-11-07T08:00:00-05:00', textoRelevante: texto });
-const PAGO = 'Bancolombia: Pagaste $5,500.00 a COMUNICACION CELULAR COMCEL S desde tu producto 1234 el 05/11/2026 07:02:40. ¿Dudas?';
+const msg = (rowId, texto, fuente = 'gmail') => ({
+  rowId,
+  fuente,
+  recibidoEn: '2026-11-07T08:00:00-05:00',
+  textoRelevante: texto,
+});
+const PAGO =
+  'Bancolombia: Pagaste $5,500.00 a COMUNICACION CELULAR COMCEL S desde tu producto 1234 el 05/11/2026 07:02:40. ¿Dudas?';
 
 test('migración: conserva todo el formato v4', () => {
   const orig = v4();
@@ -52,7 +80,10 @@ test('migración: conserva todo el formato v4', () => {
 
 test('migración: los saldos no cambian', () => {
   const { datos } = migrar(v4());
-  assert.equal(saldoCuenta(datos.accounts[0], datos.transactions), 1000000 + 2000000 - 50001 - 100000 + 20000);
+  assert.equal(
+    saldoCuenta(datos.accounts[0], datos.transactions),
+    1000000 + 2000000 - 50001 - 100000 + 20000,
+  );
 });
 
 test('migración: idempotente, datos vacíos y versión futura', () => {
@@ -72,7 +103,14 @@ test('deduplicación: comercios parecidos', () => {
 });
 
 test('deduplicación: reglas de igualdad', () => {
-  const m = { type: 'expense', amount: 10, date: '2026-11-05', hora: '10:00', comercio: 'EXITO', ultimos4: '1' };
+  const m = {
+    type: 'expense',
+    amount: 10,
+    date: '2026-11-05',
+    hora: '10:00',
+    comercio: 'EXITO',
+    ultimos4: '1',
+  };
   assert.equal(esMismoMovimiento(m, { ...m, hora: '10:10' }), true);
   assert.equal(esMismoMovimiento(m, { ...m, hora: '10:11' }), false);
   assert.equal(esMismoMovimiento(m, { ...m, amount: 11 }), false);
@@ -82,9 +120,15 @@ test('deduplicación: reglas de igualdad', () => {
   assert.equal(esMismoMovimiento({ ...m, referenciaBanco: 'A' }, { ...m, referenciaBanco: 'B' }), false);
   assert.match(huella(m), /expense\|10/);
   assert.equal(huella({ ...m, referenciaBanco: 'A' }), 'ref|A');
-  assert.ok(buscarDuplicado(m, 'gmail', [{ ...m, origen: 'manual', fuentes: [{ fuente: 'sms' }] }]), 'un manual ya vinculado recibe la segunda fuente');
+  assert.ok(
+    buscarDuplicado(m, 'gmail', [{ ...m, origen: 'manual', fuentes: [{ fuente: 'sms' }] }]),
+    'un manual ya vinculado recibe la segunda fuente',
+  );
   assert.equal(buscarDuplicado(m, 'gmail', [{ ...m, origen: 'manual', fuentes: [] }]), null);
-  assert.equal(buscarDuplicado(m, 'gmail', [{ ...m, estado: 'descartado', fuentes: [{ fuente: 'sms' }] }]), null);
+  assert.equal(
+    buscarDuplicado(m, 'gmail', [{ ...m, estado: 'descartado', fuentes: [{ fuente: 'sms' }] }]),
+    null,
+  );
 });
 
 test('ingesta: mismo rowId no duplica', () => {
@@ -101,7 +145,10 @@ test('ingesta: SMS y correo del mismo movimiento se fusionan', () => {
   const r = procesarMensaje(d, msg('r2', PAGO, 'gmail'), ctx);
   assert.equal(r.resultado, 'duplicado');
   assert.equal(d.transactions.length, 1);
-  assert.deepEqual(d.transactions[0].fuentes.map((f) => f.fuente), ['sms', 'gmail']);
+  assert.deepEqual(
+    d.transactions[0].fuentes.map((f) => f.fuente),
+    ['sms', 'gmail'],
+  );
 });
 
 test('ingesta: dos compras legítimas iguales de una misma fuente son dos movimientos', () => {
@@ -133,7 +180,14 @@ test('ingesta: confianza y estados', () => {
   procesarMensaje(d, msg('r1', PAGO), ctx);
   assert.equal(d.transactions[0].estado, 'confirmado');
   assert.equal(d.transactions[0].category, 'Servicios');
-  const t = procesarMensaje(d, msg('r2', 'Bancolombia: Transferiste $19,000 desde tu cuenta *1234 a la cuenta *00000000000 el 06/11/2026 a las 16:01.'), ctx);
+  const t = procesarMensaje(
+    d,
+    msg(
+      'r2',
+      'Bancolombia: Transferiste $19,000 desde tu cuenta *1234 a la cuenta *00000000000 el 06/11/2026 a las 16:01.',
+    ),
+    ctx,
+  );
   assert.equal(t.resultado, 'pendiente', 'una transferencia puede ser a cuenta propia: siempre se revisa');
   const manual = base();
   manual.settings.ingesta.autoConfirmar = false;
@@ -146,7 +200,14 @@ test('ingesta: confianza y estados', () => {
 
 test('ingesta: rechazo, no reconocido y reintento tras error', () => {
   const d = base();
-  const r = procesarMensaje(d, msg('r1', 'Bancolombia: Tu compra por $45.000 en NETFLIX con tu T.Cred *1234 no fue exitosa el 08/01/2026 a las 11:11.'), ctx);
+  const r = procesarMensaje(
+    d,
+    msg(
+      'r1',
+      'Bancolombia: Tu compra por $45.000 en NETFLIX con tu T.Cred *1234 no fue exitosa el 08/01/2026 a las 11:11.',
+    ),
+    ctx,
+  );
   assert.equal(r.resultado, 'descartado');
   assert.equal(saldoCuenta(d.accounts[0], d.transactions), 1000000);
   const x = procesarMensaje(d, msg('r2', 'Bancolombia: formato nuevo sin nada conocido'), ctx);
@@ -159,7 +220,11 @@ test('ingesta: rechazo, no reconocido y reintento tras error', () => {
 
 test('ingesta: la publicidad no crea movimiento ni guarda su texto', () => {
   const d = base();
-  const r = procesarMensaje(d, msg('r1', 'Bancolombia: Todos los premios son libres de impuestos. Sorteo de $100.000'), ctx);
+  const r = procesarMensaje(
+    d,
+    msg('r1', 'Bancolombia: Todos los premios son libres de impuestos. Sorteo de $100.000'),
+    ctx,
+  );
   assert.equal(r.resultado, 'publicidad');
   assert.equal(d.transactions.length, 0);
   assert.equal(d.ingesta[0].textoRelevante, undefined);
@@ -168,20 +233,49 @@ test('ingesta: la publicidad no crea movimiento ni guarda su texto', () => {
 
 test('ingesta: flujo de tarjeta completo por últimos 4', () => {
   const d = base();
-  d.tarjetas.push({ id: 'c', alias: 'Visa', ultimos4: '5566', cupoTotal: 2000000, tasaEA: 26.82, diaCorte: 15, diaLimitePago: 30 });
-  procesarMensaje(d, msg('r1', 'Bancolombia: Compraste $100,000.00 con tu T.Cred *5566 en EXITO el 05/11/2026 a las 10:00. ¿Dudas?'), ctx);
+  d.tarjetas.push({
+    id: 'c',
+    alias: 'Visa',
+    ultimos4: '5566',
+    cupoTotal: 2000000,
+    tasaEA: 26.82,
+    diaCorte: 15,
+    diaLimitePago: 30,
+  });
+  procesarMensaje(
+    d,
+    msg(
+      'r1',
+      'Bancolombia: Compraste $100,000.00 con tu T.Cred *5566 en EXITO el 05/11/2026 a las 10:00. ¿Dudas?',
+    ),
+    ctx,
+  );
   const compra = d.transactions.at(-1);
   assert.equal(compra.tarjetaId, 'c');
   assert.equal(compra.accountId, null);
   compra.estado = 'confirmado';
-  procesarMensaje(d, msg('r2', 'Bancolombia: Compraste $1,200,000.00 con tu T.Cred *5566 en ALKOSTO en 12 cuotas el 05/11/2026 a las 11:00.'), ctx);
+  procesarMensaje(
+    d,
+    msg(
+      'r2',
+      'Bancolombia: Compraste $1,200,000.00 con tu T.Cred *5566 en ALKOSTO en 12 cuotas el 05/11/2026 a las 11:00.',
+    ),
+    ctx,
+  );
   const dif = d.transactions.at(-1);
   assert.equal(dif.esCuota, true);
   confirmar(d, dif.id, {}, ctx);
   assert.equal(d.comprasDiferidas.length, 1);
   registrarDiferida(d, dif, ctx.nuevoId);
   assert.equal(d.comprasDiferidas.length, 1, 'no repite el plan');
-  const pago = confirmar(d, procesarMensaje(d, msg('r3', 'Bancolombia: Pagaste $150,000.00 a tu Tarjeta de Credito *5566 el 06/11/2026 a las 09:30.'), ctx).movimientoId);
+  const pago = confirmar(
+    d,
+    procesarMensaje(
+      d,
+      msg('r3', 'Bancolombia: Pagaste $150,000.00 a tu Tarjeta de Credito *5566 el 06/11/2026 a las 09:30.'),
+      ctx,
+    ).movimientoId,
+  );
   assert.equal(pago.type, 'pago_tarjeta');
   assert.equal(saldoTarjeta(d.tarjetas[0], d.transactions), 100000 + 1200000 - 150000);
   assert.equal(estadisticasMes(d.transactions, '2026-11').expense, 1300000);
@@ -191,7 +285,14 @@ test('ingesta: flujo de tarjeta completo por últimos 4', () => {
 test('ingesta: retiro va a la cuenta de efectivo y no es gasto', () => {
   const d = base();
   d.accounts.push({ id: 'e', name: 'Efectivo', tipo: 'efectivo', startBalance: 0 });
-  const id = procesarMensaje(d, msg('r1', 'Bancolombia: Retiraste $200,000.00 de tu cuenta *1234 en CAJERO EJEMPLO el 05/11/2026 a las 08:15.'), ctx).movimientoId;
+  const id = procesarMensaje(
+    d,
+    msg(
+      'r1',
+      'Bancolombia: Retiraste $200,000.00 de tu cuenta *1234 en CAJERO EJEMPLO el 05/11/2026 a las 08:15.',
+    ),
+    ctx,
+  ).movimientoId;
   confirmar(d, id);
   assert.equal(saldoCuenta(d.accounts[1], d.transactions), 200000);
   assert.equal(estadisticasMes(d.transactions, '2026-11').expense, 0);
@@ -206,16 +307,49 @@ test('revisión: confirmar, descartar y dividir', () => {
   assert.throws(() => confirmar(d, 'nada'), /ya no existe/);
   assert.throws(() => descartar(d, 'nada'), /ya no existe/);
   assert.throws(() => dividir(d, 'nada', [], ctx.nuevoId), /ya no existe/);
-  assert.throws(() => dividir(d, id, [{ amount: 1, category: 'A' }, { amount: 2, category: 'B' }], ctx.nuevoId), /sumar/);
+  assert.throws(
+    () =>
+      dividir(
+        d,
+        id,
+        [
+          { amount: 1, category: 'A' },
+          { amount: 2, category: 'B' },
+        ],
+        ctx.nuevoId,
+      ),
+    /sumar/,
+  );
   assert.throws(() => dividir(d, id, [{ amount: 5500, category: 'A' }], ctx.nuevoId), /positivo/);
-  const partes = dividir(d, id, [{ amount: 5000, category: 'A' }, { amount: 500, category: 'B' }], ctx.nuevoId);
-  assert.deepEqual(partes.map((p) => p.amount), [5000, 500]);
+  const partes = dividir(
+    d,
+    id,
+    [
+      { amount: 5000, category: 'A' },
+      { amount: 500, category: 'B' },
+    ],
+    ctx.nuevoId,
+  );
+  assert.deepEqual(
+    partes.map((p) => p.amount),
+    [5000, 500],
+  );
   assert.equal(partes[1].divididoDe, id);
 });
 
 test('conciliación con registro manual', () => {
   const d = base();
-  d.transactions.push({ id: 'manual', date: '2026-11-05', type: 'expense', amount: 5500, category: 'Servicios', accountId: 'a', origen: 'manual', estado: 'confirmado', fuentes: [] });
+  d.transactions.push({
+    id: 'manual',
+    date: '2026-11-05',
+    type: 'expense',
+    amount: 5500,
+    category: 'Servicios',
+    accountId: 'a',
+    origen: 'manual',
+    estado: 'confirmado',
+    fuentes: [],
+  });
   const r = procesarMensaje(d, msg('r1', PAGO), ctx);
   assert.equal(r.resultado, 'pendiente');
   assert.equal(paresPorConciliar(d.transactions).length, 1);
@@ -227,20 +361,34 @@ test('conciliación con registro manual', () => {
   assert.throws(() => vincular(d, 'nada'), /No hay/);
 
   const s = base();
-  s.transactions.push({ id: 'manual', date: '2026-11-05', type: 'expense', amount: 5500, origen: 'manual', fuentes: [] });
+  s.transactions.push({
+    id: 'manual',
+    date: '2026-11-05',
+    type: 'expense',
+    amount: 5500,
+    origen: 'manual',
+    fuentes: [],
+  });
   const r2 = procesarMensaje(s, msg('r1', PAGO), ctx);
   mantenerSeparados(s, r2.movimientoId);
   assert.equal(s.transactions.length, 2);
   assert.equal(paresPorConciliar(s.transactions).length, 0);
   assert.throws(() => mantenerSeparados(s, 'nada'), /ya no existe/);
-  assert.equal(buscarCandidatoManual({ type: 'expense', amount: 5500, date: '2026-11-08' }, s.transactions), null);
+  assert.equal(
+    buscarCandidatoManual({ type: 'expense', amount: 5500, date: '2026-11-08' }, s.transactions),
+    null,
+  );
 });
 
 test('categorización y aprendizaje', () => {
   const dic = { EXITO: 'Alimentación', 'EXITO EXPRESS': 'Entretenimiento' };
   assert.equal(categorizar('Éxito', 'compra_debito', [], dic).fuente, 'diccionario');
   assert.equal(categorizar('EXITO CALLE 80', 'compra_debito', [], dic).categoria, 'Alimentación');
-  assert.equal(categorizar('EXITO EXPRESS 3', 'compra_debito', [], dic).categoria, 'Entretenimiento', 'gana la coincidencia más larga');
+  assert.equal(
+    categorizar('EXITO EXPRESS 3', 'compra_debito', [], dic).categoria,
+    'Entretenimiento',
+    'gana la coincidencia más larga',
+  );
   assert.equal(categorizar('DESCONOCIDO', 'nomina', [], dic).categoria, 'Salario');
   assert.equal(categorizar(null, 'compra_debito', [], dic).fuente, 'defecto');
   const reglas = aprender(aprender([], 'Exito', 'Otros'), 'EXITO', 'Vivienda');
@@ -261,7 +409,13 @@ test('enseñar: la regla propuesta reconoce el mensaje', () => {
 });
 
 test('purga de textos', () => {
-  const d = { ingesta: [{ recibidoEn: '2026-01-01T00:00:00Z', textoRelevante: 'x' }, { recibidoEn: '2026-11-01T00:00:00Z', textoRelevante: 'y' }, { recibidoEn: '2026-01-01T00:00:00Z' }] };
+  const d = {
+    ingesta: [
+      { recibidoEn: '2026-01-01T00:00:00Z', textoRelevante: 'x' },
+      { recibidoEn: '2026-11-01T00:00:00Z', textoRelevante: 'y' },
+      { recibidoEn: '2026-01-01T00:00:00Z' },
+    ],
+  };
   assert.equal(purgarTextos(d, 30, Date.parse('2026-11-07T00:00:00Z')), 1);
   assert.equal(d.ingesta[0].textoRelevante, undefined);
   assert.equal(d.ingesta[1].textoRelevante, 'y');
@@ -295,24 +449,69 @@ test('reportes: solo agregados', () => {
   const d = base();
   d.goals.push({ id: 'g', name: 'Meta secreta', contributions: [] });
   d.investments.push({ id: 'i', entity: 'Banco Secreto', amount: 100 });
-  d.transactions.push({ id: 't', date: '2026-11-05', type: 'expense', amount: 1000, category: 'Salud', comercio: 'CLINICA PRIVADA', note: 'nota privada', accountId: 'a' }, { id: 'u', date: '2026-10-05', type: 'expense', amount: 400, category: 'Salud', accountId: 'a' });
+  d.transactions.push(
+    {
+      id: 't',
+      date: '2026-11-05',
+      type: 'expense',
+      amount: 1000,
+      category: 'Salud',
+      comercio: 'CLINICA PRIVADA',
+      note: 'nota privada',
+      accountId: 'a',
+    },
+    { id: 'u', date: '2026-10-05', type: 'expense', amount: 400, category: 'Salud', accountId: 'a' },
+  );
   const a = agregados(d, '2026-11');
   assert.equal(a.variacionPorCategoria.Salud, 600);
   const p = promptReporte(a);
-  for (const privado of ['CLINICA', 'nota privada', 'Meta secreta', 'Banco Secreto', 'Ahorros', '1234']) assert.ok(!p.includes(privado), privado);
+  for (const privado of ['CLINICA', 'nota privada', 'Meta secreta', 'Banco Secreto', 'Ahorros', '1234'])
+    assert.ok(!p.includes(privado), privado);
   assert.match(p, /Salud: \$1\.000 \(\+\$600/);
   assert.match(promptReporte(agregados(base(), '2026-11')), /sin gastos/);
 });
 
 test('revisión cruzada: una compra aprobada no se funde con su rechazo', () => {
   const d = base();
-  procesarMensaje(d, msg('r1', 'Bancolombia: Tu compra por $50,000 en EXITO con tu T.Deb *1234 fue rechazada el 06/11/2026 a las 14:00.', 'sms'), ctx);
-  const r = procesarMensaje(d, msg('r2', 'Bancolombia: Compraste $50,000 en EXITO con tu T.Deb *1234, el 06/11/2026 a las 14:01.', 'gmail'), ctx);
+  procesarMensaje(
+    d,
+    msg(
+      'r1',
+      'Bancolombia: Tu compra por $50,000 en EXITO con tu T.Deb *1234 fue rechazada el 06/11/2026 a las 14:00.',
+      'sms',
+    ),
+    ctx,
+  );
+  const r = procesarMensaje(
+    d,
+    msg(
+      'r2',
+      'Bancolombia: Compraste $50,000 en EXITO con tu T.Deb *1234, el 06/11/2026 a las 14:01.',
+      'gmail',
+    ),
+    ctx,
+  );
   assert.equal(r.resultado, 'confirmado');
   assert.equal(saldoCuenta(d.accounts[0], d.transactions), 950000);
   const inverso = base();
-  procesarMensaje(inverso, msg('r1', 'Bancolombia: Compraste $50,000 en EXITO con tu T.Deb *1234, el 06/11/2026 a las 14:01.', 'sms'), ctx);
-  procesarMensaje(inverso, msg('r2', 'Bancolombia: Tu compra por $50,000 en EXITO con tu T.Deb *1234 fue rechazada el 06/11/2026 a las 14:00.', 'gmail'), ctx);
+  procesarMensaje(
+    inverso,
+    msg(
+      'r1',
+      'Bancolombia: Compraste $50,000 en EXITO con tu T.Deb *1234, el 06/11/2026 a las 14:01.',
+      'sms',
+    ),
+    ctx,
+  );
+  procesarMensaje(
+    inverso,
+    msg(
+      'r2',
+      'Bancolombia: Tu compra por $50,000 en EXITO con tu T.Deb *1234 fue rechazada el 06/11/2026 a las 14:00.',
+      'gmail',
+    ),
+    ctx,
+  );
   assert.equal(inverso.transactions.find((t) => t.estado === 'confirmado').fuentes.length, 1);
 });
 
@@ -321,15 +520,32 @@ test('revisión cruzada: movimientos de dos lados exigen ambos', () => {
   d.accounts.push({ id: 'b', name: 'Otra', tipo: 'ahorros', ultimos4: '1111' });
   d.tarjetas.push({ id: 'c', alias: 'V', ultimos4: '5566', tasaEA: 20 });
   d.settings.ingesta.umbralAutoConfirmar = 0.5;
-  assert.equal(procesarMensaje(d, msg('r1', 'Bancolombia: Pagaste $1,000 a tu Tarjeta de Credito *5566 el 06/11/2026 a las 09:30.'), ctx).resultado, 'pendiente');
+  assert.equal(
+    procesarMensaje(
+      d,
+      msg('r1', 'Bancolombia: Pagaste $1,000 a tu Tarjeta de Credito *5566 el 06/11/2026 a las 09:30.'),
+      ctx,
+    ).resultado,
+    'pendiente',
+  );
   const sinEfectivo = base();
   sinEfectivo.settings.ingesta.umbralAutoConfirmar = 0.5;
-  assert.equal(procesarMensaje(sinEfectivo, msg('r1', 'Bancolombia: Retiraste $1,000 de tu cuenta *1234 en CAJERO el 05/11/2026 a las 08:15.'), ctx).resultado, 'pendiente');
+  assert.equal(
+    procesarMensaje(
+      sinEfectivo,
+      msg('r1', 'Bancolombia: Retiraste $1,000 de tu cuenta *1234 en CAJERO el 05/11/2026 a las 08:15.'),
+      ctx,
+    ).resultado,
+    'pendiente',
+  );
 });
 
 test('revisión cruzada: la cuenta única no absorbe otra cuenta', () => {
   const d = base();
-  assert.equal(procesarMensaje(d, msg('r1', PAGO.replace('producto 1234', 'producto 9999')), ctx).resultado, 'pendiente');
+  assert.equal(
+    procesarMensaje(d, msg('r1', PAGO.replace('producto 1234', 'producto 9999')), ctx).resultado,
+    'pendiente',
+  );
   assert.equal(d.transactions[0].accountId, null);
   const sinDigitos = base();
   sinDigitos.accounts[0].ultimos4 = null;
@@ -340,7 +556,15 @@ test('revisión cruzada: la cuenta única no absorbe otra cuenta', () => {
 
 test('revisión cruzada: manual vinculado recibe la segunda fuente', () => {
   const d = base();
-  d.transactions.push({ id: 'manual', date: '2026-11-05', type: 'expense', amount: 5500, origen: 'manual', estado: 'confirmado', fuentes: [] });
+  d.transactions.push({
+    id: 'manual',
+    date: '2026-11-05',
+    type: 'expense',
+    amount: 5500,
+    origen: 'manual',
+    estado: 'confirmado',
+    fuentes: [],
+  });
   vincular(d, procesarMensaje(d, msg('r1', PAGO, 'sms'), ctx).movimientoId);
   assert.equal(procesarMensaje(d, msg('r2', PAGO, 'gmail'), ctx).resultado, 'duplicado');
   assert.equal(d.transactions.length, 1);
@@ -355,12 +579,26 @@ test('revisión cruzada: confirmar aprende y las cuotas siguen al movimiento', (
   assert.equal(d.reglas[0].categoria, 'Salud');
   d.settings.ingesta.autoConfirmar = true;
   d.settings.ingesta.umbralAutoConfirmar = 0.5;
-  const dif = procesarMensaje(d, msg('r2', 'Bancolombia: Compraste $600,000.00 con tu T.Cred *5566 en ALKOSTO en 6 cuotas el 05/11/2026 a las 11:00.'), ctx);
+  const dif = procesarMensaje(
+    d,
+    msg(
+      'r2',
+      'Bancolombia: Compraste $600,000.00 con tu T.Cred *5566 en ALKOSTO en 6 cuotas el 05/11/2026 a las 11:00.',
+    ),
+    ctx,
+  );
   assert.equal(d.comprasDiferidas.length, 1);
   descartar(d, dif.movimientoId);
   assert.equal(d.comprasDiferidas.length, 0, 'sin cuotas fantasma');
   d.settings.ingesta.autoConfirmar = false;
-  const otra = procesarMensaje(d, msg('r3', 'Bancolombia: Compraste $700,000.00 con tu T.Cred *5566 en ALKOSTO en 6 cuotas el 05/11/2026 a las 11:00.'), ctx);
+  const otra = procesarMensaje(
+    d,
+    msg(
+      'r3',
+      'Bancolombia: Compraste $700,000.00 con tu T.Cred *5566 en ALKOSTO en 6 cuotas el 05/11/2026 a las 11:00.',
+    ),
+    ctx,
+  );
   assert.throws(() => confirmar(d, otra.movimientoId), /identificadores/);
 });
 
@@ -368,7 +606,15 @@ test('revisión cruzada: dividir no duplica cuando llega la segunda fuente', () 
   const d = base();
   d.settings.ingesta.autoConfirmar = false;
   const { movimientoId: id } = procesarMensaje(d, msg('r1', PAGO, 'sms'), ctx);
-  const [a, b] = dividir(d, id, [{ amount: 5000, category: 'A' }, { amount: 500, category: 'B' }], ctx.nuevoId);
+  const [a, b] = dividir(
+    d,
+    id,
+    [
+      { amount: 5000, category: 'A' },
+      { amount: 500, category: 'B' },
+    ],
+    ctx.nuevoId,
+  );
   assert.notEqual(a.fuentes, b.fuentes);
   assert.deepEqual(b.fuentes, []);
   assert.equal(procesarMensaje(d, msg('r2', PAGO, 'gmail'), ctx).resultado, 'duplicado');
@@ -376,14 +622,18 @@ test('revisión cruzada: dividir no duplica cuando llega la segunda fuente', () 
 });
 
 test('enseñar: dato al inicio, comercio variable y sin monto', () => {
-  const texto = 'Bancolombia: El 06/11/2026 a las 14:30 abonaste en EXITO NORTE por $120.000 con tu tarjeta *1234. Publicidad larga';
+  const texto =
+    'Bancolombia: El 06/11/2026 a las 14:30 abonaste en EXITO NORTE por $120.000 con tu tarjeta *1234. Publicidad larga';
   const regla = proponerRegla(texto, 'compra_debito');
   const r = crearRegistro({ patrones: [] }, [regla]);
   const uno = r.analizar(texto, { fuente: 'sms' });
   assert.equal(uno.monto, 120000);
   assert.equal(uno.ultimos4, '1234');
   assert.equal(uno.comercio, 'EXITO NORTE');
-  assert.equal(r.analizar(texto.replace('EXITO NORTE', 'CARULLA').replace('120.000', '5.000'), { fuente: 'sms' }).monto, 5000);
+  assert.equal(
+    r.analizar(texto.replace('EXITO NORTE', 'CARULLA').replace('120.000', '5.000'), { fuente: 'sms' }).monto,
+    5000,
+  );
   assert.throws(() => proponerRegla('Bancolombia: aviso sin cifras', 'iva'), /monto/);
 });
 
@@ -397,7 +647,10 @@ test('Power BI: tablas y CSV seguro', () => {
   const d = base();
   d.tarjetas.push({ id: 'c', alias: 'Visa', cupoTotal: 10, tasaEA: 1 });
   d.deudas.push({ id: 'd', tipo: 'consumo', saldo: 5, tasaEA: 2 });
-  d.transactions.push({ id: 't', date: '2026-10-30', type: 'expense', amount: 10, category: 'X', accountId: 'a' }, { id: 'p', date: '2026-10-30', type: 'expense', amount: 10, estado: 'pendiente_revision' });
+  d.transactions.push(
+    { id: 't', date: '2026-10-30', type: 'expense', amount: 10, category: 'X', accountId: 'a' },
+    { id: 'p', date: '2026-10-30', type: 'expense', amount: 10, estado: 'pendiente_revision' },
+  );
   const t = tablasPowerBi(d, '2026-11-02');
   assert.equal(t.movimientos.length, 1, 'excluye pendientes');
   assert.equal(t.movimientos[0].tipo, 'gasto');

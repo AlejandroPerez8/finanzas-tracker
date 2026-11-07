@@ -35,21 +35,55 @@ export function tablasPowerBi(datos, hoy) {
     origen: t.origen ?? 'manual',
     es_cuota: t.esCuota ? 1 : 0,
   }));
-  const fechas = tx.map((t) => t.date).filter(Boolean).sort();
+  const fechas = tx
+    .map((t) => t.date)
+    .filter(Boolean)
+    .sort();
   const calendario = [];
   if (fechas.length) {
     const hasta = hoy > fechas[fechas.length - 1] ? hoy : fechas[fechas.length - 1];
-    for (let d = new Date(`${fechas[0].slice(0, 7)}-01T00:00:00Z`); d.toISOString().slice(0, 10) <= hasta; d = new Date(d.getTime() + 86400000)) {
+    for (
+      let d = new Date(`${fechas[0].slice(0, 7)}-01T00:00:00Z`);
+      d.toISOString().slice(0, 10) <= hasta;
+      d = new Date(d.getTime() + 86400000)
+    ) {
       const iso = d.toISOString().slice(0, 10);
-      calendario.push({ fecha: iso, anio: iso.slice(0, 4), mes: iso.slice(5, 7), anio_mes: iso.slice(0, 7), dia: iso.slice(8, 10), dia_semana: d.getUTCDay() });
+      calendario.push({
+        fecha: iso,
+        anio: iso.slice(0, 4),
+        mes: iso.slice(5, 7),
+        anio_mes: iso.slice(0, 7),
+        dia: iso.slice(8, 10),
+        dia_semana: d.getUTCDay(),
+      });
     }
   }
   return {
     movimientos,
-    cuentas: datos.accounts.map((a) => ({ id: a.id, nombre: a.name, tipo: a.tipo ?? a.type ?? '', saldo: saldoCuenta(a, tx) })),
-    categorias: [...new Set(movimientos.map((m) => m.categoria).filter(Boolean))].sort().map((c) => ({ categoria: c })),
-    tarjetas: (datos.tarjetas || []).map((t) => ({ id: t.id, alias: t.alias, banco: t.banco ?? '', cupo_total: aEntero(t.cupoTotal), saldo: saldoTarjeta(t, tx), tasa_ea: t.tasaEA })),
-    deudas: (datos.deudas || []).map((d) => ({ id: d.id, nombre: d.nombre ?? '', tipo: d.tipo, saldo: aEntero(d.saldo), tasa_ea: d.tasaEA })),
+    cuentas: datos.accounts.map((a) => ({
+      id: a.id,
+      nombre: a.name,
+      tipo: a.tipo ?? a.type ?? '',
+      saldo: saldoCuenta(a, tx),
+    })),
+    categorias: [...new Set(movimientos.map((m) => m.categoria).filter(Boolean))]
+      .sort()
+      .map((c) => ({ categoria: c })),
+    tarjetas: (datos.tarjetas || []).map((t) => ({
+      id: t.id,
+      alias: t.alias,
+      banco: t.banco ?? '',
+      cupo_total: aEntero(t.cupoTotal),
+      saldo: saldoTarjeta(t, tx),
+      tasa_ea: t.tasaEA,
+    })),
+    deudas: (datos.deudas || []).map((d) => ({
+      id: d.id,
+      nombre: d.nombre ?? '',
+      tipo: d.tipo,
+      saldo: aEntero(d.saldo),
+      tasa_ea: d.tasaEA,
+    })),
     calendario,
   };
 }

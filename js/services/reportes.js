@@ -35,7 +35,10 @@ export function agregados(datos, mes) {
 /** Prompt para copiar a Claude: lo único de datos que incluye son los agregados. */
 export function promptReporte(a) {
   const cat = Object.entries(a.gastosPorCategoria).sort((x, y) => y[1] - x[1]);
-  const lineas = cat.map(([c, v]) => `${c}: ${formatear(v)} (${a.variacionPorCategoria[c] >= 0 ? '+' : ''}${formatear(a.variacionPorCategoria[c])} vs. mes anterior)`);
+  const lineas = cat.map(
+    ([c, v]) =>
+      `${c}: ${formatear(v)} (${a.variacionPorCategoria[c] >= 0 ? '+' : ''}${formatear(a.variacionPorCategoria[c])} vs. mes anterior)`,
+  );
   return `Eres un asesor financiero para una persona en Colombia (COP). Responde en español, en menos de 400 palabras, con markdown simple (## títulos, - listas, ** negritas):
 ## Diagnóstico del mes
 ## Qué está funcionando
