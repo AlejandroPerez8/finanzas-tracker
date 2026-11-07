@@ -54,6 +54,18 @@ test('si guardar falla no se confirma, y el reintento no duplica', async (t) => 
   assert.equal(e.estado.peticionesAck.length, 1);
 });
 
+test('tras un guardado fallido, la siguiente sincronización no confirma nada sin guardar', async (t) => {
+  const e = await escenario(t);
+  e.estado.agregar('gmail', 'g1', FECHA, PAGO);
+  const falla = async () => { throw new Error('disco lleno'); };
+  await assert.rejects(sincronizar({ ...e, guardar: falla }));
+  await assert.rejects(sincronizar({ ...e, guardar: falla }));
+  assert.equal(e.estado.peticionesAck.length, 0);
+  await sincronizar({ ...e, guardar: async () => {} });
+  assert.equal(e.estado.peticionesAck.length, 1);
+  assert.equal(e.datos.transactions.length, 1);
+});
+
 test('un ack fallido se reintenta en la siguiente sincronización', async (t) => {
   const e = await escenario(t);
   e.estado.agregar('gmail', 'g1', FECHA, PAGO);

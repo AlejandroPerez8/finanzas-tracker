@@ -7,7 +7,6 @@ import { CATEGORIAS_GASTO, CATEGORIAS_INGRESO } from '../domain/categorias.js';
 import { procesarMensaje, confirmar, descartar, dividir, proponerRegla, purgarTextos, hashTexto } from '../services/ingesta.js';
 import { paresPorConciliar, vincular, mantenerSeparados } from '../services/conciliacion.js';
 import { crearCliente, sincronizar, urlValida } from '../services/sync.js';
-import { aprender } from '../services/categorizacion.js';
 import { registrar } from '../services/registro.js';
 import { crearRegistro } from '../parsers/registry.js';
 
@@ -136,7 +135,6 @@ export function crearIngestaUI(ctx, recursos) {
         cambios.accountId = valorMedio || null;
       }
       if (clase.value === 'transferencia') cambios.cuentaDestinoId = destino.value || null;
-      if (cambios.category !== t.category && t.comercio) datos.reglas = aprender(datos.reglas, t.comercio, cambios.category);
       confirmar(datos, t.id, cambios, contexto());
       await ctx.guardar();
       ctx.renderAll();

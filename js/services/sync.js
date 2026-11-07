@@ -118,7 +118,9 @@ export async function sincronizar({ cliente, datos, guardar, contexto, enLinea =
   if (!enLinea()) return { ...resumen, estado: 'offline' };
 
   const estado = (datos.settings.sync ??= { cursor: null, ackPendientes: [], ultima: null });
-  // Confirmaciones que fallaron en una sincronización anterior; ya están guardadas.
+  // Lo que quedó en memoria tras un fallo de guardado se persiste primero: nunca se confirma
+  // al servidor algo que no esté en disco. Si vuelve a fallar, aquí se detiene todo.
+  await guardar();
   await vaciarAcks(cliente, estado, guardar);
 
   for (let lote = 0; lote < maxLotes; lote++) {

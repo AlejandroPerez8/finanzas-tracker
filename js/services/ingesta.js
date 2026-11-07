@@ -4,7 +4,8 @@
  */
 
 import { aEntero } from '../domain/money.js';
-import { categorizar } from './categorizacion.js';
+import { normalizarTexto } from '../parsers/bancolombia/comun.js';
+import { aprender, categorizar } from './categorizacion.js';
 import { buscarDuplicado } from './deduplicacion.js';
 import { buscarCandidatoManual } from './conciliacion.js';
 
@@ -52,10 +53,14 @@ function asociar(parseado, regla, datos) {
   const tarjeta = ultimos4 ? tarjetas.find((t) => t.ultimos4 === ultimos4) : null;
   const usaTarjeta = regla.tarjeta || (regla.tarjetaOpcional && tarjeta);
   let accountId = null;
-  const cuentasBanco = datos.accounts;
+  const cuentasBanco = datos.accounts.filter((a) => a.tipo !== 'efectivo');
   if (!usaTarjeta || regla.type === 'pago_tarjeta' || regla.type === 'avance') {
-    const porUltimos = ultimos4 ? cuentasBanco.find((a) => a.ultimos4 === ultimos4) : null;
-    accountId = porUltimos?.id ?? (cuentasBanco.length === 1 ? cuentasBanco[0].id : null);
+    // Si los dígitos ya identifican la tarjeta, no dicen nada sobre la cuenta.
+    const digitosCuenta = tarjeta ? null : ultimos4;
+    const porUltimos = digitosCuenta ? cuentasBanco.find((a) => a.ultimos4 === digitosCuenta) : null;
+    // Con una sola cuenta se asume esa, salvo que tenga otros dígitos: sería una cuenta no registrada.
+    const unica = cuentasBanco.length === 1 && (!digitosCuenta || !cuentasBanco[0].ultimos4) ? cuentasBanco[0] : null;
+    accountId = porUltimos?.id ?? unica?.id ?? null;
   }
   return { tarjetaId: usaTarjeta ? (tarjeta?.id ?? null) : null, accountId };
 }
@@ -95,7 +100,9 @@ export function aMovimiento(parseado, item, datos, contexto) {
 function decidirEstado(mov, parseado, ajustes, regla) {
   if (regla.descartar) return 'descartado';
   if (regla.siempreRevisar) return 'pendiente_revision';
-  const asociado = regla.tarjeta ? mov.tarjetaId : mov.accountId || mov.tarjetaId;
+  // Un movimiento con dos lados necesita ambos para no descuadrar ningún saldo.
+  const dosLados = mov.type === 'pago_tarjeta' || mov.type === 'avance';
+  const asociado = dosLados ? mov.tarjetaId && mov.accountId : regla.efectivo ? mov.accountId && mov.cuentaDestinoId : regla.tarjeta ? mov.tarjetaId : mov.accountId || mov.tarjetaId;
   const umbral = ajustes?.umbralAutoConfirmar ?? 0.9;
   const auto = ajustes?.autoConfirmar !== false;
   return auto && asociado && parseado.confianza >= umbral ? 'confirmado' : 'pendiente_revision';
@@ -143,7 +150,8 @@ export function procesarMensaje(datos, entrada, contexto) {
   if (conservar) item.textoRelevante = entrada.textoRelevante;
 
   const regla = MAPA_TIPOS[parseado.tipo] ?? {};
-  const existente = buscarDuplicado(mov, item.fuente, datos.transactions);
+  // Un rechazo no es el mismo evento que una compra aprobada igual.
+  const existente = regla.descartar ? null : buscarDuplicado(mov, item.fuente, datos.transactions);
   if (existente) {
     existente.fuentes.push(mov.fuentes[0]);
     item.movimientoId = existente.id;
@@ -158,7 +166,7 @@ export function procesarMensaje(datos, entrada, contexto) {
     mov.conciliarCon = candidato.id;
   }
   datos.transactions.push(mov);
-  if (parseado.tipo === 'compra_diferida' && mov.tarjetaId && mov.estado === 'confirmado') {
+  if (mov.esCuota && mov.tarjetaId && mov.estado === 'confirmado') {
     registrarDiferida(datos, mov, contexto.nuevoId);
   }
   item.movimientoId = mov.id;
@@ -187,9 +195,14 @@ export function registrarDiferida(datos, mov, nuevoId) {
 export function confirmar(datos, id, cambios = {}, contexto = {}) {
   const mov = datos.transactions.find((t) => t.id === id);
   if (!mov) throw new Error('El movimiento ya no existe');
+  const categoriaPrevia = mov.category;
   Object.assign(mov, cambios, { estado: 'confirmado' });
   delete mov.conciliarCon;
-  if (mov.type === 'expense' && mov.esCuota && mov.tarjetaId && contexto.nuevoId) registrarDiferida(datos, mov, contexto.nuevoId);
+  if (mov.category !== categoriaPrevia && mov.comercio) datos.reglas = aprender(datos.reglas, mov.comercio, mov.category);
+  if (mov.type === 'expense' && mov.esCuota && mov.tarjetaId) {
+    if (!contexto.nuevoId) throw new Error('Falta el generador de identificadores para la compra a cuotas');
+    registrarDiferida(datos, mov, contexto.nuevoId);
+  }
   return mov;
 }
 
@@ -199,6 +212,7 @@ export function descartar(datos, id) {
   if (!mov) throw new Error('El movimiento ya no existe');
   mov.estado = 'descartado';
   delete mov.conciliarCon;
+  datos.comprasDiferidas = datos.comprasDiferidas.filter((c) => c.movimientoId !== id);
   return mov;
 }
 
@@ -212,7 +226,9 @@ export function dividir(datos, id, partes, nuevoId) {
   const suma = partes.reduce((s, p) => s + aEntero(p.amount), 0);
   if (partes.length < 2 || partes.some((p) => aEntero(p.amount) <= 0)) throw new Error('Cada parte debe tener un monto positivo');
   if (suma !== mov.amount) throw new Error('Las partes deben sumar el total del movimiento');
-  const nuevos = partes.slice(1).map((p) => ({ ...mov, id: nuevoId(), amount: aEntero(p.amount), category: p.category, divididoDe: mov.id }));
+  // Las partes nuevas no tienen fuentes: el mensaje del banco queda ligado a la primera.
+  const nuevos = partes.slice(1).map((p) => ({ ...mov, id: nuevoId(), amount: aEntero(p.amount), category: p.category, divididoDe: mov.id, fuentes: [], esCuota: false, cuotaInfo: null }));
+  mov.montoIngerido = mov.montoIngerido ?? mov.amount;
   mov.amount = aEntero(partes[0].amount);
   mov.category = partes[0].category;
   datos.transactions.push(...nuevos);
@@ -222,18 +238,27 @@ export function dividir(datos, id, partes, nuevoId) {
 /** Regla nueva desde un texto no reconocido: escapa el texto y convierte el monto y la fecha en grupos. */
 export function proponerRegla(texto, tipo) {
   const escapar = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
-  const base = texto.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  const base = normalizarTexto(texto);
   const montoRe = /\$\s?[\d.,]*\d|\b\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?\b/;
   const fechaRe = /\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b/;
   const horaRe = /\b\d{1,2}:\d{2}(?::\d{2})?\b/;
   const ultimosRe = /\*{1,2}\d{4}\b/;
-  const fin = base.search(fechaRe);
-  const util = fin >= 0 ? base.slice(0, fin + base.slice(fin).match(fechaRe)[0].length + 20) : base;
+  if (!montoRe.test(base)) throw new Error('No encontré un monto en este mensaje');
+  // Se conserva hasta el último dato útil: lo que sigue suele ser publicidad o teléfonos.
+  const fin = Math.max(...[montoRe, fechaRe, horaRe, ultimosRe].map((re) => {
+    const m = re.exec(base);
+    return m ? m.index + m[0].length : 0;
+  }));
+  const util = base.slice(0, fin);
   let regex = escapar(util);
   const reemplazar = (re, grupo) => {
     const m = re.exec(util);
-    if (m) regex = regex.replace(escapar(m[0]), grupo);
+    if (m) regex = regex.replace(escapar(m[0]), () => grupo);
   };
+  // El primer nombre en mayúsculas después del prefijo es el comercio o la persona.
+  const cuerpo = util.replace(/^Bancolombia:? ?/i, '');
+  const nombre = /\b[A-Z][A-Z0-9&*]+(?: [A-Z0-9&*]+)*\b/.exec(cuerpo);
+  if (nombre) regex = regex.replace(escapar(nombre[0]), () => '(?<comercio>.+?)');
   reemplazar(montoRe, '\\$?\\s*(?<monto>[\\d.,]*\\d)');
   reemplazar(ultimosRe, '\\*{1,2}(?<ultimos4>\\d{4})');
   reemplazar(fechaRe, '(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)');

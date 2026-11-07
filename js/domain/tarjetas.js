@@ -129,7 +129,8 @@ export function alertasTarjeta(tarjeta, saldo, opciones = {}) {
   if (diasCorte >= 0 && diasCorte <= 3) {
     alertas.push({ tipo: 'corte', nivel: 'info', dias: diasCorte, mensaje: `${nombre}: corte en ${diasCorte} día(s).` });
   }
-  if (saldo > 0 && [7, 3, 1, 0].includes(diasPago)) {
+  const yaPagado = cicloActual?.pagado && cicloActual.fechaLimitePago === limitePago;
+  if (saldo > 0 && !yaPagado && [7, 3, 1, 0].includes(diasPago)) {
     alertas.push({
       tipo: 'limite_pago',
       nivel: diasPago <= 1 ? 'urgente' : 'aviso',

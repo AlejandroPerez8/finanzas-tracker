@@ -800,9 +800,11 @@ import { iniciarInterfaz } from './ui/principal.js';
           openEditModal('transaction', t.id);
         } else if(btn.dataset.act==='del'){
           const copia = data.transactions.slice();
+          const copiaDiferidas = data.comprasDiferidas.slice();
           deleteTransaction(t);
+          data.comprasDiferidas = data.comprasDiferidas.filter(c=>c.movimientoId!==t.id);
           await saveData(); renderAll();
-          interfaz.alEliminar('Movimiento eliminado', async ()=>{ data.transactions = copia; await saveData(); renderAll(); });
+          interfaz.alEliminar('Movimiento eliminado', async ()=>{ data.transactions = copia; data.comprasDiferidas = copiaDiferidas; await saveData(); renderAll(); });
         } else if(btn.dataset.act==='dup'){
           duplicateTransaction(t);
           await saveData(); showToast('Movimiento duplicado'); renderAll();

@@ -35,6 +35,8 @@ test('money: el prorrateo suma exactamente el total', () => {
 test('money: montos de banco en ambos estilos', () => {
   const casos = { '$1,550,555.00': 1550555, '$29,000.00': 29000, '$116,500': 116500, '30,000.00': 30000, '$1.234.567': 1234567, '1.234.567,89': 1234568, '$5,500': 5500, 'COP 19000': 19000, '1500,50': 1501, '1500.5': 1501, '1.500': 1500, '1,500': 1500, '$ 75.500': 75500 };
   for (const [texto, esperado] of Object.entries(casos)) assert.equal(interpretarMonto(texto), esperado, texto);
+  assert.equal(interpretarMonto('$1.234.567,89.'), 1234568, 'punto final de oración');
+  assert.equal(interpretarMonto('$1,234.567'), 1234567, 'tres dígitos finales son miles');
   assert.equal(interpretarMonto(null), null);
   assert.equal(interpretarMonto('sin monto'), null);
 });
@@ -203,6 +205,7 @@ test('alertas de tarjeta: 7, 3 y 1 día', () => {
   assert.ok(!de('2026-11-23', 0).some((a) => a.tipo === 'limite_pago'), 'sin deuda no se alerta el pago');
   assert.ok(de('2026-11-13').some((a) => a.tipo === 'corte' && a.dias === 2));
   assert.ok(de('2026-11-13').some((a) => a.tipo === 'cuota_manejo'));
+  assert.ok(!de('2026-11-29', 100, { cicloActual: { pagado: true, fechaLimitePago: '2026-11-30' } }).some((a) => a.tipo === 'limite_pago'), 'ciclo ya pagado');
   assert.ok(de('2026-11-02', 700).some((a) => a.tipo === 'utilizacion'));
   assert.ok(de('2026-11-02', 100, { cicloActual: { pagado: false, fechaLimitePago: '2026-11-01' } }).some((a) => a.tipo === 'minimo_no_cubierto'));
   assert.ok(alertasTarjeta({ ultimos4: '1234', diaCorte: 15, diaLimitePago: 30 }, 100, { hoy: '2026-11-13' })[0].mensaje.includes('*1234'));
@@ -247,6 +250,14 @@ test('simulador: casos no factibles y sin deudas', () => {
   assert.equal(eterno.factible, false);
   assert.match(eterno.motivo, /intereses/);
   assert.equal(compararEstrategias([{ id: 'x', saldo: 1000000, tasaEA: 100, pagoMinimo: 1000 }], 500000, '2026-11').avalancha.interesesAhorrados, null);
+});
+
+test('simulador: la base de solo mínimos no reinvierte ni cuenta deudas saldadas', () => {
+  const lista = [{ id: 'z', saldo: 0, tasaEA: 25, pagoMinimo: 200000 }, { id: 'a', saldo: 1000000, tasaEA: 30, pagoMinimo: 100000 }, { id: 'b', saldo: 100000, tasaEA: 15, pagoMinimo: 50000 }];
+  const r = compararEstrategias(lista, 150000, '2026-11');
+  assert.ok(r.avalancha.interesesAhorrados >= 0);
+  assert.ok(r.bola_de_nieve.interesesAhorrados >= 0);
+  assert.ok(r.soloMinimos.meses > r.bola_de_nieve.meses, 'sin reinvertir tarda más');
 });
 
 test('flujo de caja: cuotas y recurrentes', () => {

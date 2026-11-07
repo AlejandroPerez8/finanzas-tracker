@@ -12,6 +12,7 @@ export function buscarCandidatoManual(mov, transacciones) {
       (t) =>
         (t.origen === 'manual' || !t.origen) &&
         !t.fuentes?.length &&
+        t.estado !== 'descartado' &&
         t.type === mov.type &&
         t.amount === mov.amount &&
         Math.abs(diasEntre(t.date, mov.date)) <= 1,

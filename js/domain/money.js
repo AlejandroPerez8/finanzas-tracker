@@ -57,7 +57,8 @@ export function interpretarMonto(texto) {
   if (texto == null) return null;
   const limpio = String(texto)
     .replace(/cop|\$|\s/gi, '')
-    .replace(/[^\d.,]/g, '');
+    .replace(/[^\d.,]/g, '')
+    .replace(/^[.,]+|[.,]+$/g, '');
   if (!/\d/.test(limpio)) return null;
   const ultimoPunto = limpio.lastIndexOf('.');
   const ultimaComa = limpio.lastIndexOf(',');
@@ -65,8 +66,11 @@ export function interpretarMonto(texto) {
   let parteDecimal = '';
   if (ultimoPunto >= 0 && ultimaComa >= 0) {
     const corte = Math.max(ultimoPunto, ultimaComa);
-    parteEntera = limpio.slice(0, corte);
-    parteDecimal = limpio.slice(corte + 1);
+    // Tres dígitos al final no son centavos: "1,234.567" son miles.
+    if (limpio.length - corte - 1 <= 2) {
+      parteEntera = limpio.slice(0, corte);
+      parteDecimal = limpio.slice(corte + 1);
+    }
   } else if (ultimoPunto >= 0 || ultimaComa >= 0) {
     const sep = ultimoPunto >= 0 ? '.' : ',';
     const trozos = limpio.split(sep);

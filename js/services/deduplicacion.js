@@ -40,7 +40,8 @@ export function comerciosParecidos(a, b) {
 /** ¿Son el mismo movimiento bancario? Ver reglas al inicio del archivo. */
 export function esMismoMovimiento(a, b) {
   if (a.referenciaBanco && b.referenciaBanco) return a.referenciaBanco === b.referenciaBanco;
-  if (a.type !== b.type || a.amount !== b.amount) return false;
+  // Tras dividir un movimiento, sigue valiendo el monto que informó el banco.
+  if (a.type !== b.type || (a.montoIngerido ?? a.amount) !== (b.montoIngerido ?? b.amount)) return false;
   if (a.ultimos4 && b.ultimos4 && a.ultimos4 !== b.ultimos4) return false;
   const ta = instanteBogota(a.date, a.hora);
   const tb = instanteBogota(b.date, b.hora);
@@ -59,7 +60,8 @@ export function esMismoMovimiento(a, b) {
  */
 export function buscarDuplicado(nuevo, fuente, existentes) {
   for (const t of existentes) {
-    if (!t.fuentes?.length || t.origen === 'manual') continue;
+    // Sin fuentes: es manual o una parte dividida; lo manual se ofrece en Conciliación.
+    if (!t.fuentes?.length || t.estado === 'descartado') continue;
     if (t.fuentes.some((f) => f.fuente === fuente)) continue;
     if (esMismoMovimiento(nuevo, t)) return t;
   }

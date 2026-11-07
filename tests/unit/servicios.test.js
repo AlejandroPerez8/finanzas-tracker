@@ -82,7 +82,9 @@ test('deduplicación: reglas de igualdad', () => {
   assert.equal(esMismoMovimiento({ ...m, referenciaBanco: 'A' }, { ...m, referenciaBanco: 'B' }), false);
   assert.match(huella(m), /expense\|10/);
   assert.equal(huella({ ...m, referenciaBanco: 'A' }), 'ref|A');
-  assert.equal(buscarDuplicado(m, 'gmail', [{ ...m, origen: 'manual', fuentes: [{ fuente: 'sms' }] }]), null);
+  assert.ok(buscarDuplicado(m, 'gmail', [{ ...m, origen: 'manual', fuentes: [{ fuente: 'sms' }] }]), 'un manual ya vinculado recibe la segunda fuente');
+  assert.equal(buscarDuplicado(m, 'gmail', [{ ...m, origen: 'manual', fuentes: [] }]), null);
+  assert.equal(buscarDuplicado(m, 'gmail', [{ ...m, estado: 'descartado', fuentes: [{ fuente: 'sms' }] }]), null);
 });
 
 test('ingesta: mismo rowId no duplica', () => {
@@ -300,6 +302,89 @@ test('reportes: solo agregados', () => {
   for (const privado of ['CLINICA', 'nota privada', 'Meta secreta', 'Banco Secreto', 'Ahorros', '1234']) assert.ok(!p.includes(privado), privado);
   assert.match(p, /Salud: \$1\.000 \(\+\$600/);
   assert.match(promptReporte(agregados(base(), '2026-11')), /sin gastos/);
+});
+
+test('revisión cruzada: una compra aprobada no se funde con su rechazo', () => {
+  const d = base();
+  procesarMensaje(d, msg('r1', 'Bancolombia: Tu compra por $50,000 en EXITO con tu T.Deb *1234 fue rechazada el 06/11/2026 a las 14:00.', 'sms'), ctx);
+  const r = procesarMensaje(d, msg('r2', 'Bancolombia: Compraste $50,000 en EXITO con tu T.Deb *1234, el 06/11/2026 a las 14:01.', 'gmail'), ctx);
+  assert.equal(r.resultado, 'confirmado');
+  assert.equal(saldoCuenta(d.accounts[0], d.transactions), 950000);
+  const inverso = base();
+  procesarMensaje(inverso, msg('r1', 'Bancolombia: Compraste $50,000 en EXITO con tu T.Deb *1234, el 06/11/2026 a las 14:01.', 'sms'), ctx);
+  procesarMensaje(inverso, msg('r2', 'Bancolombia: Tu compra por $50,000 en EXITO con tu T.Deb *1234 fue rechazada el 06/11/2026 a las 14:00.', 'gmail'), ctx);
+  assert.equal(inverso.transactions.find((t) => t.estado === 'confirmado').fuentes.length, 1);
+});
+
+test('revisión cruzada: movimientos de dos lados exigen ambos', () => {
+  const d = base();
+  d.accounts.push({ id: 'b', name: 'Otra', tipo: 'ahorros', ultimos4: '1111' });
+  d.tarjetas.push({ id: 'c', alias: 'V', ultimos4: '5566', tasaEA: 20 });
+  d.settings.ingesta.umbralAutoConfirmar = 0.5;
+  assert.equal(procesarMensaje(d, msg('r1', 'Bancolombia: Pagaste $1,000 a tu Tarjeta de Credito *5566 el 06/11/2026 a las 09:30.'), ctx).resultado, 'pendiente');
+  const sinEfectivo = base();
+  sinEfectivo.settings.ingesta.umbralAutoConfirmar = 0.5;
+  assert.equal(procesarMensaje(sinEfectivo, msg('r1', 'Bancolombia: Retiraste $1,000 de tu cuenta *1234 en CAJERO el 05/11/2026 a las 08:15.'), ctx).resultado, 'pendiente');
+});
+
+test('revisión cruzada: la cuenta única no absorbe otra cuenta', () => {
+  const d = base();
+  assert.equal(procesarMensaje(d, msg('r1', PAGO.replace('producto 1234', 'producto 9999')), ctx).resultado, 'pendiente');
+  assert.equal(d.transactions[0].accountId, null);
+  const sinDigitos = base();
+  sinDigitos.accounts[0].ultimos4 = null;
+  sinDigitos.accounts.push({ id: 'e', name: 'Efectivo', tipo: 'efectivo' });
+  procesarMensaje(sinDigitos, msg('r1', PAGO), ctx);
+  assert.equal(sinDigitos.transactions[0].accountId, 'a', 'el efectivo no cuenta como cuenta bancaria');
+});
+
+test('revisión cruzada: manual vinculado recibe la segunda fuente', () => {
+  const d = base();
+  d.transactions.push({ id: 'manual', date: '2026-11-05', type: 'expense', amount: 5500, origen: 'manual', estado: 'confirmado', fuentes: [] });
+  vincular(d, procesarMensaje(d, msg('r1', PAGO, 'sms'), ctx).movimientoId);
+  assert.equal(procesarMensaje(d, msg('r2', PAGO, 'gmail'), ctx).resultado, 'duplicado');
+  assert.equal(d.transactions.length, 1);
+});
+
+test('revisión cruzada: confirmar aprende y las cuotas siguen al movimiento', () => {
+  const d = base();
+  d.tarjetas.push({ id: 'c', alias: 'V', ultimos4: '5566', tasaEA: 20 });
+  d.settings.ingesta.autoConfirmar = false;
+  const { movimientoId: id } = procesarMensaje(d, msg('r1', PAGO), ctx);
+  confirmar(d, id, { category: 'Salud' });
+  assert.equal(d.reglas[0].categoria, 'Salud');
+  d.settings.ingesta.autoConfirmar = true;
+  d.settings.ingesta.umbralAutoConfirmar = 0.5;
+  const dif = procesarMensaje(d, msg('r2', 'Bancolombia: Compraste $600,000.00 con tu T.Cred *5566 en ALKOSTO en 6 cuotas el 05/11/2026 a las 11:00.'), ctx);
+  assert.equal(d.comprasDiferidas.length, 1);
+  descartar(d, dif.movimientoId);
+  assert.equal(d.comprasDiferidas.length, 0, 'sin cuotas fantasma');
+  d.settings.ingesta.autoConfirmar = false;
+  const otra = procesarMensaje(d, msg('r3', 'Bancolombia: Compraste $700,000.00 con tu T.Cred *5566 en ALKOSTO en 6 cuotas el 05/11/2026 a las 11:00.'), ctx);
+  assert.throws(() => confirmar(d, otra.movimientoId), /identificadores/);
+});
+
+test('revisión cruzada: dividir no duplica cuando llega la segunda fuente', () => {
+  const d = base();
+  d.settings.ingesta.autoConfirmar = false;
+  const { movimientoId: id } = procesarMensaje(d, msg('r1', PAGO, 'sms'), ctx);
+  const [a, b] = dividir(d, id, [{ amount: 5000, category: 'A' }, { amount: 500, category: 'B' }], ctx.nuevoId);
+  assert.notEqual(a.fuentes, b.fuentes);
+  assert.deepEqual(b.fuentes, []);
+  assert.equal(procesarMensaje(d, msg('r2', PAGO, 'gmail'), ctx).resultado, 'duplicado');
+  assert.equal(d.transactions.length, 2);
+});
+
+test('enseñar: dato al inicio, comercio variable y sin monto', () => {
+  const texto = 'Bancolombia: El 06/11/2026 a las 14:30 abonaste en EXITO NORTE por $120.000 con tu tarjeta *1234. Publicidad larga';
+  const regla = proponerRegla(texto, 'compra_debito');
+  const r = crearRegistro({ patrones: [] }, [regla]);
+  const uno = r.analizar(texto, { fuente: 'sms' });
+  assert.equal(uno.monto, 120000);
+  assert.equal(uno.ultimos4, '1234');
+  assert.equal(uno.comercio, 'EXITO NORTE');
+  assert.equal(r.analizar(texto.replace('EXITO NORTE', 'CARULLA').replace('120.000', '5.000'), { fuente: 'sms' }).monto, 5000);
+  assert.throws(() => proponerRegla('Bancolombia: aviso sin cifras', 'iva'), /monto/);
 });
 
 test('Power BI: tablas y CSV seguro', () => {

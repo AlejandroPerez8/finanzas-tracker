@@ -18,10 +18,11 @@ function ordenar(deudas, estrategia) {
  * Simula mes a mes: causa intereses, paga mínimos y destina el resto a la deuda prioritaria.
  * Lo que libera una deuda saldada pasa a la siguiente en el mismo mes.
  * @param {Array<{id:string,saldo:number,tasaEA:number,pagoMinimo:number}>} deudas
- * @param {{estrategia:'avalancha'|'bola_de_nieve', presupuesto:number, mesInicio:string}} opciones
+ * @param {{estrategia:'avalancha'|'bola_de_nieve', presupuesto:number, mesInicio:string, soloMinimos?:boolean}} opciones
+ *   `soloMinimos`: lo que libera una deuda saldada no se reinvierte en las demás.
  * @returns {{factible:boolean, motivo?:string, meses:number, intereses:number, fechaLibertad:string|null, serie:number[]}}
  */
-export function simular(deudas, { estrategia, presupuesto, mesInicio }) {
+export function simular(deudas, { estrategia, presupuesto, mesInicio, soloMinimos = false }) {
   const vivas = deudas.filter((d) => aEntero(d.saldo) > 0).map((d) => ({ ...d, saldo: aEntero(d.saldo), i: tasaMensual(d.tasaEA), pagoMinimo: aEntero(d.pagoMinimo) }));
   const serie = [sumar(vivas.map((d) => d.saldo))];
   const tope = aEntero(presupuesto);
@@ -47,7 +48,7 @@ export function simular(deudas, { estrategia, presupuesto, mesInicio }) {
       d.saldo -= pago;
       disponible -= pago;
     }
-    for (const d of ordenar(vivas, estrategia)) {
+    for (const d of soloMinimos ? [] : ordenar(vivas, estrategia)) {
       if (disponible <= 0) break;
       const extra = Math.min(d.saldo, disponible);
       d.saldo -= extra;
@@ -61,8 +62,8 @@ export function simular(deudas, { estrategia, presupuesto, mesInicio }) {
 
 /** Compara ambas estrategias contra pagar solo los mínimos. */
 export function compararEstrategias(deudas, presupuesto, mesInicio) {
-  const minimos = sumar(deudas.map((d) => d.pagoMinimo));
-  const base = simular(deudas, { estrategia: 'avalancha', presupuesto: minimos, mesInicio });
+  const minimos = sumar(deudas.filter((d) => aEntero(d.saldo) > 0).map((d) => d.pagoMinimo));
+  const base = simular(deudas, { estrategia: 'avalancha', presupuesto: minimos, mesInicio, soloMinimos: true });
   const resultado = {};
   for (const estrategia of ['avalancha', 'bola_de_nieve']) {
     const r = simular(deudas, { estrategia, presupuesto, mesInicio });
