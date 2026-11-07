@@ -29,7 +29,7 @@ const migraciones = {
       esCuota: t.esCuota ?? false,
     }));
     d.goals = (d.goals ?? []).map((g) => ({ ...g, target: aEntero(g.target), contributions: (g.contributions ?? []).map((c) => ({ ...c, amount: aEntero(c.amount) })) }));
-    d.investments = (d.investments ?? []).map((i) => ({ ...i, amount: aEntero(i.amount) }));
+    d.investments = (d.investments ?? []).map((i) => ({ ...i, amount: aEntero(i.amount), termMonths: i.termMonths ?? (i.termDays != null ? Math.max(1, Math.round(i.termDays / 30)) : 12), startDate: i.startDate ?? i.start }));
     d.reports ??= [];
     d.settings ??= { reminderOn: false, reminderHour: 20, lastNotified: null, lastReportMonth: null };
     d.tarjetas ??= [];

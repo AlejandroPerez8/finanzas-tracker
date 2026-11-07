@@ -150,3 +150,15 @@ export function alertasTarjeta(tarjeta, saldo, opciones = {}) {
   }
   return alertas;
 }
+
+/**
+ * Marca como pagado el ciclo más reciente si los pagos desde su corte cubren el mínimo.
+ * Devuelve copias: no modifica los ciclos recibidos.
+ */
+export function actualizarCiclos(ciclos, transacciones, tarjetaId) {
+  return ciclos.map((c) => {
+    if (c.tarjetaId !== tarjetaId || c.pagado) return c;
+    const pagos = transacciones.reduce((s, t) => (t.type === 'pago_tarjeta' && t.tarjetaId === tarjetaId && t.estado !== 'descartado' && t.estado !== 'pendiente_revision' && t.date >= c.fechaCorte ? s + aEntero(t.amount) : s), 0);
+    return pagos >= aEntero(c.pagoMinimo) ? { ...c, pagado: true } : c;
+  });
+}
