@@ -1,0 +1,12 @@
+{"accounts":[{"id":"a1","name":"Bancolombia Ahorros","type":"Ahorros","startBalance":1000000.4},{"id":"a2","name":"Efectivo","type":"Efectivo","startBalance":50000}],
+"pockets":[{"id":"p1","name":"Viaje","accountId":"a1","balance":100000},{"id":"p2","name":"Arriendo","accountId":"a1","startBalance":200000}],
+"transactions":[{"id":"t1","date":"2026-10-05","type":"income","amount":2000000,"category":"Salario","accountId":"a1","method":"","note":""},
+{"id":"t2","date":"2026-10-06","type":"expense","amount":50000.5,"category":"Alimentación","accountId":"a1","method":"Débito","note":"Mercado"},
+{"id":"t3","date":"2026-10-07","type":"transfer_out","amount":100000,"accountId":"a1","transferencia_id":"tr1","targetType":"goal","targetId":"g1","note":""},
+{"id":"t4","date":"2026-10-07","type":"transfer_in","amount":100000,"targetType":"goal","targetId":"g1","transferencia_id":"tr1","note":""},
+{"id":"t5","date":"2026-10-08","type":"withdraw_out","amount":20000,"targetType":"pocket","targetId":"p1","transferencia_id":"tr2","note":""},
+{"id":"t6","date":"2026-10-08","type":"withdraw_in","amount":20000,"accountId":"a1","transferencia_id":"tr2","note":""}],
+"goals":[{"id":"g1","name":"Moto","target":5000000,"contributions":[{"amount":30000,"date":"2026-01-01"}],"includeContributions":true}],
+"investments":[{"id":"i1","entity":"Banco X","amount":3000000,"rate":10.5,"termDays":180,"start":"2026-06-01"}],
+"reports":[{"id":"r1","monthKey":"2026-09","income":1,"expense":1,"balance":0,"savingsRate":0,"byCategory":{}}],
+"settings":{"reminderOn":true,"reminderHour":21,"lastNotified":null,"lastReportMonth":"2026-09"}}
