@@ -106,7 +106,7 @@ function decidirEstado(mov, parseado, ajustes, regla) {
  * @param {object} datos estado de la app (se muta)
  * @param {{rowId:string,fuente:string,recibidoEn:string,textoRelevante:string}} entrada
  * @param {{registro:object,diccionario:object,nuevoId:()=>string}} contexto
- * @returns {{resultado:'repetido'|'no_reconocido'|'duplicado'|'descartado'|'pendiente'|'confirmado', movimientoId?:string}}
+ * @returns {{resultado:'repetido'|'publicidad'|'no_reconocido'|'duplicado'|'descartado'|'pendiente'|'confirmado', movimientoId?:string}}
  */
 export function procesarMensaje(datos, entrada, contexto) {
   const yaVisto = datos.ingesta.find((i) => i.rowId === entrada.rowId);
@@ -124,6 +124,11 @@ export function procesarMensaje(datos, entrada, contexto) {
   };
   if (yaVisto) datos.ingesta.splice(datos.ingesta.indexOf(yaVisto), 1);
   datos.ingesta.push(item);
+
+  if (contexto.registro.esPublicidad?.(entrada.textoRelevante)) {
+    item.estado = 'publicidad';
+    return { resultado: 'publicidad' };
+  }
 
   const parseado = contexto.registro.analizar(entrada.textoRelevante, { fuente: entrada.fuente, recibidoEn: entrada.recibidoEn });
   if (!parseado) {

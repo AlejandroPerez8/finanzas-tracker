@@ -25,6 +25,10 @@ test('formatos verificados en correos reales (anonimizados)', async (t) => {
     ['transferencia_recibida', 'Bancolombia: Recibiste una transferencia por $116,500 de PERSONA EJEMPLO en tu cuenta **1234, el 01/11/2026 a las 14:23. Si tienes dudas, hablemos: 018000931987. Siempre a tu lado.', 116500, '2026-11-01', '14:23', '1234'],
     ['recarga', 'Bancolombia: Recargaste 30,000.00 a Tarjeta Civica desde tu cuenta *1234 el 04/11/2026 16:52 ¿Dudas? Llama al 018000945555 y las resolvemos.', 30000, '2026-11-04', '16:52', '1234'],
     ['pago_servicio', 'Bancolombia: Pagaste $5,500.00 a COMUNICACION CELULAR COMCEL S desde tu producto 1234 el 05/11/2026 07:02:40. ¿Dudas? Llamanos al 6045109095. Estamos cerca', 5500, '2026-11-05', '07:02', '1234'],
+    ['compra_debito', 'Bancolombia: Compraste $45.300,50 en TIENDAS D1 EJEMPLO con tu T.Deb *1234, el 03/11/2026 a las 18:42. Si tienes dudas, encuentranos aqui: 6045109095 o 018000931987. Estamos cerca.', 45301, '2026-11-03', '18:42', '1234'],
+    ['compra_debito', 'Bancolombia: Compraste $9.900,00 en DLO*Didi con tu T.Deb *1234, el 03/11/2026 a las 18:42. Si tienes dudas, encuentranos aqui: 6045109095.', 9900, '2026-11-03', '18:42', '1234'],
+    ['transferencia_enviada', 'Bancolombia: PERSONA EJEMPLO, transferiste $80,000.00 a la llave @llave0000 desde tu cuenta *1234 a OTRA PERSONA el 02/11/26 a las 09:15. Con Bre-b es de una y gratis. Dudas al 6045109095.', 80000, '2026-11-02', '09:15', '1234'],
+    ['transferencia_enviada', 'Bancolombia: Transferiste $40,000.00 por Boton Bancolombia a TIENDA EJEMPLO desde producto *1234. 02/11/2026 09:15:30 ¿Dudas? 6045109095.Este es una notificación automática', 40000, '2026-11-02', '09:15', '1234'],
     ['transferencia_enviada', 'Bancolombia: Transferiste $19,000 desde tu cuenta *1234 a la cuenta *00000000000 el 06/11/2026 a las 16:01. ¿Dudas? Llamanos al 018000931987. Estamos cerca.', 19000, '2026-11-06', '16:01', '1234'],
   ];
   for (const [tipo, texto, monto, fecha, hora, ultimos4] of casos) {
@@ -38,6 +42,11 @@ test('formatos verificados en correos reales (anonimizados)', async (t) => {
       assert.ok(r.confianza >= 0.9, `confianza ${r.confianza}`);
     });
   }
+});
+
+test('la publicidad del banco se identifica', () => {
+  assert.equal(registro.esPublicidad('Bancolombia: 5 de $100.000.000 cada una. Todos los premios son libres de impuestos. Fechas de los sorteos: x'), true);
+  assert.equal(registro.esPublicidad('Bancolombia: Pagaste $5,500.00 a CLARO'), false);
 });
 
 test('texto ajeno al banco no se reconoce', () => {

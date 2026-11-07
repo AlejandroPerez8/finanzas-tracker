@@ -226,7 +226,7 @@ export function crearIngestaUI(ctx, recursos) {
     const importar = accion(async () => {
       const mensajes = separarMensajes(caja.value);
       if (!mensajes.length) throw new Error('Pega al menos un mensaje');
-      const conteo = { confirmado: 0, pendiente: 0, no_reconocido: 0, duplicado: 0, repetido: 0, descartado: 0 };
+      const conteo = { confirmado: 0, pendiente: 0, no_reconocido: 0, duplicado: 0, repetido: 0, descartado: 0, publicidad: 0 };
       const recibidoEn = isoBogota();
       for (const texto of mensajes) {
         const { resultado } = procesarMensaje(ctx.datos(), { rowId: `manual_${hashTexto(texto)}`, fuente: 'manual', recibidoEn, textoRelevante: texto }, contexto());

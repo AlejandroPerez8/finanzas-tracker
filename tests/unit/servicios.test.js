@@ -155,6 +155,15 @@ test('ingesta: rechazo, no reconocido y reintento tras error', () => {
   assert.equal(d.ingesta.filter((i) => i.rowId === 'r2').length, 1);
 });
 
+test('ingesta: la publicidad no crea movimiento ni guarda su texto', () => {
+  const d = base();
+  const r = procesarMensaje(d, msg('r1', 'Bancolombia: Todos los premios son libres de impuestos. Sorteo de $100.000'), ctx);
+  assert.equal(r.resultado, 'publicidad');
+  assert.equal(d.transactions.length, 0);
+  assert.equal(d.ingesta[0].textoRelevante, undefined);
+  assert.equal(procesarMensaje(d, msg('r1', 'x'), ctx).resultado, 'repetido');
+});
+
 test('ingesta: flujo de tarjeta completo por últimos 4', () => {
   const d = base();
   d.tarjetas.push({ id: 'c', alias: 'Visa', ultimos4: '5566', cupoTotal: 2000000, tasaEA: 26.82, diaCorte: 15, diaLimitePago: 30 });

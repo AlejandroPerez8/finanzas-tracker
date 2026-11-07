@@ -3,6 +3,27 @@
  "version": 1,
  "patrones": [
   {
+   "id": "compra_debito_verificada",
+   "tipo": "compra_debito",
+   "confianza": 0.96,
+   "verificado": true,
+   "regex": "compraste\\s+(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+en\\s+(?<comercio>.+?)\\s+con tu t\\.?\\s?deb\\s*\\*{0,2}(?<ultimos4>\\d{4}),?\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "transferencia_breb",
+   "tipo": "transferencia_enviada",
+   "confianza": 0.95,
+   "verificado": true,
+   "regex": "transferiste\\s+(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+a la llave\\s+\\S+\\s+desde tu (?:cuenta|producto)\\s+\\*{0,2}(?<ultimos4>\\d{4})\\s+a\\s+(?<comercio>.+?)\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "transferencia_boton",
+   "tipo": "transferencia_enviada",
+   "confianza": 0.95,
+   "verificado": true,
+   "regex": "transferiste\\s+(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+por boton bancolombia a\\s+(?<comercio>.+?)\\s+desde (?:tu )?producto\\s+\\*{0,2}(?<ultimos4>\\d{4})[.,]?\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
    "id": "rechazo",
    "tipo": "rechazo",
    "confianza": 0.99,
@@ -158,5 +179,11 @@
    "verificado": false,
    "regex": "compr(?:a|aste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+con\\s+(?:tu\\s+)?(?:t\\.?\\s?deb|tarjeta debito|cuenta|producto)\\s*\\*{0,2}(?<ultimos4>\\d{4})\\s+en\\s+(?<comercio>.+?)\\s+(?:el\\s+)?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
   }
+ ],
+ "_ignorar_ayuda": "Texto que identifica publicidad del banco: se marca como revisado sin crear movimiento.",
+ "ignorar": [
+  "\\bsorteos?\\b",
+  "premios son libres",
+  "\\bpromocion\\b.*\\bparticipa"
  ]
 }
