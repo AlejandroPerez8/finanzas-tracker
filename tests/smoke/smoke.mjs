@@ -94,6 +94,11 @@ prueba('flujo completo: mensaje del script → pendiente → confirmado → ack'
   assert.equal(await p.locator('#vistaIngesta img').count(), 0, 'sin HTML inyectado');
   assert.ok(!JSON.stringify(d.ingesta.find((i) => i.rowId === 'r_000001')).includes('COMCEL'), 'sin texto crudo');
 
+  const fila = p.locator('.fila-pendiente').first();
+  assert.equal(await fila.getByLabel('Cuenta de destino').isVisible(), false);
+  await fila.getByLabel('Tipo').selectOption('transferencia');
+  assert.equal(await fila.getByLabel('Cuenta de destino').isVisible(), true, 'el campo aparece al cambiar el tipo');
+  await fila.getByLabel('Tipo').selectOption('income');
   await p.getByRole('button', { name: 'Confirmar' }).click();
   await p.waitForFunction(() => document.querySelectorAll('.subtab')[0].textContent.includes('(0)'));
   assert.equal((await datos(p)).transactions.find((t) => t.amount === 116500).estado, 'confirmado');

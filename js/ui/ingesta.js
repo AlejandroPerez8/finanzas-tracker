@@ -1,8 +1,8 @@
 /** Pantallas de ingesta: pendientes, conciliación, no reconocidos, pegado manual y ajustes. */
 
 import { h, montar, monto, campo, entradaMonto, selector, vacio, encabezado, seguro } from './dom.js';
-import { aEntero, formatear } from '../domain/money.js';
-import { diaBogota, isoBogota } from '../domain/fechas.js';
+import { aEntero } from '../domain/money.js';
+import { isoBogota } from '../domain/fechas.js';
 import { CATEGORIAS_GASTO, CATEGORIAS_INGRESO } from '../domain/categorias.js';
 import { procesarMensaje, confirmar, descartar, dividir, proponerRegla, purgarTextos, hashTexto } from '../services/ingesta.js';
 import { paresPorConciliar, vincular, mantenerSeparados } from '../services/conciliacion.js';
@@ -119,6 +119,15 @@ export function crearIngestaUI(ctx, recursos) {
     const destino = selector([['', 'Sin cuenta de destino'], ...datos.accounts.map((a) => [a.id, a.name])], t.cuentaDestinoId ?? '');
     const tarjetaPago = selector([['', 'Elige la tarjeta'], ...datos.tarjetas.map((c) => [c.id, c.alias])], t.tarjetaId ?? '');
     const zonaDividir = h('div', { class: 'formulario', hidden: true });
+    const zonaDestino = campo('Cuenta de destino', destino);
+    const zonaTarjeta = campo('Tarjeta', tarjetaPago);
+    // Los campos extra dependen del tipo elegido; se ocultan sin perder lo ya escrito.
+    const ajustarCampos = () => {
+      zonaDestino.hidden = clase.value !== 'transferencia';
+      zonaTarjeta.hidden = !['pago_tarjeta', 'avance'].includes(clase.value);
+    };
+    clase.addEventListener('change', ajustarCampos);
+    ajustarCampos();
 
     const confirmarMov = accion(async () => {
       const cambios = { category: categoria.value.trim() || t.category, type: clase.value };
@@ -165,9 +174,7 @@ export function crearIngestaUI(ctx, recursos) {
       h('div', { class: 'fp-detalle' }, `${t.comercio || 'Sin comercio'} · ${t.date}${t.hora ? ` ${t.hora}` : ''}`),
       t.conciliarCon ? h('div', { class: 'chip chip-aviso' }, 'Puede estar ya registrado a mano: revisa Conciliar.') : null,
       h('div', { class: 'formulario' },
-        campo('Tipo', clase), campo('Categoría', categoria), campo('Cuenta o tarjeta', medio),
-        clase.value === 'transferencia' ? campo('Cuenta de destino', destino) : null,
-        ['pago_tarjeta', 'avance'].includes(clase.value) ? campo('Tarjeta', tarjetaPago) : null),
+        campo('Tipo', clase), campo('Categoría', categoria), campo('Cuenta o tarjeta', medio), zonaDestino, zonaTarjeta),
       zonaDividir,
       h('div', { class: 'fp-acciones' },
         h('button', { class: 'btn-accent', onclick: confirmarMov }, 'Confirmar'),
@@ -313,5 +320,5 @@ export function crearIngestaUI(ctx, recursos) {
     sincronizarAhora();
   }
 
-  return { render, renderAjustes, iniciar, contarPendientes, resumenEstado, ultimoResultado: () => ultimoResultado, hoy: diaBogota, formatear };
+  return { render, renderAjustes, iniciar, contarPendientes };
 }

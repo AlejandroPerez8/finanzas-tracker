@@ -632,3 +632,11 @@ body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 .vacio { min-height: 96px; padding: 12px; }
 .subtabs { overflow-x: auto; margin: 10px 0; }
 .subtab { flex: none; }
+
+/* Los estilos originales no cubrían estos tipos de campo. */
+input[type='password'], input[type='url'] { width: 100%; min-height: 48px; padding: 12px 14px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; font: inherit; font-size: 14px; }
+input::placeholder, textarea::placeholder { color: var(--muted); }
+#vistaTarjetas > div, #vistaPresupuesto .card { margin-bottom: 20px; }
+#vistaTarjetas > .card, #vistaPresupuesto > .card, #vistaAjustes > .card { margin-bottom: 20px; }
+
+.campo[hidden] { display: none; }
