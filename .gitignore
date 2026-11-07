@@ -1,0 +1,11 @@
+node_modules/
+coverage/
+.local/
+.env
+.env.*
+!.env.example
+integraciones/apps_script/.clasp.json
+integraciones/apps_script/Secreto.gs
+backups/*.json
+!backups/*sintetico*.json
+tests/fixtures/bancolombia/reales/
