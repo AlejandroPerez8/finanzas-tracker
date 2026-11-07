@@ -1,6 +1,33 @@
-# Finanzas Tracker — PWA
+# Finanzas Tracker
 
-Aplicación web de finanzas personales, lista para GitHub Pages.
+PWA de finanzas personales para Colombia. Los datos viven en tu dispositivo. Sin backend y sin compilación.
+
+Incluye cuentas, bolsillos, metas, CDT, reportes, **ingesta automática de Bancolombia** (Gmail y SMS), **tarjetas y deudas** y exportación a Power BI.
+
+## Ejecutar
+```bash
+npm install
+npm start        # App y mock del script en http://localhost:8787/
+npm run check    # Lint, pruebas y cobertura (≥ 85 % en domain y services)
+npm run test:smoke   # Navegador real (ajusta CHROMIUM si hace falta)
+```
+Para producción sirve la carpeta en HTTPS (GitHub Pages sirve tal cual).
+
+**Al publicar una versión**, cambia `VERSION` en `service-worker.js` y agrega cualquier archivo nuevo a `APP_SHELL`.
+
+## Documentación
+- [Conectar la ingesta](docs/GUIA_INGESTA.md)
+- [Contrato del endpoint](docs/API_INGESTA.md)
+- [Arquitectura](docs/ARQUITECTURA_ACTUAL.md) y [decisiones](docs/DECISIONES.md)
+- [Seguridad](docs/SEGURIDAD.md)
+- [Power BI](docs/EXPORT_POWERBI.md)
+- [Hoja de ruta](docs/ROADMAP.md) y [cambios](CHANGELOG.md)
+
+Los formatos de mensajes se editan en `js/parsers/bancolombia/patrones.json`, sin tocar código.
+
+---
+
+## Historial de versiones anteriores
 
 ## Refactor v4 — lo nuevo
 
