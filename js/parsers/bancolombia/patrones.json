@@ -1,0 +1,162 @@
+{
+ "_ayuda": "Se evalúan contra el texto normalizado: sin tildes y con espacios compactados, sin distinguir mayúsculas. Grupos con nombre: monto, fecha, hora, ultimos4, comercio, cuotas, saldo, referencia. 'verificado': true = formato visto en correos reales.",
+ "version": 1,
+ "patrones": [
+  {
+   "id": "rechazo",
+   "tipo": "rechazo",
+   "confianza": 0.99,
+   "verificado": false,
+   "regex": "(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)(?:\\s+en\\s+(?<comercio>.+?)\\s+(?:con|desde)\\b)?.*?\\*{1,2}(?<ultimos4>\\d{4})?.*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?",
+   "exigeTexto": "rechazad[ao]|no exitos[ao]|declinad[ao]|no fue exitos[ao]|no se pudo"
+  },
+  {
+   "id": "nomina",
+   "tipo": "nomina",
+   "confianza": 0.97,
+   "verificado": true,
+   "regex": "recibiste un pago de nomina de (?<comercio>.+?) por\\s+(?:\\$|COP)?\\s*(?<monto>[\\d.,]*\\d)\\s+en tu cuenta(?: de \\w+)?(?:\\s+\\*+(?<ultimos4>\\d{4}))?,?\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s+(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)"
+  },
+  {
+   "id": "pago_qr",
+   "tipo": "pago_qr",
+   "confianza": 0.97,
+   "verificado": true,
+   "regex": "pagaste\\s+(?:\\$|COP)?\\s*(?<monto>[\\d.,]*\\d)\\s+por codigo qr desde tu (?:cuenta|producto)\\s+\\*{0,2}(?<ultimos4>\\d{4})\\s+a la llave\\s+\\S+\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s+(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)"
+  },
+  {
+   "id": "transferencia_recibida",
+   "tipo": "transferencia_recibida",
+   "confianza": 0.97,
+   "verificado": true,
+   "regex": "recibiste una transferencia por\\s+(?:\\$|COP)?\\s*(?<monto>[\\d.,]*\\d)\\s+de\\s+(?<comercio>.+?)\\s+en tu cuenta\\s+\\*{0,2}(?<ultimos4>\\d{4}),?\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s+(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)"
+  },
+  {
+   "id": "recarga",
+   "tipo": "recarga",
+   "confianza": 0.95,
+   "verificado": true,
+   "regex": "recargaste\\s+(?:\\$|COP)?\\s*(?<monto>[\\d.,]*\\d)\\s+a\\s+(?<comercio>.+?)\\s+desde tu (?:cuenta|producto)\\s+\\*{0,2}(?<ultimos4>\\d{4})\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s+(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)"
+  },
+  {
+   "id": "pago_tarjeta",
+   "tipo": "pago_tarjeta",
+   "confianza": 0.8,
+   "verificado": false,
+   "regex": "(?:pagaste|pago(?: de)?(?: tu)?(?: a)?)\\s+(?:(?:de\\s+)?(?:tu\\s+)?(?:t\\.?\\s?cred|tarjeta(?: de credito)?)\\s*\\*{0,2}(?<ultimos4a>\\d{4})?[^$\\d]*)?(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)(?:[^.]*?(?:t\\.?\\s?cred|tarjeta(?: de credito)?)\\s*\\*{0,2}(?<ultimos4>\\d{4}))?[^.]*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?",
+   "exigeTexto": "(?:t\\.?\\s?cred|tarjeta de credito|tu tarjeta)"
+  },
+  {
+   "id": "pago_servicio",
+   "tipo": "pago_servicio",
+   "confianza": 0.95,
+   "verificado": true,
+   "regex": "pagaste\\s+(?:\\$|COP)?\\s*(?<monto>[\\d.,]*\\d)\\s+a\\s+(?<comercio>.+?)\\s+desde tu (?:cuenta|producto)\\s+\\*{0,2}(?<ultimos4>\\d{4})\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s+(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)"
+  },
+  {
+   "id": "transferencia_enviada",
+   "tipo": "transferencia_enviada",
+   "confianza": 0.95,
+   "verificado": true,
+   "regex": "transferiste\\s+(?:\\$|COP)?\\s*(?<monto>[\\d.,]*\\d)\\s+desde tu (?:cuenta|producto)\\s+\\*{0,2}(?<ultimos4>\\d{4})\\s+a la cuenta\\s+\\*{0,2}\\d+,?\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s+(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)"
+  },
+  {
+   "id": "compra_diferida",
+   "tipo": "compra_diferida",
+   "confianza": 0.75,
+   "verificado": false,
+   "regex": "compra[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+en\\s+(?<comercio>.+?)\\s+(?:a\\s+)?(?<cuotas>\\d{1,2})\\s+cuotas?\\b.*?(?:t\\.?\\s?cred|tarjeta)[^\\d]*\\*{0,2}(?<ultimos4>\\d{4}).*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "compra_credito",
+   "tipo": "compra_credito",
+   "confianza": 0.8,
+   "verificado": false,
+   "regex": "compr(?:a|aste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+(?:en\\s+)?(?<comercio>.+?)\\s+(?:con\\s+)?(?:tu\\s+)?(?:\\d{1,2}:\\d{2}[.,]?\\s+\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\s+)?(?:t\\.?\\s?cred|tarjeta de credito)\\s*\\*{0,2}(?<ultimos4>\\d{4}).*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "compra_debito",
+   "tipo": "compra_debito",
+   "confianza": 0.8,
+   "verificado": false,
+   "regex": "compr(?:a|aste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+(?:en\\s+)?(?<comercio>.+?)\\s+(?:con\\s+|desde\\s+)?(?:tu\\s+)?(?:t\\.?\\s?deb|tarjeta debito|cuenta|producto)\\s*\\*{0,2}(?<ultimos4>\\d{4}).*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "retiro_cajero",
+   "tipo": "retiro_cajero",
+   "confianza": 0.8,
+   "verificado": false,
+   "regex": "retir(?:o|aste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+(?:de|desde|con)?\\s*(?:tu\\s+)?(?:t\\.?\\s?deb|cuenta|producto|tarjeta)\\s*\\*{0,2}(?<ultimos4>\\d{4}).*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "consignacion",
+   "tipo": "consignacion",
+   "confianza": 0.8,
+   "verificado": false,
+   "regex": "(?:consignacion|consignaron|consignaste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d).*?(?:cuenta|producto)\\s*\\*{0,2}(?<ultimos4>\\d{4})?.*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "avance",
+   "tipo": "avance",
+   "confianza": 0.8,
+   "verificado": false,
+   "regex": "avance[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)(?:\\s+en\\s+(?<cuotas>\\d{1,2})\\s+cuotas?)?.*?(?:t\\.?\\s?cred|tarjeta(?: de credito)?)\\s*\\*{0,2}(?<ultimos4>\\d{4}).*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "cuota_manejo",
+   "tipo": "cuota_manejo",
+   "confianza": 0.8,
+   "verificado": false,
+   "regex": "cuota de manejo[^$\\d]*(?:por\\s+|de\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)(?:.*?\\*{1,2}(?<ultimos4>\\d{4}))?.*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "intereses",
+   "tipo": "intereses",
+   "confianza": 0.8,
+   "verificado": false,
+   "regex": "intereses?[^$\\d]*(?:por\\s+|de\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)(?:.*?\\*{1,2}(?<ultimos4>\\d{4}))?.*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "cuatro_por_mil",
+   "tipo": "cuatro_por_mil",
+   "confianza": 0.8,
+   "verificado": false,
+   "regex": "(?:4\\s?x\\s?1000|4\\s?x\\s?mil|cuatro por mil|gmf)[^$\\d]*(?:por\\s+|de\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)(?:.*?\\*{1,2}(?<ultimos4>\\d{4}))?.*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "iva",
+   "tipo": "iva",
+   "confianza": 0.75,
+   "verificado": false,
+   "regex": "\\biva\\b[^$\\d]*(?:por\\s+|de\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)(?:.*?\\*{1,2}(?<ultimos4>\\d{4}))?.*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "comision",
+   "tipo": "comision",
+   "confianza": 0.75,
+   "verificado": false,
+   "regex": "comision[^$\\d]*(?:por\\s+|de\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)(?:.*?\\*{1,2}(?<ultimos4>\\d{4}))?.*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "compra_diferida_b",
+   "tipo": "compra_diferida",
+   "confianza": 0.82,
+   "verificado": false,
+   "regex": "compr(?:a|aste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+con\\s+(?:tu\\s+)?(?:t\\.?\\s?cred|tarjeta de credito)\\s*\\*{0,2}(?<ultimos4>\\d{4})\\s+en\\s+(?<comercio>.+?)\\s+(?:en|a)\\s+(?<cuotas>\\d{1,2})\\s+cuotas?\\b.*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "compra_credito_b",
+   "tipo": "compra_credito",
+   "confianza": 0.8,
+   "verificado": false,
+   "regex": "compr(?:a|aste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+con\\s+(?:tu\\s+)?(?:t\\.?\\s?cred|tarjeta de credito)\\s*\\*{0,2}(?<ultimos4>\\d{4})\\s+en\\s+(?<comercio>.+?)\\s+(?:el\\s+)?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "compra_debito_b",
+   "tipo": "compra_debito",
+   "confianza": 0.8,
+   "verificado": false,
+   "regex": "compr(?:a|aste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+con\\s+(?:tu\\s+)?(?:t\\.?\\s?deb|tarjeta debito|cuenta|producto)\\s*\\*{0,2}(?<ultimos4>\\d{4})\\s+en\\s+(?<comercio>.+?)\\s+(?:el\\s+)?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  }
+ ]
+}

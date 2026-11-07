@@ -1,0 +1,69 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { crearRegistro } from '../../js/parsers/registry.js';
+
+const leer = (r) => JSON.parse(readFileSync(new URL(r, import.meta.url), 'utf8'));
+const registro = crearRegistro(leer('../../js/parsers/bancolombia/patrones.json'));
+const RECIBIDO = '2026-11-07T08:00:00-05:00';
+
+function comprobar(caso) {
+  const r = registro.analizar(caso.texto, { fuente: 'manual', recibidoEn: RECIBIDO });
+  assert.ok(r, `sin coincidencia: ${caso.texto}`);
+  assert.equal(r.tipo, caso.tipo);
+  if (caso.esperado.monto != null) assert.equal(r.monto, caso.esperado.monto);
+  if (caso.esperado.fecha) assert.equal(r.fecha, caso.esperado.fecha);
+  if (caso.esperado.hora) assert.equal(r.hora, caso.esperado.hora);
+  if (caso.esperado.ultimos4) assert.equal(r.ultimos4, caso.esperado.ultimos4);
+  if (caso.esperado.cuotas) assert.equal(r.cuotas, caso.esperado.cuotas);
+}
+
+test('formatos verificados en correos reales (anonimizados)', async (t) => {
+  const casos = [
+    ['nomina', 'Bancolombia: Recibiste un pago de Nomina de EMPRESA EJEMPLO por $1,550,555.00 en tu cuenta de Ahorros el 29/10/2026 a las 13:44. Si tienes dudas, llamanos al 018000931987. A tu lado siempre.', 1550555, '2026-10-29', '13:44', null],
+    ['pago_qr', 'Bancolombia: PERSONA EJEMPLO pagaste $29,000.00 por codigo QR desde tu cuenta *1234 a la llave 0000000000 el 05/11/2026 a las 19:48. Con codigo QR es facil y de una. Dudas al 018000912345.', 29000, '2026-11-05', '19:48', '1234'],
+    ['transferencia_recibida', 'Bancolombia: Recibiste una transferencia por $116,500 de PERSONA EJEMPLO en tu cuenta **1234, el 01/11/2026 a las 14:23. Si tienes dudas, hablemos: 018000931987. Siempre a tu lado.', 116500, '2026-11-01', '14:23', '1234'],
+    ['recarga', 'Bancolombia: Recargaste 30,000.00 a Tarjeta Civica desde tu cuenta *1234 el 04/11/2026 16:52 ¿Dudas? Llama al 018000945555 y las resolvemos.', 30000, '2026-11-04', '16:52', '1234'],
+    ['pago_servicio', 'Bancolombia: Pagaste $5,500.00 a COMUNICACION CELULAR COMCEL S desde tu producto 1234 el 05/11/2026 07:02:40. ¿Dudas? Llamanos al 6045109095. Estamos cerca', 5500, '2026-11-05', '07:02', '1234'],
+    ['transferencia_enviada', 'Bancolombia: Transferiste $19,000 desde tu cuenta *1234 a la cuenta *00000000000 el 06/11/2026 a las 16:01. ¿Dudas? Llamanos al 018000931987. Estamos cerca.', 19000, '2026-11-06', '16:01', '1234'],
+  ];
+  for (const [tipo, texto, monto, fecha, hora, ultimos4] of casos) {
+    await t.test(tipo, () => {
+      const r = registro.analizar(texto, { fuente: 'gmail', recibidoEn: RECIBIDO });
+      assert.equal(r.tipo, tipo);
+      assert.equal(r.monto, monto);
+      assert.equal(r.fecha, fecha);
+      assert.equal(r.hora, hora);
+      assert.equal(r.ultimos4, ultimos4);
+      assert.ok(r.confianza >= 0.9, `confianza ${r.confianza}`);
+    });
+  }
+});
+
+test('texto ajeno al banco no se reconoce', () => {
+  assert.equal(registro.analizar('Hola, ¿nos vemos mañana?', { fuente: 'sms' }), null);
+  assert.equal(registro.analizar('Tu seguridad es nuestra prioridad.', { fuente: 'gmail' }), null);
+  assert.equal(registro.analizar('', { fuente: 'gmail' }), null);
+});
+
+test('un patrón de usuario inválido se reporta y no rompe el registro', () => {
+  const errores = [];
+  const r = crearRegistro({ patrones: [{ id: 'malo', tipo: 'x', confianza: 1, regex: '(' }] }, [], (e) => errores.push(e));
+  assert.equal(r.analizar('$1 algo', { fuente: 'sms' }), null);
+  assert.equal(errores.length, 1);
+});
+
+test('fixtures sintéticos', async (t) => {
+  for (const caso of leer('../fixtures/bancolombia/fixtures.json')) {
+    await t.test(`${caso.tipo}: ${caso.texto.slice(0, 50)}`, () => comprobar(caso));
+  }
+});
+
+const carpetaReales = new URL('../fixtures/bancolombia/reales/', import.meta.url);
+if (existsSync(carpetaReales)) {
+  for (const archivo of readdirSync(carpetaReales).filter((n) => n.endsWith('.json'))) {
+    test(`muestras reales: ${archivo}`, () => {
+      JSON.parse(readFileSync(new URL(archivo, carpetaReales), 'utf8')).forEach(comprobar);
+    });
+  }
+}

@@ -1,0 +1,1484 @@
+[
+ {
+  "tipo": "nomina",
+  "texto": "Bancolombia: Recibiste un pago de Nomina de EMPRESA EJEMPLO por $1,550,555.00 en tu cuenta de Ahorros el 29/10/2026 a las 13:44. Si tienes dudas, llamanos al 018000931987. A tu lado siempre.",
+  "esperado": {
+   "monto": 1550555,
+   "fecha": "2026-10-29",
+   "hora": "13:44",
+   "ultimos4": null,
+   "comercio": "EMPRESA EJEMPLO",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "nomina",
+  "texto": "Bancolombia: Recibiste un pago de Nómina de INVERSIONES ANDINAS SAS por $2.345.678 COP en tu cuenta de Ahorros **4321 el 15/01/2026 a las 08:05. Si tienes dudas, llámanos al 018000931987. A tu lado siempre.",
+  "esperado": {
+   "monto": 2345678,
+   "fecha": "2026-01-15",
+   "hora": "08:05",
+   "ultimos4": "4321",
+   "comercio": "INVERSIONES ANDINAS SAS",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "nomina",
+  "texto": "bancolombia: recibiste un pago de nomina de textiles del norte ltda por $3,200,000.00  en tu cuenta de ahorros *9876 el 02/03/2026 a las 09:30. si tienes dudas, llamanos al 018000931987. a tu lado siempre.",
+  "esperado": {
+   "monto": 3200000,
+   "fecha": "2026-03-02",
+   "hora": "09:30",
+   "ultimos4": "9876",
+   "comercio": "textiles del norte ltda",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "nomina",
+  "texto": "Bancolombia: Recibiste un pago de Nómina de CONSTRUCTORA PACIFICO S.A. por $4.500.000 en tu cuenta de Ahorros **1122 el 30/04/2026 a las 06:15.\nSi tienes dudas, llamanos al 018000931987. A tu lado siempre.",
+  "esperado": {
+   "monto": 4500000,
+   "fecha": "2026-04-30",
+   "hora": "06:15",
+   "ultimos4": "1122",
+   "comercio": "CONSTRUCTORA PACIFICO S.A.",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "nomina",
+  "texto": "Bancolombia: Recibiste un pago de Nomina de ALIMENTOS DEL VALLE por $1,234,567 en tu cuenta de Ahorros *5566 el 12/06/2026 a las 17:45. Si tienes dudas, llamanos al 018000931987. A tu lado siempre.",
+  "esperado": {
+   "monto": 1234567,
+   "fecha": "2026-06-12",
+   "hora": "17:45",
+   "ultimos4": "5566",
+   "comercio": "ALIMENTOS DEL VALLE",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "nomina",
+  "texto": "Bancolombia: Recibiste un pago de NÓMINA de SERVICIOS INTEGRALES SAS por $5.678.900 en tu cuenta de Ahorros **7788 el 07/08/2026 a las 10:10. Si tienes dudas, llamanos al 018000931987. A tu lado siempre.",
+  "esperado": {
+   "monto": 5678900,
+   "fecha": "2026-08-07",
+   "hora": "10:10",
+   "ultimos4": "7788",
+   "comercio": "SERVICIOS INTEGRALES SAS",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_qr",
+  "texto": "Bancolombia: PERSONA EJEMPLO pagaste $29,000.00 por codigo QR desde tu cuenta *1234 a la llave 0000000000 el 05/11/2026 a las 19:48. Con codigo QR es facil y de una. Dudas al 018000912345.",
+  "esperado": {
+   "monto": 29000,
+   "fecha": "2026-11-05",
+   "hora": "19:48",
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_qr",
+  "texto": "Bancolombia: MARÍA EJEMPLO pagaste $12.500 por código QR desde tu cuenta **8899 a la llave 0000000001 el 18/02/2026 a las 12:05. Con código QR es fácil y de una. Dudas al 018000912345.",
+  "esperado": {
+   "monto": 12500,
+   "fecha": "2026-02-18",
+   "hora": "12:05",
+   "ultimos4": "8899",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_qr",
+  "texto": "bancolombia: persona ejemplo pagaste $150,000.00 COP por codigo qr desde tu cuenta *4455 a la llave 0000000002 el 03/04/2026 a las 21:10.  con codigo qr es facil y de una. dudas al 018000912345.",
+  "esperado": {
+   "monto": 150000,
+   "fecha": "2026-04-03",
+   "hora": "21:10",
+   "ultimos4": "4455",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_qr",
+  "texto": "Bancolombia: CARLOS EJEMPLO pagaste $8.750 por codigo QR desde tu cuenta **7712 a la llave 0000000003 el 27/06/2026 a las 07:35. Con codigo QR es facil y de una. Dudas al 018000912345.",
+  "esperado": {
+   "monto": 8750,
+   "fecha": "2026-06-27",
+   "hora": "07:35",
+   "ultimos4": "7712",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_qr",
+  "texto": "Bancolombia: PERSONA EJEMPLO pagaste $1,000,000.00 por código QR desde tu cuenta *3322 a la llave 0000000004 el 09/09/2026 a las 16:20.\nCon código QR es fácil y de una. Dudas al 018000912345.",
+  "esperado": {
+   "monto": 1000000,
+   "fecha": "2026-09-09",
+   "hora": "16:20",
+   "ultimos4": "3322",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_qr",
+  "texto": "Bancolombia: PERSONA EJEMPLO pagaste $45.900 por codigo QR desde tu cuenta *9080 a la llave 0000000005 el 01/11/2026 a las 11:11. Con codigo QR es facil y de una. Dudas al 018000912345.",
+  "esperado": {
+   "monto": 45900,
+   "fecha": "2026-11-01",
+   "hora": "11:11",
+   "ultimos4": "9080",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_recibida",
+  "texto": "Bancolombia: Recibiste una transferencia por $116,500 de PERSONA EJEMPLO en tu cuenta **1234, el 01/11/2026 a las 14:23. Si tienes dudas, hablemos: 018000931987. Siempre a tu lado.",
+  "esperado": {
+   "monto": 116500,
+   "fecha": "2026-11-01",
+   "hora": "14:23",
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_recibida",
+  "texto": "Bancolombia: Recibiste una transferencia por $2.000.000 de JUAN EJEMPLO en tu cuenta **5678, el 14/01/2026 a las 09:12. Si tienes dudas, hablemos: 018000931987. Siempre a tu lado.",
+  "esperado": {
+   "monto": 2000000,
+   "fecha": "2026-01-14",
+   "hora": "09:12",
+   "ultimos4": "5678",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_recibida",
+  "texto": "Bancolombia: Recibiste una transferencia por $350,000.00 de ANA EJEMPLO en tu cuenta **2468, el 22/03/2026 a las 18:40.  Si tienes dudas, hablemos: 018000931987. Siempre a tu lado.",
+  "esperado": {
+   "monto": 350000,
+   "fecha": "2026-03-22",
+   "hora": "18:40",
+   "ultimos4": "2468",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_recibida",
+  "texto": "bancolombia: recibiste una transferencia por $75.500 cop de luis ejemplo en tu cuenta *1357, el 08/05/2026 a las 20:15. si tienes dudas, hablemos: 018000931987. siempre a tu lado.",
+  "esperado": {
+   "monto": 75500,
+   "fecha": "2026-05-08",
+   "hora": "20:15",
+   "ultimos4": "1357",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_recibida",
+  "texto": "Bancolombia: Recibiste una transferencia por $1,250,000 de PEDRO EJEMPLO en tu cuenta **8642, el 19/07/2026 a las 13:05.\nSi tienes dudas, hablemos: 018000931987. Siempre a tu lado.",
+  "esperado": {
+   "monto": 1250000,
+   "fecha": "2026-07-19",
+   "hora": "13:05",
+   "ultimos4": "8642",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_recibida",
+  "texto": "Bancolombia: Recibiste una transferencia por $980.000 de SOFIA EJEMPLO en tu cuenta *4321, el 30/10/2026 a las 06:50. Si tienes dudas, hablemos: 018000931987. Siempre a tu lado.",
+  "esperado": {
+   "monto": 980000,
+   "fecha": "2026-10-30",
+   "hora": "06:50",
+   "ultimos4": "4321",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "recarga",
+  "texto": "Bancolombia: Recargaste 30,000.00 a Tarjeta Civica desde tu cuenta *1234 el 04/11/2026 16:52 ¿Dudas? Llama al 018000945555 y las resolvemos.",
+  "esperado": {
+   "monto": 30000,
+   "fecha": "2026-11-04",
+   "hora": "16:52",
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "recarga",
+  "texto": "Bancolombia: Recargaste $50.000 a Tarjeta Civica desde tu cuenta *7788 el 12/02/2026 08:20 ¿Dudas? Llama al 018000945555 y las resolvemos.",
+  "esperado": {
+   "monto": 50000,
+   "fecha": "2026-02-12",
+   "hora": "08:20",
+   "ultimos4": "7788",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "recarga",
+  "texto": "Bancolombia: Recargaste 100,000.00 COP a Tarjeta Cívica desde tu cuenta **2211 el 25/04/2026 19:30. ¿Dudas? Llama al 018000945555 y las resolvemos.",
+  "esperado": {
+   "monto": 100000,
+   "fecha": "2026-04-25",
+   "hora": "19:30",
+   "ultimos4": "2211",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "recarga",
+  "texto": "bancolombia: recargaste $15.500 a tarjeta civica desde tu cuenta *6633 el 07/06/2026 22:05 ¿dudas? llama al 018000945555 y las resolvemos.",
+  "esperado": {
+   "monto": 15500,
+   "fecha": "2026-06-07",
+   "hora": "22:05",
+   "ultimos4": "6633",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "recarga",
+  "texto": "Bancolombia: Recargaste 80,000 a Tarjeta Civica desde tu cuenta *1144 el 16/08/2026 10:45.  ¿Dudas? Llama al 018000945555 y las resolvemos.",
+  "esperado": {
+   "monto": 80000,
+   "fecha": "2026-08-16",
+   "hora": "10:45",
+   "ultimos4": "1144",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "recarga",
+  "texto": "Bancolombia: Recargaste $200.000 a Tarjeta Cívica desde tu cuenta *9900 el 03/11/2026 14:10.\n¿Dudas? Llama al 018000945555 y las resolvemos.",
+  "esperado": {
+   "monto": 200000,
+   "fecha": "2026-11-03",
+   "hora": "14:10",
+   "ultimos4": "9900",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_servicio",
+  "texto": "Bancolombia: Pagaste $5,500.00 a COMUNICACION CELULAR COMCEL S desde tu producto 1234 el 05/11/2026 07:02. ¿Dudas? Llamanos al 6045109095. Estamos cerca",
+  "esperado": {
+   "monto": 5500,
+   "fecha": "2026-11-05",
+   "hora": "07:02",
+   "ultimos4": "1234",
+   "comercio": "COMUNICACION CELULAR COMCEL S",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_servicio",
+  "texto": "Bancolombia: Pagaste $120.000 a EMPRESAS PUBLICAS DE MEDELLIN desde tu producto **8899 el 10/01/2026 09:15. ¿Dudas? Llamanos al 6045109095. Estamos cerca",
+  "esperado": {
+   "monto": 120000,
+   "fecha": "2026-01-10",
+   "hora": "09:15",
+   "ultimos4": "8899",
+   "comercio": "EMPRESAS PUBLICAS DE MEDELLIN",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_servicio",
+  "texto": "Bancolombia: Pagaste $89,900.00 a ENEL COLOMBIA S.A. ESP desde tu producto 4433 el 18/03/2026 20:40. ¿Dudas? Llamanos al 6045109095. Estamos cerca.",
+  "esperado": {
+   "monto": 89900,
+   "fecha": "2026-03-18",
+   "hora": "20:40",
+   "ultimos4": "4433",
+   "comercio": "ENEL COLOMBIA S.A. ESP",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_servicio",
+  "texto": "bancolombia: pagaste $45.300 cop a claro colombia desde tu producto *6677 el 29/05/2026 11:25. ¿dudas? llamanos al 6045109095. estamos cerca",
+  "esperado": {
+   "monto": 45300,
+   "fecha": "2026-05-29",
+   "hora": "11:25",
+   "ultimos4": "6677",
+   "comercio": "claro colombia",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_servicio",
+  "texto": "Bancolombia: Pagaste $210,000 a GAS NATURAL SABANA desde tu producto 2211 el 14/09/2026 06:05.  ¿Dudas? Llamanos al 6045109095. Estamos cerca",
+  "esperado": {
+   "monto": 210000,
+   "fecha": "2026-09-14",
+   "hora": "06:05",
+   "ultimos4": "2211",
+   "comercio": "GAS NATURAL SABANA",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "pago_servicio",
+  "texto": "Bancolombia: Pagaste $33,333.00 a DIRECTV COLOMBIA desde tu producto **7788 el 27/10/2026 17:55.\n¿Dudas? Llamanos al 6045109095. Estamos cerca",
+  "esperado": {
+   "monto": 33333,
+   "fecha": "2026-10-27",
+   "hora": "17:55",
+   "ultimos4": "7788",
+   "comercio": "DIRECTV COLOMBIA",
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_enviada",
+  "texto": "Bancolombia: Transferiste $19,000 desde tu cuenta *1234 a la cuenta *00000000000 el 06/11/2026 a las 16:01. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 19000,
+   "fecha": "2026-11-06",
+   "hora": "16:01",
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_enviada",
+  "texto": "Bancolombia: Transferiste $450.000 desde tu cuenta *5566 a la cuenta *00000011111 el 20/02/2026 a las 10:30. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 450000,
+   "fecha": "2026-02-20",
+   "hora": "10:30",
+   "ultimos4": "5566",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_enviada",
+  "texto": "Bancolombia: Transferiste $1,200,000.00 desde tu cuenta **3344 a la cuenta *00000022222 el 11/04/2026 a las 15:45. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 1200000,
+   "fecha": "2026-04-11",
+   "hora": "15:45",
+   "ultimos4": "3344",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_enviada",
+  "texto": "bancolombia: transferiste $67.890 cop desde tu cuenta *1122 a la cuenta *00000033333 el 05/07/2026 a las 08:10. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 67890,
+   "fecha": "2026-07-05",
+   "hora": "08:10",
+   "ultimos4": "1122",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_enviada",
+  "texto": "Bancolombia: Transferiste $990,500 desde tu cuenta *7788 a la cuenta *00000044444 el 23/09/2026 a las 19:00.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 990500,
+   "fecha": "2026-09-23",
+   "hora": "19:00",
+   "ultimos4": "7788",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "transferencia_enviada",
+  "texto": "Bancolombia: Transferiste $300.000 desde tu cuenta *4466 a la cuenta *00000055555 el 02/11/2026 a las 12:30.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 300000,
+   "fecha": "2026-11-02",
+   "hora": "12:30",
+   "ultimos4": "4466",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
+  "tipo": "compra_debito",
+  "texto": "Bancolombia: Compraste $89,900.00 con tu Tarjeta Debito *1234 en EXITO CALLE 80 el 12/03/2026 a las 18:25. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 89900,
+   "fecha": "2026-03-12",
+   "hora": "18:25",
+   "ultimos4": "1234",
+   "comercio": "EXITO CALLE 80",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_debito",
+  "texto": "Bancolombia: Compraste $23.500 con tu Tarjeta Débito *8899 en PANADERIA LA ESPIGA el 04/01/2026 a las 09:40. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 23500,
+   "fecha": "2026-01-04",
+   "hora": "09:40",
+   "ultimos4": "8899",
+   "comercio": "PANADERIA LA ESPIGA",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_debito",
+  "texto": "bancolombia: compraste $150,000.00 cop con tu tarjeta debito **4433 en almacenes flamingo el 16/05/2026 a las 20:15. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 150000,
+   "fecha": "2026-05-16",
+   "hora": "20:15",
+   "ultimos4": "4433",
+   "comercio": "almacenes flamingo",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_debito",
+  "texto": "Bancolombia: Compraste $12.300 con tu Tarjeta Debito *6677 en DROGUERIA SAN JORGE el 28/06/2026 a las 13:05.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 12300,
+   "fecha": "2026-06-28",
+   "hora": "13:05",
+   "ultimos4": "6677",
+   "comercio": "DROGUERIA SAN JORGE",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_debito",
+  "texto": "Bancolombia: Compraste $310,000.00 con tu Tarjeta Debito *2211 en FERRETERIA EL TORNILLO el 09/09/2026 a las 11:50.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 310000,
+   "fecha": "2026-09-09",
+   "hora": "11:50",
+   "ultimos4": "2211",
+   "comercio": "FERRETERIA EL TORNILLO",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_debito",
+  "texto": "Bancolombia: Compraste $7,450 con tu Tarjeta Debito *9900 en TIENDA D1 el 25/10/2026 a las 17:30. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 7450,
+   "fecha": "2026-10-25",
+   "hora": "17:30",
+   "ultimos4": "9900",
+   "comercio": "TIENDA D1",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_credito",
+  "texto": "Bancolombia: Compraste $250,000.00 con tu T.Cred *1234 en ARTURO CALLE el 14/04/2026 a las 16:40. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 250000,
+   "fecha": "2026-04-14",
+   "hora": "16:40",
+   "ultimos4": "1234",
+   "comercio": "ARTURO CALLE",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_credito",
+  "texto": "Bancolombia: Compraste $99.900 con tu T.Cred *5566 en FALABELLA el 07/02/2026 a las 12:15. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 99900,
+   "fecha": "2026-02-07",
+   "hora": "12:15",
+   "ultimos4": "5566",
+   "comercio": "FALABELLA",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_credito",
+  "texto": "Bancolombia: Compraste $1,350,000.00 COP con tu T.Cred **8899 en HOME SENTRY el 21/05/2026 a las 19:20. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 1350000,
+   "fecha": "2026-05-21",
+   "hora": "19:20",
+   "ultimos4": "8899",
+   "comercio": "HOME SENTRY",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_credito",
+  "texto": "bancolombia: compraste $45.500 con tu t.cred *3344 en decathlon el 13/07/2026 a las 10:00. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 45500,
+   "fecha": "2026-07-13",
+   "hora": "10:00",
+   "ultimos4": "3344",
+   "comercio": "decathlon",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_credito",
+  "texto": "Bancolombia: Compraste $678,000 con tu T.Cred *7712 en APPLE STORE el 29/08/2026 a las 15:35.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 678000,
+   "fecha": "2026-08-29",
+   "hora": "15:35",
+   "ultimos4": "7712",
+   "comercio": "APPLE STORE",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_credito",
+  "texto": "Bancolombia: Compraste $120.000 con tu T.Cred *9080 en ZARA el 18/10/2026 a las 21:45.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 120000,
+   "fecha": "2026-10-18",
+   "hora": "21:45",
+   "ultimos4": "9080",
+   "comercio": "ZARA",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_diferida",
+  "texto": "Bancolombia: Compraste $1,200,000.00 con tu T.Cred *1234 en ALKOSTO en 12 cuotas el 03/03/2026 a las 14:10. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 1200000,
+   "fecha": "2026-03-03",
+   "hora": "14:10",
+   "ultimos4": "1234",
+   "comercio": "ALKOSTO",
+   "cuotas": 12
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_diferida",
+  "texto": "Bancolombia: Compraste $899.900 con tu T.Cred *5566 en MUEBLES Y MUEBLES a 24 cuotas el 19/04/2026 a las 11:05. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 899900,
+   "fecha": "2026-04-19",
+   "hora": "11:05",
+   "ultimos4": "5566",
+   "comercio": "MUEBLES Y MUEBLES",
+   "cuotas": 24
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_diferida",
+  "texto": "Bancolombia: Compraste $2,000,000.00 COP con tu T.Cred **8899 en ELECTROHOGAR en 36 cuotas el 08/06/2026 a las 18:30. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 2000000,
+   "fecha": "2026-06-08",
+   "hora": "18:30",
+   "ultimos4": "8899",
+   "comercio": "ELECTROHOGAR",
+   "cuotas": 36
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_diferida",
+  "texto": "bancolombia: compraste $450.000 con tu t.cred *3344 en samsung store en 6 cuotas el 27/07/2026 a las 09:55. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 450000,
+   "fecha": "2026-07-27",
+   "hora": "09:55",
+   "ultimos4": "3344",
+   "comercio": "samsung store",
+   "cuotas": 6
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_diferida",
+  "texto": "Bancolombia: Compraste $1,500,000 con tu T.Cred *6677 en COMPUTADORES Y CIA en 18 cuotas el 15/09/2026 a las 17:20.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 1500000,
+   "fecha": "2026-09-15",
+   "hora": "17:20",
+   "ultimos4": "6677",
+   "comercio": "COMPUTADORES Y CIA",
+   "cuotas": 18
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "compra_diferida",
+  "texto": "Bancolombia: Compraste $320,000.00 con tu T.Cred *1122 en COLCHONES DORMIR en 3 cuotas el 02/11/2026 a las 13:40.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 320000,
+   "fecha": "2026-11-02",
+   "hora": "13:40",
+   "ultimos4": "1122",
+   "comercio": "COLCHONES DORMIR",
+   "cuotas": 3
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "retiro_cajero",
+  "texto": "Bancolombia: Retiraste $200,000.00 de tu cuenta *1234 en CAJERO AUTOMATICO CALLE 45 el 10/02/2026 a las 08:15. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 200000,
+   "fecha": "2026-02-10",
+   "hora": "08:15",
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "retiro_cajero",
+  "texto": "Bancolombia: Retiraste $100.000 de tu cuenta *8899 en CAJERO AUTOMATICO CENTRO COMERCIAL el 22/03/2026 a las 19:40. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 100000,
+   "fecha": "2026-03-22",
+   "hora": "19:40",
+   "ultimos4": "8899",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "retiro_cajero",
+  "texto": "Bancolombia: Retiraste $500,000.00 COP de tu cuenta **5566 en CAJERO AUTOMATICO AV 68 el 06/05/2026 a las 12:00. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 500000,
+   "fecha": "2026-05-06",
+   "hora": "12:00",
+   "ultimos4": "5566",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "retiro_cajero",
+  "texto": "bancolombia: retiraste $50.000 de tu cuenta *3344 en cajero automatico parque el 18/07/2026 a las 07:25. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 50000,
+   "fecha": "2026-07-18",
+   "hora": "07:25",
+   "ultimos4": "3344",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "retiro_cajero",
+  "texto": "Bancolombia: Retiraste $1,000,000 de tu cuenta *6677 en CAJERO AUTOMATICO TERMINAL el 29/08/2026 a las 16:50.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 1000000,
+   "fecha": "2026-08-29",
+   "hora": "16:50",
+   "ultimos4": "6677",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "retiro_cajero",
+  "texto": "Bancolombia: Retiraste $300.000 de tu cuenta *9900 en CAJERO AUTOMATICO PLAZA el 21/10/2026 a las 20:10.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 300000,
+   "fecha": "2026-10-21",
+   "hora": "20:10",
+   "ultimos4": "9900",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "consignacion",
+  "texto": "Bancolombia: Recibiste una consignación de $500,000.00 en tu cuenta *1234 el 05/04/2026 a las 10:20. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 500000,
+   "fecha": "2026-04-05",
+   "hora": "10:20",
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "consignacion",
+  "texto": "Bancolombia: Recibiste una consignacion de $150.000 en tu cuenta **8899 el 19/01/2026 a las 09:05. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 150000,
+   "fecha": "2026-01-19",
+   "hora": "09:05",
+   "ultimos4": "8899",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "consignacion",
+  "texto": "Bancolombia: Recibiste una consignación de $1,000,000.00 COP en tu cuenta **5566 el 11/03/2026 a las 14:35. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 1000000,
+   "fecha": "2026-03-11",
+   "hora": "14:35",
+   "ultimos4": "5566",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "consignacion",
+  "texto": "bancolombia: recibiste una consignacion de $75.000 en tu cuenta *3344 el 02/06/2026 a las 16:15. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 75000,
+   "fecha": "2026-06-02",
+   "hora": "16:15",
+   "ultimos4": "3344",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "consignacion",
+  "texto": "Bancolombia: Recibiste una consignación de $2,300,000 en tu cuenta *6677 el 17/08/2026 a las 11:45.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 2300000,
+   "fecha": "2026-08-17",
+   "hora": "11:45",
+   "ultimos4": "6677",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "consignacion",
+  "texto": "Bancolombia: Recibiste una consignación de $480.000 en tu cuenta *2211 el 09/10/2026 a las 13:20.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 480000,
+   "fecha": "2026-10-09",
+   "hora": "13:20",
+   "ultimos4": "2211",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "pago_tarjeta",
+  "texto": "Bancolombia: Pagaste $1,500,000.00 a tu Tarjeta de Credito *1234 el 15/05/2026 a las 09:30. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 1500000,
+   "fecha": "2026-05-15",
+   "hora": "09:30",
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "pago_tarjeta",
+  "texto": "Bancolombia: Pagaste $800.000 a tu Tarjeta de Crédito **5566 el 25/02/2026 a las 18:10. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 800000,
+   "fecha": "2026-02-25",
+   "hora": "18:10",
+   "ultimos4": "5566",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "pago_tarjeta",
+  "texto": "Bancolombia: Pagaste $2,000,000.00 COP a tu Tarjeta de Credito *8899 el 30/04/2026 a las 11:00. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 2000000,
+   "fecha": "2026-04-30",
+   "hora": "11:00",
+   "ultimos4": "8899",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "pago_tarjeta",
+  "texto": "bancolombia: pagaste $350.000 a tu tarjeta de credito *3344 el 06/07/2026 a las 20:45. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 350000,
+   "fecha": "2026-07-06",
+   "hora": "20:45",
+   "ultimos4": "3344",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "pago_tarjeta",
+  "texto": "Bancolombia: Pagaste $1,200,000 a tu Tarjeta de Crédito *6677 el 01/09/2026 a las 08:20.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 1200000,
+   "fecha": "2026-09-01",
+   "hora": "08:20",
+   "ultimos4": "6677",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "pago_tarjeta",
+  "texto": "Bancolombia: Pagaste $500.000 a tu Tarjeta de Credito *9900 el 04/11/2026 a las 15:30.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 500000,
+   "fecha": "2026-11-04",
+   "hora": "15:30",
+   "ultimos4": "9900",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "avance",
+  "texto": "Bancolombia: Realizaste un avance de $500,000.00 con tu T.Cred *1234 el 12/06/2026 a las 17:05. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 500000,
+   "fecha": "2026-06-12",
+   "hora": "17:05",
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "avance",
+  "texto": "Bancolombia: Realizaste un avance de $300.000 con tu T.Cred *5566 el 27/01/2026 a las 10:40. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 300000,
+   "fecha": "2026-01-27",
+   "hora": "10:40",
+   "ultimos4": "5566",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "avance",
+  "texto": "Bancolombia: Realizaste un avance de $1,000,000.00 COP con tu T.Cred **8899 el 19/03/2026 a las 21:15. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 1000000,
+   "fecha": "2026-03-19",
+   "hora": "21:15",
+   "ultimos4": "8899",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "avance",
+  "texto": "bancolombia: realizaste un avance de $250.000 en 6 cuotas con tu t.cred *3344 el 08/05/2026 a las 14:25. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 250000,
+   "fecha": "2026-05-08",
+   "hora": "14:25",
+   "ultimos4": "3344",
+   "comercio": null,
+   "cuotas": 6
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "avance",
+  "texto": "Bancolombia: Realizaste un avance de $700,000 con tu T.Cred *6677 el 23/08/2026 a las 12:50.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 700000,
+   "fecha": "2026-08-23",
+   "hora": "12:50",
+   "ultimos4": "6677",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "avance",
+  "texto": "Bancolombia: Realizaste un avance de $150,000.00 con tu T.Cred *9900 el 14/10/2026 a las 19:35.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 150000,
+   "fecha": "2026-10-14",
+   "hora": "19:35",
+   "ultimos4": "9900",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuota_manejo",
+  "texto": "Bancolombia: Se cobro la cuota de manejo de $15,900.00 en tu cuenta *1234 el 01/07/2026. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 15900,
+   "fecha": "2026-07-01",
+   "hora": null,
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuota_manejo",
+  "texto": "Bancolombia: Se cobró la cuota de manejo de $19.900 en tu cuenta *5566 el 01/02/2026. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 19900,
+   "fecha": "2026-02-01",
+   "hora": null,
+   "ultimos4": "5566",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuota_manejo",
+  "texto": "Bancolombia: Se cobro la cuota de manejo de $12,500.00 COP en tu cuenta **8899 el 01/03/2026. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 12500,
+   "fecha": "2026-03-01",
+   "hora": null,
+   "ultimos4": "8899",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuota_manejo",
+  "texto": "bancolombia: se cobro la cuota de manejo de $8.900 en tu cuenta *3344 el 01/05/2026. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 8900,
+   "fecha": "2026-05-01",
+   "hora": null,
+   "ultimos4": "3344",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuota_manejo",
+  "texto": "Bancolombia: Se cobró la cuota de manejo de $22,000 en tu cuenta *6677 el 01/08/2026.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 22000,
+   "fecha": "2026-08-01",
+   "hora": null,
+   "ultimos4": "6677",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuota_manejo",
+  "texto": "Bancolombia: Se cobro la cuota de manejo de $10.400 en tu cuenta *9900 el 01/11/2026.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 10400,
+   "fecha": "2026-11-01",
+   "hora": null,
+   "ultimos4": "9900",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "intereses",
+  "texto": "Bancolombia: Se cobraron intereses por $4,300.00 en tu cuenta *1234 el 30/06/2026. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 4300,
+   "fecha": "2026-06-30",
+   "hora": null,
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "intereses",
+  "texto": "Bancolombia: Se cobraron intereses por $12.750 en tu cuenta *5566 el 31/01/2026. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 12750,
+   "fecha": "2026-01-31",
+   "hora": null,
+   "ultimos4": "5566",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "intereses",
+  "texto": "Bancolombia: Se cobraron intereses por $2,100.00 COP en tu cuenta **8899 el 31/03/2026 a las 23:59. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 2100,
+   "fecha": "2026-03-31",
+   "hora": "23:59",
+   "ultimos4": "8899",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "intereses",
+  "texto": "bancolombia: se cobraron intereses por $9.800 en tu cuenta *3344 el 31/05/2026. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 9800,
+   "fecha": "2026-05-31",
+   "hora": null,
+   "ultimos4": "3344",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "intereses",
+  "texto": "Bancolombia: Se cobraron intereses por $15,600 en tu cuenta *6677 el 31/08/2026.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 15600,
+   "fecha": "2026-08-31",
+   "hora": null,
+   "ultimos4": "6677",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "intereses",
+  "texto": "Bancolombia: Se cobraron intereses por $3.200 en tu cuenta *9900 el 31/10/2026.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 3200,
+   "fecha": "2026-10-31",
+   "hora": null,
+   "ultimos4": "9900",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "comision",
+  "texto": "Bancolombia: Se cobro una comision de $6,500.00 en tu cuenta *1234 el 20/04/2026. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 6500,
+   "fecha": "2026-04-20",
+   "hora": null,
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "comision",
+  "texto": "Bancolombia: Se cobró una comisión de $3.900 en tu cuenta *5566 el 14/02/2026. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 3900,
+   "fecha": "2026-02-14",
+   "hora": null,
+   "ultimos4": "5566",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "comision",
+  "texto": "Bancolombia: Se cobro una comision de $11,200.00 COP en tu cuenta **8899 el 25/06/2026 a las 13:30. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 11200,
+   "fecha": "2026-06-25",
+   "hora": "13:30",
+   "ultimos4": "8899",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "comision",
+  "texto": "bancolombia: se cobro una comision de $4.750 en tu cuenta *3344 el 19/07/2026. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 4750,
+   "fecha": "2026-07-19",
+   "hora": null,
+   "ultimos4": "3344",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "comision",
+  "texto": "Bancolombia: Se cobró una comisión de $8,000 en tu cuenta *6677 el 08/09/2026.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 8000,
+   "fecha": "2026-09-08",
+   "hora": null,
+   "ultimos4": "6677",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "comision",
+  "texto": "Bancolombia: Se cobro una comision de $2.300 en tu cuenta *9900 el 05/11/2026.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 2300,
+   "fecha": "2026-11-05",
+   "hora": null,
+   "ultimos4": "9900",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuatro_por_mil",
+  "texto": "Bancolombia: Se aplico el cuatro por mil por $1,240.00 en tu cuenta *1234 el 06/05/2026. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 1240,
+   "fecha": "2026-05-06",
+   "hora": null,
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuatro_por_mil",
+  "texto": "Bancolombia: Se aplicó el cuatro por mil por $4.000 en tu cuenta *5566 el 15/01/2026. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 4000,
+   "fecha": "2026-01-15",
+   "hora": null,
+   "ultimos4": "5566",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuatro_por_mil",
+  "texto": "Bancolombia: Se aplico el cuatro por mil por $2,800.00 COP en tu cuenta **8899 el 22/03/2026 a las 10:10. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 2800,
+   "fecha": "2026-03-22",
+   "hora": "10:10",
+   "ultimos4": "8899",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuatro_por_mil",
+  "texto": "bancolombia: se aplico el cuatro por mil por $640 en tu cuenta *3344 el 30/06/2026. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 640,
+   "fecha": "2026-06-30",
+   "hora": null,
+   "ultimos4": "3344",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuatro_por_mil",
+  "texto": "Bancolombia: Se aplicó el cuatro por mil por $12,000 en tu cuenta *6677 el 11/08/2026.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 12000,
+   "fecha": "2026-08-11",
+   "hora": null,
+   "ultimos4": "6677",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "cuatro_por_mil",
+  "texto": "Bancolombia: Se aplico el cuatro por mil por $960.00 en tu cuenta *9900 el 28/10/2026.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 960,
+   "fecha": "2026-10-28",
+   "hora": null,
+   "ultimos4": "9900",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "iva",
+  "texto": "Bancolombia: Se cobro el IVA de $2,850.00 en tu cuenta *1234 el 15/03/2026. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 2850,
+   "fecha": "2026-03-15",
+   "hora": null,
+   "ultimos4": "1234",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "iva",
+  "texto": "Bancolombia: Se cobró el IVA de $1.425 en tu cuenta *5566 el 02/04/2026. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 1425,
+   "fecha": "2026-04-02",
+   "hora": null,
+   "ultimos4": "5566",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "iva",
+  "texto": "Bancolombia: Se cobro el IVA de $3,600.00 COP en tu cuenta **8899 el 29/05/2026 a las 09:45. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 3600,
+   "fecha": "2026-05-29",
+   "hora": "09:45",
+   "ultimos4": "8899",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "iva",
+  "texto": "bancolombia: se cobro el iva de $7.200 en tu cuenta *3344 el 10/07/2026. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 7200,
+   "fecha": "2026-07-10",
+   "hora": null,
+   "ultimos4": "3344",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "iva",
+  "texto": "Bancolombia: Se cobró el IVA de $950 en tu cuenta *6677 el 17/09/2026.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 950,
+   "fecha": "2026-09-17",
+   "hora": null,
+   "ultimos4": "6677",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "iva",
+  "texto": "Bancolombia: Se cobro el IVA de $4.100 en tu cuenta *9900 el 03/11/2026.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 4100,
+   "fecha": "2026-11-03",
+   "hora": null,
+   "ultimos4": "9900",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "rechazo",
+  "texto": "Bancolombia: Tu compra por $89,900.00 en EXITO CALLE 80 con tu Tarjeta Debito *1234 fue rechazada el 12/03/2026 a las 18:26. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 89900,
+   "fecha": "2026-03-12",
+   "hora": "18:26",
+   "ultimos4": "1234",
+   "comercio": "EXITO CALLE 80",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "rechazo",
+  "texto": "Bancolombia: Tu compra por $45.000 en NETFLIX con tu T.Cred *5566 no fue exitosa el 08/01/2026 a las 11:11. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 45000,
+   "fecha": "2026-01-08",
+   "hora": "11:11",
+   "ultimos4": "5566",
+   "comercio": "NETFLIX",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "rechazo",
+  "texto": "Bancolombia: Tu compra por $120,000.00 COP en RAPPI con tu Tarjeta Debito **8899 fue rechazada el 17/02/2026 a las 21:05. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 120000,
+   "fecha": "2026-02-17",
+   "hora": "21:05",
+   "ultimos4": "8899",
+   "comercio": "RAPPI",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "rechazo",
+  "texto": "bancolombia: tu compra por $15.900 en uber con tu tarjeta debito *3344 fue rechazada el 23/04/2026 a las 08:40. ¿dudas? llamanos al 018000931987. estamos cerca.",
+  "esperado": {
+   "monto": 15900,
+   "fecha": "2026-04-23",
+   "hora": "08:40",
+   "ultimos4": "3344",
+   "comercio": "uber",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "rechazo",
+  "texto": "Bancolombia: Tu compra por $300,000 en CINE COLOMBIA con tu T.Cred *6677 no fue exitosa el 14/06/2026 a las 19:15.  ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 300000,
+   "fecha": "2026-06-14",
+   "hora": "19:15",
+   "ultimos4": "6677",
+   "comercio": "CINE COLOMBIA",
+   "cuotas": null
+  },
+  "verificado": false
+ },
+ {
+  "tipo": "rechazo",
+  "texto": "Bancolombia: Tu compra por $9,990.00 en SPOTIFY con tu T.Cred *9900 fue rechazada el 22/10/2026 a las 13:55.\n¿Dudas? Llamanos al 018000931987. Estamos cerca.",
+  "esperado": {
+   "monto": 9990,
+   "fecha": "2026-10-22",
+   "hora": "13:55",
+   "ultimos4": "9900",
+   "comercio": "SPOTIFY",
+   "cuotas": null
+  },
+  "verificado": false
+ }
+]
