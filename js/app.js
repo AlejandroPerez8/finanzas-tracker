@@ -50,12 +50,13 @@ import { iniciarInterfaz } from './ui/principal.js';
     return new Date(y, m-1, 1).toLocaleDateString('es-CO', {month:'long', year:'numeric'});
   }
   function uid(prefix){ return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  // Paleta fija validada para CVD en modo oscuro; excluye verde/violeta/rojo (reservados para ingreso/marca/gasto).
+  const CATEGORIA_COLORES = ['#3987E5', '#199E70', '#C98500', '#D95926'];
   function catColor(name){
     const s = String(name||'Otros');
     let hash = 0;
     for(let i=0;i<s.length;i++){ hash = s.charCodeAt(i) + ((hash<<5)-hash); hash |= 0; }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 62%, 56%)`;
+    return CATEGORIA_COLORES[Math.abs(hash) % CATEGORIA_COLORES.length];
   }
 
   // Si los datos no se pudieron leer, no se guarda nada encima (ver init).
@@ -727,8 +728,8 @@ import { iniciarInterfaz } from './ui/principal.js';
     const line = pts.map(p=>`${p.x},${p.y}`).join(' ');
     svg.innerHTML = `
       <line x1="0" y1="${zeroY}" x2="300" y2="${zeroY}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>
-      <polyline points="${line}" fill="none" stroke="#C6F135" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3" fill="#0E1217" stroke="#C6F135" stroke-width="2"/>`).join('')}`;
+      <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/>`).join('')}`;
   }
 
   function historyRows(monthKey){

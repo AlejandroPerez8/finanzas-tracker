@@ -33,7 +33,8 @@ import { detectarRecurrentes } from '../domain/presupuesto.js';
 import { estadisticasMes, saldoCuenta } from '../domain/movimientos.js';
 import { sumarMeses } from '../domain/fechas.js';
 
-const COLORES = { avalancha: '#C6F135', bola_de_nieve: '#38BDF8' };
+// Par categórico validado (azul/aqua), distinto de los colores de ingreso/gasto/marca.
+const COLORES = { avalancha: '#3987E5', bola_de_nieve: '#199E70' };
 
 export function crearTarjetasUI(ctx) {
   const accion = (fn) => seguro(fn, ctx.toast);

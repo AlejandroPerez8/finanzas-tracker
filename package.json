@@ -1,6 +1,6 @@
 {
   "name": "finanzas-tracker",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "private": true,
   "type": "module",
   "description": "PWA de finanzas personales con ingesta de Bancolombia y módulo de tarjetas.",
