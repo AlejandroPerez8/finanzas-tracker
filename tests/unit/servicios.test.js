@@ -554,6 +554,24 @@ test('revisión cruzada: la cuenta única no absorbe otra cuenta', () => {
   assert.equal(sinDigitos.transactions[0].accountId, 'a', 'el efectivo no cuenta como cuenta bancaria');
 });
 
+test('ingesta: nómina sin últimos 4 usa el tipo de cuenta cuando es único', () => {
+  const NOMINA_SIN_DIGITOS =
+    'Bancolombia: Recibiste un pago de Nomina de EMPRESA EJEMPLO por $1,550,555.00 en tu cuenta de Ahorros el 29/10/2026 a las 13:44.';
+  const d = base();
+  d.accounts.push({ id: 'b', name: 'Corriente', tipo: 'corriente', ultimos4: '9999' });
+  procesarMensaje(d, msg('r1', NOMINA_SIN_DIGITOS), ctx);
+  assert.equal(d.transactions[0].accountId, 'a', 'la única cuenta de Ahorros resuelve la nómina sin dígitos');
+
+  const dosAhorros = base();
+  dosAhorros.accounts.push({ id: 'b', name: 'Otra Ahorros', tipo: 'ahorros', ultimos4: '9999' });
+  procesarMensaje(dosAhorros, msg('r1', NOMINA_SIN_DIGITOS), ctx);
+  assert.equal(
+    dosAhorros.transactions[0].accountId,
+    null,
+    'con dos cuentas del mismo tipo no hay forma de adivinar cuál es',
+  );
+});
+
 test('revisión cruzada: manual vinculado recibe la segunda fuente', () => {
   const d = base();
   d.transactions.push({

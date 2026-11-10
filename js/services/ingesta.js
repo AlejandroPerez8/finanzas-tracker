@@ -46,6 +46,17 @@ export function hashTexto(texto) {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 
+/** "Ahorros"/"Corriente" del mensaje → tipo de cuenta tal como se guarda en accounts. */
+const TIPOS_CUENTA_TEXTO = { ahorro: 'ahorros', ahorros: 'ahorros', corriente: 'corriente', corrientes: 'corriente' };
+
+/** Si el mensaje dice el tipo de cuenta y solo una cuenta del usuario es de ese tipo, es ella. */
+function porTipoCuenta(cuentasBanco, tipoCuentaTexto) {
+  const tipo = TIPOS_CUENTA_TEXTO[tipoCuentaTexto?.toLowerCase()];
+  if (!tipo) return null;
+  const coincidencias = cuentasBanco.filter((a) => a.tipo === tipo);
+  return coincidencias.length === 1 ? coincidencias[0] : null;
+}
+
 /** Resuelve cuenta y tarjeta por últimos 4; con una sola cuenta y sin coincidencia, usa esa. */
 function asociar(parseado, regla, datos) {
   const { ultimos4 } = parseado;
@@ -61,7 +72,9 @@ function asociar(parseado, regla, datos) {
     // Con una sola cuenta se asume esa, salvo que tenga otros dígitos: sería una cuenta no registrada.
     const unica =
       cuentasBanco.length === 1 && (!digitosCuenta || !cuentasBanco[0].ultimos4) ? cuentasBanco[0] : null;
-    accountId = porUltimos?.id ?? unica?.id ?? null;
+    // Sin dígitos (ej. nómina que no los trae), el tipo de cuenta del mensaje desempata si es único.
+    const porTipo = !digitosCuenta ? porTipoCuenta(cuentasBanco, parseado.tipoCuenta) : null;
+    accountId = porUltimos?.id ?? unica?.id ?? porTipo?.id ?? null;
   }
   return { tarjetaId: usaTarjeta ? (tarjeta?.id ?? null) : null, accountId };
 }

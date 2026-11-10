@@ -114,6 +114,15 @@ test('formatos verificados en correos reales (anonimizados)', async (t) => {
   }
 });
 
+test('nómina: el tipo de cuenta se captura cuando no hay últimos 4', () => {
+  const r = registro.analizar(
+    'Bancolombia: Recibiste un pago de Nomina de EMPRESA EJEMPLO por $1,550,555.00 en tu cuenta de Ahorros el 29/10/2026 a las 13:44.',
+    { fuente: 'gmail', recibidoEn: RECIBIDO },
+  );
+  assert.equal(r.ultimos4, null);
+  assert.equal(r.tipoCuenta, 'Ahorros');
+});
+
 test('la publicidad del banco se identifica', () => {
   assert.equal(
     registro.esPublicidad(

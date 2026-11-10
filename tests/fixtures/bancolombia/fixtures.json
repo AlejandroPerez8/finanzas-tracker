@@ -234,6 +234,19 @@
   "verificado": true
  },
  {
+  "tipo": "transferencia_recibida",
+  "texto": "Bancolombia: Recibiste una transferencia por $50,000 de PERSONA EJEMPLO en tu cuenta **7531, el 21/10/2026 a las 16:08. Si tienes dudas, hablemos: 018000931987. Siempre a tu lado.",
+  "esperado": {
+   "monto": 50000,
+   "fecha": "2026-10-21",
+   "hora": "16:08",
+   "ultimos4": "7531",
+   "comercio": null,
+   "cuotas": null
+  },
+  "verificado": true
+ },
+ {
   "tipo": "recarga",
   "texto": "Bancolombia: Recargaste 30,000.00 a Tarjeta Civica desde tu cuenta *1234 el 04/11/2026 16:52 ¿Dudas? Llama al 018000945555 y las resolvemos.",
   "esperado": {

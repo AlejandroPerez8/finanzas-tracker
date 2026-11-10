@@ -36,7 +36,7 @@
    "tipo": "nomina",
    "confianza": 0.97,
    "verificado": true,
-   "regex": "recibiste un pago de nomina de (?<comercio>.+?) por\\s+(?:\\$|COP)?\\s*(?<monto>[\\d.,]*\\d)\\s+en tu cuenta(?: de \\w+)?(?:\\s+\\*+(?<ultimos4>\\d{4}))?,?\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s+(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)"
+   "regex": "recibiste un pago de nomina de (?<comercio>.+?) por\\s+(?:\\$|COP)?\\s*(?<monto>[\\d.,]*\\d)\\s+en tu cuenta(?: de (?<tipoCuenta>\\w+))?(?:\\s+\\*+(?<ultimos4>\\d{4}))?,?\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s+(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)"
   },
   {
    "id": "pago_qr",

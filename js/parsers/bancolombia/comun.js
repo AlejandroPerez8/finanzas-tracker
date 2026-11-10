@@ -65,6 +65,7 @@ export function aplicarPatron(patron, normalizado, recibidoEn) {
     hora: horaTexto ?? (fechaTexto ? null : horaBogota(referencia)),
     comercio: g.comercio ? normalizarComercio(g.comercio) : null,
     ultimos4,
+    tipoCuenta: g.tipoCuenta ?? null,
     cuotas: g.cuotas ? Number(g.cuotas) : null,
     saldoPosterior: g.saldo ? interpretarMonto(g.saldo) : null,
     referencia: g.referencia ?? null,
