@@ -33,7 +33,7 @@ npm run test:smoke   # navegador real
 1. **Publicar:** revisa la rama y súbela al repositorio de GitHub Pages. El repositorio es de otra cuenta, así que necesitarás sus permisos.
 2. **Conectar:** sigue `docs/GUIA_INGESTA.md`. La URL y el token están en `.local/ingesta.env`.
 3. **Configurar:** escribe los últimos 4 dígitos de tu cuenta y crea tus tarjetas.
-4. **Limpiar la cuenta equivocada** (`sml.041998@gmail.com`): borra el proyecto *Finanzas Tracker - Ingesta* y su hoja, y quita sus accesos en `myaccount.google.com/permissions`. Su disparador sigue activo.
+4. **Limpiar la cuenta equivocada** (la cuenta de Gmail de prueba que se usó antes de la definitiva; no se nombra aquí porque este repositorio es público): borra el proyecto *Finanzas Tracker - Ingesta* y su hoja, y quita sus accesos en `myaccount.google.com/permissions`. Su disparador sigue activo.
 5. **Reducir permisos de `clasp`:** tiene permisos que ya no necesita. Si no vas a redesplegar, quita su acceso en la cuenta actual.
 
 ## Riesgos conocidos

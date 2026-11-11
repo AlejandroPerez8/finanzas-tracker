@@ -32,6 +32,8 @@ const navegador = {
   Buffer: 'readonly',
   self: 'readonly',
   caches: 'readonly',
+  Event: 'readonly',
+  MutationObserver: 'readonly',
 };
 export default [
   { ignores: ['node_modules/', 'coverage/', 'js/app.js'] },

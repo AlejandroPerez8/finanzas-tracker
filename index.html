@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Finanzas & Ahorro — Seguimiento</title>
 <link rel="manifest" href="./manifest.json">
@@ -62,11 +62,11 @@
     <div class="dot"></div>
     <div id="reportBannerText"></div>
   </div>
-  <div class="banner info" id="installBanner" data-tab="inicio" style="align-items:flex-start;">
-    <div class="dot" style="margin-top:5px;"></div>
-    <div style="flex:1;">
-      <div id="installBannerText" style="margin-bottom:8px;"></div>
-      <button class="btn-ghost" id="installDismissBtn" style="padding:6px 12px; font-size:12px;">Entendido</button>
+  <div class="banner info" id="installBanner" data-tab="inicio">
+    <div class="dot"></div>
+    <div class="install-banner-cuerpo">
+      <div id="installBannerText"></div>
+      <button class="btn-ghost boton-pequeno" id="installDismissBtn">Entendido</button>
     </div>
   </div>
 
@@ -80,7 +80,7 @@
     <div class="card">
       <div id="accountsList"></div>
       <div class="acc-total-row"><span class="lbl">Total</span><span class="val" id="accountsTotal">$0</span></div>
-      <div class="extra-toggle-row" style="margin-top:10px;"><span id="accFormToggle">+ agregar cuenta</span></div>
+      <div class="extra-toggle-row margen-arriba-chico"><span id="accFormToggle">+ agregar cuenta</span></div>
       <div class="extra-fields" id="accFormFields">
         <input type="text" id="accName" placeholder="Nombre (ej. Bancolombia Ahorros)">
         <div class="weight-input-row">
@@ -106,7 +106,7 @@
     <div class="card">
       <div id="pocketsList"></div>
       <div class="acc-total-row"><span class="lbl">Total bolsillos</span><span class="val" id="pocketsTotal">$0</span></div>
-      <div class="extra-toggle-row" style="margin-top:10px;"><span id="pocketFormToggle">+ agregar bolsillo</span></div>
+      <div class="extra-toggle-row margen-arriba-chico"><span id="pocketFormToggle">+ agregar bolsillo</span></div>
       <div class="extra-fields" id="pocketFormFields">
         <input type="text" id="pocketName" placeholder="Nombre (ej. Viaje, Arriendo, Emergencias)">
         <div class="weight-input-row">
@@ -133,7 +133,7 @@
       </div>
       <div id="categoryBars"></div>
       <svg class="trend" id="trendSvg" viewBox="0 0 300 80" preserveAspectRatio="none"></svg>
-      <div class="lbl" style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; text-align:center; margin-top:2px;">Balance neto — últimos 6 meses</div>
+      <div class="leyenda-tendencia">Balance neto — últimos 6 meses</div>
     </div>
   </section>
 
@@ -172,17 +172,17 @@
         </select>
         <textarea id="txNote" placeholder="Nota (opcional)"></textarea>
       </div>
-      <button class="btn-accent" id="addTxBtn" style="width:100%;">Guardar movimiento</button>
+      <button class="btn-accent boton-ancho" id="addTxBtn">Guardar movimiento</button>
     </div>
   </section>
 
   <section data-tab="movimientos">
     <div class="section-head">
       <h2>Historial</h2>
-      <input type="month" id="historyMonth" style="width:auto; padding:6px 10px; font-size:12px;">
+      <input type="month" id="historyMonth" class="mes-compacto">
     </div>
     <div class="card">
-      <div class="weight-list" id="historyList" style="max-height:280px; overflow-y:auto;"></div>
+      <div class="weight-list lista-con-scroll" id="historyList"></div>
     </div>
   </section>
 
@@ -244,8 +244,8 @@
       <span class="tag">análisis IA</span>
     </div>
     <div class="card">
-      <p class="rest-note" style="margin:0 0 12px; color:var(--muted); font-size:12.5px; line-height:1.5;">Al cerrar cada mes se genera un análisis local automático (sin conexión) con tu historial y capacidad de ahorro. Si quieres algo más a fondo, puedes copiar un prompt listo y pedírselo a Claude. No reemplaza asesoría financiera profesional.</p>
-      <button class="btn-accent" id="genReportBtn" style="width:100%; margin-bottom:12px;">Generar reporte de este mes</button>
+      <p class="rest-note">Al cerrar cada mes se genera un análisis local automático (sin conexión) con tu historial y capacidad de ahorro. Si quieres algo más a fondo, puedes copiar un prompt listo y pedírselo a Claude. No reemplaza asesoría financiera profesional.</p>
+      <button class="btn-accent boton-ancho margen-abajo-chico" id="genReportBtn">Generar reporte de este mes</button>
       <div id="reportsList"></div>
     </div>
   </section>
@@ -275,12 +275,12 @@
         </div>
         <button class="btn-ghost" id="notifBtn">Activar</button>
       </div>
-      <div class="settings-row" style="border-bottom:none; padding-top:16px;">
-        <div class="btn-row" style="width:100%;">
-          <input type="password" id="exportClave" autocomplete="new-password" aria-label="Clave de la copia (opcional)" placeholder="Clave para cifrar o abrir la copia (opcional)" style="flex:1 1 100%;">
-          <button class="btn-ghost" id="exportBtn" style="flex:1;">Descargar copia</button>
-          <button class="btn-ghost" id="importBtn" style="flex:1;">Restaurar copia</button>
-          <input type="file" id="importFile" accept=".json" style="display:none;">
+      <div class="settings-row sin-borde-inferior">
+        <div class="btn-row boton-ancho">
+          <input type="password" id="exportClave" autocomplete="new-password" aria-label="Clave de la copia (opcional)" placeholder="Clave para cifrar o abrir la copia (opcional)" class="flex-ancho-total">
+          <button class="btn-ghost flex-uno" id="exportBtn">Descargar copia</button>
+          <button class="btn-ghost flex-uno" id="importBtn">Restaurar copia</button>
+          <input type="file" id="importFile" accept=".json" class="archivo-oculto">
         </div>
       </div>
     </div>
@@ -314,7 +314,7 @@
 <div class="modal-overlay" id="confirmOverlay">
   <div class="modal-box">
     <div class="modal-header"><h3>Confirmar</h3></div>
-    <p id="confirmText" style="font-size:13.5px; line-height:1.5; color:var(--text-muted);"></p>
+    <p id="confirmText" class="texto-confirmacion"></p>
     <div class="modal-actions">
       <button class="btn-ghost" id="confirmCancelBtn">Cancelar</button>
       <button class="btn-accent" id="confirmOkBtn">Continuar</button>

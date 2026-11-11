@@ -13,6 +13,7 @@ import { agregados, promptReporte } from './services/reportes.js';
 import { aprender } from './services/categorizacion.js';
 import { registrarDiferida } from './services/ingesta.js';
 import { iniciarInterfaz } from './ui/principal.js';
+import { activarCombobox } from './ui/combobox.js';
 
 
   const EXPENSE_CATEGORIES = CATEGORIAS_GASTO;
@@ -291,8 +292,8 @@ import { iniciarInterfaz } from './ui/principal.js';
     } else if(type==='goal'){
       const g = data.goals.find(x=>x.id===id); if(!g) return;
       titleEl.textContent = 'Editar meta';
-      const pocketOpts = data.pockets.map(p=>`<label><input type="checkbox" class="edit-goal-pocket-check" value="${p.id}" ${(g.pocketIds||[]).includes(p.id)?'checked':''}> ${escapeAttr(p.name)} — ${formatCOP(pocketBalance(p))}</label>`).join('') || '<div class="empty" style="padding:4px 0;">No hay bolsillos creados.</div>';
-      const invOpts = data.investments.map(i=>`<label><input type="checkbox" class="edit-goal-investment-check" value="${i.id}" ${(g.investmentIds||[]).includes(i.id)?'checked':''}> ${escapeAttr(i.entity)} — ${formatCOP(investmentTotal(i))}</label>`).join('') || '<div class="empty" style="padding:4px 0;">No hay CDT registrados.</div>';
+      const pocketOpts = data.pockets.map(p=>`<label><input type="checkbox" class="edit-goal-pocket-check" value="${p.id}" ${(g.pocketIds||[]).includes(p.id)?'checked':''}> ${escapeAttr(p.name)} — ${formatCOP(pocketBalance(p))}</label>`).join('') || '<div class="empty vacio-compacto">No hay bolsillos creados.</div>';
+      const invOpts = data.investments.map(i=>`<label><input type="checkbox" class="edit-goal-investment-check" value="${i.id}" ${(g.investmentIds||[]).includes(i.id)?'checked':''}> ${escapeAttr(i.entity)} — ${formatCOP(investmentTotal(i))}</label>`).join('') || '<div class="empty vacio-compacto">No hay CDT registrados.</div>';
       fieldsEl.innerHTML = `
         <div class="modal-field"><label>Nombre</label><input type="text" id="editGoalName" value="${escapeAttr(g.name)}"></div>
         <div class="modal-field"><label>Monto objetivo (COP)</label><input type="number" id="editGoalTarget" value="${g.target}" min="0" step="10000"></div>
@@ -333,7 +334,7 @@ import { iniciarInterfaz } from './ui/principal.js';
         const esRecurso = t.type==='transfer_in' || t.type==='withdraw_out';
         titleEl.textContent = esRecurso ? (isAbono ? 'Editar abono' : 'Editar retiro') : 'Editar movimiento';
         fieldsEl.innerHTML = `
-          <div class="modal-field" ${esRecurso?'':'hidden'}><label>${isAbono?'Destino':'Origen del retiro'}</label><div style="font-size:13px;">${escapeAttr(targetLabel(t.targetType, t.targetId))} (no editable)</div></div>
+          <div class="modal-field" ${esRecurso?'':'hidden'}><label>${isAbono?'Destino':'Origen del retiro'}</label><div class="texto-no-editable">${escapeAttr(targetLabel(t.targetType, t.targetId))} (no editable)</div></div>
           <div class="modal-field"><label>Monto (COP)</label><input type="number" id="editTxAmount" value="${t.amount}" min="0" step="1000"></div>
           <div class="modal-field"><label>Fecha</label><input type="date" id="editTxDate" value="${t.date}"></div>
           <div class="modal-field"><label>Nota</label><textarea id="editTxNote">${escapeAttr(t.note||'')}</textarea></div>`;
@@ -668,10 +669,10 @@ import { iniciarInterfaz } from './ui/principal.js';
     if(!pocketEl || !invEl) return;
     pocketEl.innerHTML=data.pockets.length
       ? data.pockets.map(p=>`<label><input type="checkbox" class="goal-pocket-check" value="${p.id}"> ${p.name} — ${formatCOP(pocketBalance(p))}</label>`).join('')
-      : '<div class="empty" style="padding:4px 0;">No hay bolsillos creados.</div>';
+      : '<div class="empty vacio-compacto">No hay bolsillos creados.</div>';
     invEl.innerHTML=data.investments.length
       ? data.investments.map(i=>`<label><input type="checkbox" class="goal-investment-check" value="${i.id}"> ${i.entity} — ${formatCOP(investmentTotal(i))}</label>`).join('')
-      : '<div class="empty" style="padding:4px 0;">No hay CDT registrados.</div>';
+      : '<div class="empty vacio-compacto">No hay CDT registrados.</div>';
   }
 
   function selectedGoalSources(goal){
@@ -710,9 +711,12 @@ import { iniciarInterfaz } from './ui/principal.js';
       const max = entries[0][1];
       barsEl.innerHTML = entries.map(([cat,amt])=>`
         <div class="bar-row">
-          <div class="bar-top"><span class="cat"><span class="cat-dot" style="background:${catColor(cat)}"></span>${escapeAttr(cat)}</span><span class="amt">${formatCOP(amt)}</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:${Math.round((amt/max)*100)}%; background:${catColor(cat)};"></div></div>
+          <div class="bar-top"><span class="cat"><span class="cat-dot" data-color="${catColor(cat)}"></span>${escapeAttr(cat)}</span><span class="amt">${formatCOP(amt)}</span></div>
+          <div class="bar-track"><div class="bar-fill" data-pct="${Math.round((amt/max)*100)}" data-color="${catColor(cat)}"></div></div>
         </div>`).join('');
+      // Color y ancho dinámicos vía CSSOM (no atributo style): compatible con CSP sin 'unsafe-inline'.
+      barsEl.querySelectorAll('[data-color]').forEach(el=>{ el.style.setProperty('background', el.dataset.color); });
+      barsEl.querySelectorAll('.bar-fill[data-pct]').forEach(el=>{ el.style.setProperty('width', el.dataset.pct+'%'); });
     }
 
     // 6-month trend
@@ -800,7 +804,7 @@ import { iniciarInterfaz } from './ui/principal.js';
           <button data-act="del" data-id="${escapeAttr(t.id)}" aria-label="Eliminar" title="Eliminar">✕</button>
         </div>
       </div>`;
-    }).join('') + (todas.length>rows.length ? `<button class="btn-ghost" id="historyMore" style="width:100%;">Ver más (${todas.length-rows.length})</button>` : '');
+    }).join('') + (todas.length>rows.length ? `<button class="btn-ghost boton-ancho" id="historyMore">Ver más (${todas.length-rows.length})</button>` : '');
     document.getElementById('historyMore')?.addEventListener('click', ()=>{ historyLimit += HISTORY_PAGE; renderHistory(); });
     listEl.querySelectorAll('button[data-act]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
@@ -885,7 +889,7 @@ import { iniciarInterfaz } from './ui/principal.js';
       }
       return `<div class="goal-card" data-goal="${g.id}">
         <div class="goal-top"><span class="name">${escapeAttr(g.name)}</span><span class="due">${dueStr}</span></div>
-        <div class="goal-progress-track"><div class="goal-progress-fill" style="width:${pct}%"></div></div>
+        <div class="goal-progress-track"><div class="goal-progress-fill" data-pct="${pct}"></div></div>
         <div class="goal-nums"><span><b>${formatCOP(current)}</b> de ${formatCOP(g.target)}</span><span>${pct}%</span></div>
         ${planHtml}
         <div class="goal-sources-summary">Fuentes: ${selectedGoalSources(g)}</div>
@@ -899,6 +903,7 @@ import { iniciarInterfaz } from './ui/principal.js';
         <div class="goal-del"><button class="edit-btn goal-edit-btn">editar meta</button><button class="goal-del-btn">eliminar meta</button></div>
       </div>`;
     }).join('');
+    listEl.querySelectorAll('.goal-progress-fill[data-pct]').forEach(el=>{ el.style.setProperty('width', el.dataset.pct+'%'); });
     listEl.querySelectorAll('.goal-card').forEach(card=>{
       const id = card.dataset.goal;
       card.querySelector('.goal-edit-btn').addEventListener('click', ()=>{
@@ -989,8 +994,8 @@ import { iniciarInterfaz } from './ui/principal.js';
           <div>Tasa EA<b>${inv.rate}%</b></div>
           <div>Vence<b>${maturityFmt}</b></div>
           <div>${matured?'Venció hace':'Días restantes'}<b>${Math.abs(daysLeft)}</b></div>
-          ${extra ? `<div style="grid-column:1/-1;">Aportes adicionales<b>${formatCOP(extra)}</b></div>` : ''}
-          <div style="grid-column:1/-1;">Valor proyectado al vencimiento<b>${formatCOP(projected)}</b></div>
+          ${extra ? `<div class="celda-ancha">Aportes adicionales<b>${formatCOP(extra)}</b></div>` : ''}
+          <div class="celda-ancha">Valor proyectado al vencimiento<b>${formatCOP(projected)}</b></div>
         </div>
         ${data.accounts.length===0 ? '<div class="mini-hint">Crea una cuenta para poder aportar o retirar de este CDT.</div>' : `
         <div class="mini-transfer-row" data-inv-transfer="${inv.id}">
@@ -1090,7 +1095,7 @@ import { iniciarInterfaz } from './ui/principal.js';
     const deuda = patrimonio(data).pasivos;
     if(deuda>0) html += `<li>Tienes deudas por <b>${formatCOP(deuda)}</b>. Compara en Tarjetas el costo de pagar solo el mínimo.</li>`;
     if(totalBalance<=0) html += '<li>Tu saldo consolidado está en cero o negativo; prioriza cubrir gastos esenciales antes de nuevos compromisos.</li>';
-    html += '</ul><p style="font-size:12px;color:var(--muted)">Análisis generado localmente en tu dispositivo (sin IA) — no reemplaza asesoría financiera profesional.</p>';
+    html += '</ul><p class="nota-pequena">Análisis generado localmente en tu dispositivo (sin IA) — no reemplaza asesoría financiera profesional.</p>';
     return html;
   }
 
@@ -1195,20 +1200,20 @@ import { iniciarInterfaz } from './ui/principal.js';
         ? `<div class="ai-box"><div class="ai-meta">Análisis de Claude · ${r.aiDate||''}</div>${simpleMarkdown(r.aiText)}</div>`
         : (r.aiHtml
           ? `<div class="ai-box"><div class="ai-meta">Análisis local (sin IA) · ${r.aiDate||''}</div>${r.aiHtml}</div>`
-          : `<button class="btn-ghost report-gen-btn" data-month="${r.monthKey}" style="width:100%; margin-top:4px;">Generar análisis</button>`);
+          : `<button class="btn-ghost report-gen-btn boton-ancho-mt" data-month="${r.monthKey}">Generar análisis</button>`);
       return `<div class="report-card">
         <div class="report-top"><span class="name">${monthLabel(r.monthKey)}</span><span class="rate">${r.savingsRate}% ahorro</span></div>
         <div class="report-stats">
-          <div class="stat"><div class="v" style="color:var(--bonus);">${formatCOP(r.income)}</div><div class="l">Ingresos</div></div>
-          <div class="stat"><div class="v" style="color:var(--warn);">${formatCOP(r.expense)}</div><div class="l">Gastos</div></div>
+          <div class="stat"><div class="v color-ingreso">${formatCOP(r.income)}</div><div class="l">Ingresos</div></div>
+          <div class="stat"><div class="v color-gasto">${formatCOP(r.expense)}</div><div class="l">Gastos</div></div>
           <div class="stat"><div class="v">${formatCOP(r.balance)}</div><div class="l">Balance</div></div>
         </div>
         ${analysisHtml}
-        <div class="extra-toggle-row" style="padding-top:10px;"><span class="report-copy-toggle" data-month="${r.monthKey}">${hasAi ? '↻ pedir un análisis nuevo con Claude' : '✨ pedir análisis más completo con Claude'}</span></div>
+        <div class="extra-toggle-row espacio-arriba"><span class="report-copy-toggle" data-month="${r.monthKey}">${hasAi ? '↻ pedir un análisis nuevo con Claude' : '✨ pedir análisis más completo con Claude'}</span></div>
         <div class="extra-fields" id="reportExtra-${r.monthKey}">
-          <button class="btn-ghost report-copy-btn" data-month="${r.monthKey}" style="align-self:flex-start;">Copiar prompt para Claude</button>
+          <button class="btn-ghost report-copy-btn alineado-inicio" data-month="${r.monthKey}">Copiar prompt para Claude</button>
           <textarea class="report-paste-box" data-month="${r.monthKey}" rows="4" placeholder="Pega aquí la respuesta de Claude…"></textarea>
-          <button class="btn-ghost report-save-btn" data-month="${r.monthKey}" style="align-self:flex-start;">Guardar respuesta</button>
+          <button class="btn-ghost report-save-btn alineado-inicio" data-month="${r.monthKey}">Guardar respuesta</button>
         </div>
       </div>`;
     }).join('');
@@ -1313,8 +1318,7 @@ import { iniciarInterfaz } from './ui/principal.js';
     if(!installBtn){
       installBtn=document.createElement('button');
       installBtn.id='installNowBtn';
-      installBtn.className='btn-accent';
-      installBtn.style.cssText='padding:6px 12px;font-size:12px;margin-right:8px;';
+      installBtn.className='btn-accent boton-pequeno boton-pequeno--separado';
       btn.parentElement.insertBefore(installBtn,btn);
     }
 
@@ -1388,5 +1392,6 @@ import { iniciarInterfaz } from './ui/principal.js';
       descargar,
     });
     renderAll();
+    activarCombobox();
     setInterval(renderWheelAndHeader, 60000);
   })();

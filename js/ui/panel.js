@@ -184,7 +184,7 @@ export function crearPanelUI(ctx, ingesta) {
                   },
                   h('div', {
                     class: `barra-uso-relleno ${clase[a.nivel]}`,
-                    style: `width:${Math.min(100, a.porcentaje)}%`,
+                    style: { width: `${Math.min(100, a.porcentaje)}%` },
                   }),
                 ),
                 h('p', { class: 'nota' }, `${texto[a.nivel]}${a.porcentaje} %`),

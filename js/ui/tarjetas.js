@@ -310,7 +310,7 @@ export function crearTarjetasUI(ctx) {
         },
         h('div', {
           class: `barra-uso-relleno ${uso.color}`,
-          style: `width:${Math.min(100, uso.porcentaje)}%`,
+          style: { width: `${Math.min(100, uso.porcentaje)}%` },
         }),
       ),
       h(

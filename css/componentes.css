@@ -639,4 +639,40 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 #vistaTarjetas > div, #vistaPresupuesto .card { margin-bottom: 20px; }
 #vistaTarjetas > .card, #vistaPresupuesto > .card, #vistaAjustes > .card { margin-bottom: 20px; }
 
+/* Sustituyen atributos style="" del HTML y de las plantillas de app.js: permiten quitar
+   'unsafe-inline' de style-src en la CSP sin cambiar ningún valor visual. */
+.boton-pequeno { padding: 6px 12px; font-size: 12px; }
+.boton-pequeno--separado { margin-right: 8px; }
+.vacio-compacto { padding: 4px 0; }
+.texto-no-editable { font-size: 13px; }
+.boton-ancho { width: 100%; }
+.boton-ancho-mt { width: 100%; margin-top: 4px; }
+.celda-ancha { grid-column: 1 / -1; }
+.nota-pequena { font-size: 12px; color: var(--muted); }
+.color-ingreso { color: var(--bonus); }
+.color-gasto { color: var(--warn); }
+.espacio-arriba { padding-top: 10px; }
+.alineado-inicio { align-self: flex-start; }
+.margen-arriba-chico { margin-top: 10px; }
+.margen-abajo-chico { margin-bottom: 12px; }
+.sin-borde-inferior { border-bottom: none; padding-top: 16px; }
+.flex-uno { flex: 1; }
+.flex-ancho-total { flex: 1 1 100%; }
+.archivo-oculto { display: none; }
+.mes-compacto { width: auto; padding: 6px 10px; font-size: 12px; }
+.lista-con-scroll { max-height: 280px; overflow-y: auto; }
+.leyenda-tendencia { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; margin-top: 2px; }
+.texto-confirmacion { font-size: 13.5px; line-height: 1.5; color: var(--text-muted); }
+.rest-note { margin: 0 0 12px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.install-banner-cuerpo { flex: 1; }
+#installBanner { align-items: flex-start; }
+#installBanner .dot { margin-top: 5px; }
+#installBannerText { margin-bottom: 8px; }
+
+/* Combobox táctil: Safari en iOS no muestra sugerencias de <datalist>, así que js/ui/combobox.js
+   dibuja esta lista a mano sobre los mismos <input list>. Posición en `top/left` vía JS (fixed). */
+.combobox-sugerencias { position: fixed; z-index: 220; max-height: 220px; overflow-y: auto; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
+.combobox-item { padding: 10px 14px; font-size: 14px; line-height: 1.3; cursor: pointer; }
+.combobox-item:hover, .combobox-item:active { background: var(--surface); }
+
 .campo[hidden] { display: none; }

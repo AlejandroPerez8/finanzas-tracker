@@ -16,6 +16,8 @@ export function h(etiqueta, props = {}, ...hijos) {
     else if (k === 'class') el.className = v;
     else if (k === 'value') el.value = v;
     else if (k === 'checked' || k === 'disabled' || k === 'selected' || k === 'hidden') el[k] = !!v;
+    // Propiedades vía CSSOM, no el atributo `style`: así no depende de 'unsafe-inline' en la CSP.
+    else if (k === 'style' && typeof v === 'object') for (const [p, val] of Object.entries(v)) el.style.setProperty(p, val);
     else el.setAttribute(k, v === true ? '' : v);
   }
   agregar(el, hijos);
@@ -179,7 +181,7 @@ export function graficoLineas(series, etiquetaEje) {
       h(
         'span',
         { class: 'leyenda-item' },
-        h('span', { class: `leyenda-marca${s.punteada ? ' punteada' : ''}`, style: `--color:${s.color}` }),
+        h('span', { class: `leyenda-marca${s.punteada ? ' punteada' : ''}`, style: { '--color': s.color } }),
         s.nombre,
       ),
     ),
