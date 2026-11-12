@@ -698,3 +698,37 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .salud-consejo { font-size: 13px; line-height: 1.45; margin: 6px 0 0; color: var(--text); }
 /* Los avisos del panel son frases completas: deben partirse en varias líneas (5.3.1). */
 #vistaPanel .chip { display: block; white-space: normal; line-height: 1.4; margin: 8px 0 0; }
+
+/* ---------- Pantallas angostas y montos de millones (5.3.3) ----------
+   Una cifra de dinero nunca se recorta con "…": se ajusta el tamaño y, si hace falta, la cuadrícula. */
+.kpi-valor {
+  font-size: clamp(0.95rem, 4.4vw, 1.25rem);
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 359px) {
+  .panel-kpis { grid-template-columns: minmax(0, 1fr); }
+}
+.summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); }
+.sum-card { min-width: 0; }
+.sum-card .val { font-size: clamp(15px, 4.6vw, 19px); overflow-wrap: anywhere; }
+/* En revisión se necesita leer el comercio completo: hasta dos líneas. */
+.fp-detalle {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+/* Objetivos táctiles de 40 px de alto en acciones de filas y cuentas, sin robar ancho al texto:
+   el relleno lateral es mínimo para que el comercio y el nombre de la cuenta sigan legibles. */
+.row-actions button,
+.acc-row button,
+.edit-btn {
+  min-height: 40px;
+  min-width: 32px;
+  padding: 8px 4px;
+}
+.row-actions { gap: 2px; }
+/* Los pasos de "Para empezar" son frases: parten línea en pantallas de 320 px. */
+.onboarding .btn-ghost { white-space: normal; height: auto; line-height: 1.35; padding-top: 10px; padding-bottom: 10px; }

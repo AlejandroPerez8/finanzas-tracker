@@ -91,7 +91,7 @@ export function indicadoresSalud(datos, mesActual) {
     const estado = nivel(tasa, 20, 10);
     salida.push({
       id: 'ahorro',
-      titulo: 'Tasa de ahorro',
+      titulo: 'Ahorro promedio (3 meses)',
       valor: `${tasa} %`,
       meta: '20 % o más del ingreso',
       estado,
@@ -101,7 +101,7 @@ export function indicadoresSalud(datos, mesActual) {
           : `Para llegar al 20 % necesitas gastar ${formatear(Math.round(prom.ingreso * 0.8))} al mes o menos (hoy ${formatear(prom.gasto)}). Revisa la categoría más alta y los recurrentes.`,
     });
   } else {
-    salida.push(sinDatos('ahorro', 'Tasa de ahorro', '20 % o más del ingreso'));
+    salida.push(sinDatos('ahorro', 'Ahorro promedio (3 meses)', '20 % o más del ingreso'));
   }
 
   // 3. Uso de tarjetas

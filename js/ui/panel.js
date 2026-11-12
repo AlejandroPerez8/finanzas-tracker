@@ -23,7 +23,7 @@ import { tamanoDatos } from '../db.js';
 import { VERSION_ACTUAL } from '../services/migraciones.js';
 import { CATEGORIAS_GASTO } from '../domain/categorias.js';
 
-export const VERSION_APP = '5.3.2';
+export const VERSION_APP = '5.3.3';
 const ITERACIONES_PIN = 200000;
 
 async function hashPin(pin, salBase64) {
@@ -147,7 +147,7 @@ export function crearPanelUI(ctx, ingesta) {
             'div',
             { class: 'kpi' },
             h('div', { class: 'kpi-valor' }, textoTasaAhorro(s)),
-            h('div', { class: 'kpi-etiqueta' }, 'Tasa de ahorro'),
+            h('div', { class: 'kpi-etiqueta' }, 'Ahorro del mes'),
           ),
           kpi(formatear(p.desglose.tarjetas + p.desglose.otrasDeudas), 'Deuda total'),
           h(

@@ -248,10 +248,13 @@ export function crearIngestaUI(ctx, recursos) {
     const zonaDividir = h('div', { class: 'formulario', hidden: true });
     const zonaDestino = campo('Cuenta de destino', destino);
     const zonaTarjeta = campo('Tarjeta', tarjetaPago);
+    const zonaCategoria = campo('Categoría', categoria);
     // Los campos extra dependen del tipo elegido; se ocultan sin perder lo ya escrito.
     const ajustarCampos = () => {
       zonaDestino.hidden = clase.value !== 'transferencia';
       zonaTarjeta.hidden = !['pago_tarjeta', 'avance'].includes(clase.value);
+      // Mover dinero entre cuentas propias o pagar la tarjeta no es gasto: no lleva categoría.
+      zonaCategoria.hidden = ['transferencia', 'pago_tarjeta'].includes(clase.value);
     };
     clase.addEventListener('change', ajustarCampos);
     ajustarCampos();
@@ -346,7 +349,7 @@ export function crearIngestaUI(ctx, recursos) {
         'div',
         { class: 'formulario' },
         campo('Tipo', clase),
-        campo('Categoría', categoria),
+        zonaCategoria,
         campo('Cuenta o tarjeta', medio),
         zonaDestino,
         zonaTarjeta,
