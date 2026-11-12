@@ -65,13 +65,38 @@ export function crearCliente({
   if (!token || token.length < 32)
     throw new ErrorSync('token_invalido', false, 'El token debe tener al menos 32 caracteres');
 
+  // El token va en el cuerpo de un POST: en la URL quedaría en registros de servidores y proxies.
+  // Un Code.gs anterior a 5.2 solo acepta acciones por GET; se detecta una vez y se recuerda.
+  let usarGet = false;
+
   async function unaVez(params) {
-    const q = new URLSearchParams({ ...params, token });
+    try {
+      return await peticion(params, usarGet);
+    } catch (err) {
+      if (usarGet || err.codigo !== 'bad_request') throw err;
+      usarGet = true;
+      return peticion(params, true);
+    }
+  }
+
+  async function peticion(params, porGet) {
     const ctl = new AbortController();
     const reloj = setTimeout(() => ctl.abort(), timeoutMs);
     let res;
     try {
-      res = await hacerFetch(`${url}?${q}`, { redirect: 'follow', signal: ctl.signal });
+      res = porGet
+        ? await hacerFetch(`${url}?${new URLSearchParams({ ...params, token })}`, {
+            redirect: 'follow',
+            signal: ctl.signal,
+          })
+        : await hacerFetch(url, {
+            method: 'POST',
+            // text/plain evita el preflight de CORS, que Apps Script no responde.
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ ...params, token }),
+            redirect: 'follow',
+            signal: ctl.signal,
+          });
     } catch (err) {
       throw new ErrorSync(
         err.name === 'AbortError' ? 'timeout' : 'red',

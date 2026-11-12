@@ -237,3 +237,29 @@ test('mock: contrato de errores', async (t) => {
     'bad_request',
   );
 });
+
+test('el token viaja en el cuerpo del POST, nunca en la URL', async (t) => {
+  const e = await escenario(t);
+  e.estado.agregar('gmail', 'g1', FECHA, PAGO);
+  await e.cliente.probar();
+  const r = await sincronizar({ ...e, guardar: async () => {} });
+  assert.equal(r.nuevos, 1);
+  assert.equal(e.estado.peticionesAck.length, 1);
+  assert.equal(e.estado.tokensEnUrl, 0);
+});
+
+test('con un script anterior a 5.2 (solo GET) se adapta sola y sigue sincronizando', async (t) => {
+  const e = await escenario(t, { legado: true });
+  e.estado.agregar('gmail', 'g1', FECHA, PAGO);
+  const r = await sincronizar({ ...e, guardar: async () => {} });
+  assert.equal(r.nuevos, 1);
+  assert.equal(e.estado.peticionesAck.length, 1);
+  assert.ok(e.estado.tokensEnUrl > 0, 'usó el modo GET del script viejo');
+});
+
+test('un token incorrecto no provoca el cambio a GET', async (t) => {
+  const e = await escenario(t);
+  const malo = crearCliente({ url: e.url, token: 'x'.repeat(40), esperar: async () => {} });
+  await assert.rejects(malo.probar(), (err) => err.codigo === 'unauthorized');
+  assert.equal(e.estado.tokensEnUrl, 0);
+});

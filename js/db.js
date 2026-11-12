@@ -54,18 +54,25 @@ async function leer(clave) {
 async function escribir(clave, valor) {
   let guardado = false;
   const db = await abrir();
-  if (db) {
-    guardado = await new Promise((resolve) => {
-      const tx = db.transaction(DB_ALMACEN, 'readwrite');
-      tx.objectStore(DB_ALMACEN).put(valor, clave);
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => resolve(false);
-      tx.onabort = () => resolve(false);
+  const operar = (fn) =>
+    new Promise((resolve) => {
+      try {
+        const tx = db.transaction(DB_ALMACEN, 'readwrite');
+        fn(tx.objectStore(DB_ALMACEN));
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+        tx.onabort = () => resolve(false);
+      } catch {
+        resolve(false);
+      }
     });
-  }
+  const enIdb = db ? await operar((s) => s.put(valor, clave)) : false;
+  guardado = enIdb;
   try {
     localStorage.setItem(clave, valor);
     guardado = true;
+    // `leer` prefiere IndexedDB: si allí quedó una versión vieja, se borra para que gane la nueva.
+    if (db && !enIdb) await operar((s) => s.delete(clave));
   } catch (err) {
     // El respaldo puede llenarse; solo es fatal si IndexedDB tampoco guardó.
     if (!guardado) console.error('No se pudo guardar', err);

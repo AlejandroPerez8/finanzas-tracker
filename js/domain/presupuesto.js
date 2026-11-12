@@ -90,3 +90,22 @@ export function patrimonio(datos) {
     desglose: { cuentas, bolsillos, metas, inversiones, tarjetas, otrasDeudas },
   };
 }
+
+/**
+ * Efectivo del mes: lo retirado hacia cuentas de efectivo frente a lo gastado desde ellas.
+ * Un retiro no es gasto; si el gasto en efectivo no se registra, la tasa de ahorro queda inflada.
+ * @returns {{retirado:number, gastado:number, sinRastrear:number}}
+ */
+export function efectivoDelMes(datos, mes) {
+  const efectivo = new Set(datos.accounts.filter((a) => a.tipo === 'efectivo').map((a) => a.id));
+  let retirado = 0;
+  let gastado = 0;
+  for (const t of datos.transactions) {
+    if (!cuenta(t) || String(t.date).slice(0, 7) !== mes) continue;
+    if (t.type === 'transferencia' && efectivo.has(t.cuentaDestinoId) && !efectivo.has(t.accountId))
+      retirado += aEntero(t.amount);
+    else if (TIPOS_GASTO.has(t.type) && efectivo.has(t.accountId) && !t.tarjetaId)
+      gastado += aEntero(t.amount);
+  }
+  return { retirado, gastado, sinRastrear: Math.max(0, retirado - gastado) };
+}

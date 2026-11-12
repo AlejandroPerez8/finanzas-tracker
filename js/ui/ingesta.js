@@ -270,7 +270,14 @@ export function crearIngestaUI(ctx, recursos) {
         cambios.tarjetaId = null;
         cambios.accountId = valorMedio || null;
       }
-      if (clase.value === 'transferencia') cambios.cuentaDestinoId = destino.value || null;
+      if (clase.value === 'transferencia') {
+        // Sin destino el dinero saldría de la cuenta sin llegar a ninguna parte ni contar como gasto.
+        if (!destino.value)
+          throw new Error('Elige la cuenta de destino (para un retiro, tu cuenta de Efectivo)');
+        if (destino.value === cambios.accountId)
+          throw new Error('El origen y el destino deben ser distintos');
+        cambios.cuentaDestinoId = destino.value;
+      }
       confirmar(datos, t.id, cambios, contexto());
       await ctx.guardar();
       ctx.renderAll();

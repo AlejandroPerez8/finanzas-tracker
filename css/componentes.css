@@ -630,8 +630,9 @@ body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 .formulario select, .formulario input:not([type='checkbox']), .formulario textarea { width: 100%; }
 .campo select, .campo input { width: 100%; }
 .vacio { min-height: 96px; padding: 12px; }
-.subtabs { overflow-x: auto; margin: 10px 0; }
-.subtab { flex: none; }
+/* Cuadrícula 2×2: en 390 px las cuatro subpestañas no caben en fila y "Importar" quedaba oculta. */
+.subtabs { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; margin: 10px 0; border-radius: 18px; }
+.subtab { flex: none; border-radius: 14px; }
 
 /* Los estilos originales no cubrían estos tipos de campo. */
 input[type='password'], input[type='url'] { width: 100%; min-height: 48px; padding: 12px 14px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; font: inherit; font-size: 14px; }

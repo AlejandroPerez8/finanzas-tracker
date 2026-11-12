@@ -4,8 +4,9 @@
  */
 import { aEntero, formatear } from './domain/money.js';
 import { CATEGORIAS_GASTO, CATEGORIAS_INGRESO } from './domain/categorias.js';
-import { saldoCuenta, estadisticasMes, cuenta as esVigente } from './domain/movimientos.js';
+import { saldoCuenta, estadisticasMes, cuenta as esVigente, textoTasaAhorro } from './domain/movimientos.js';
 import { patrimonio } from './domain/presupuesto.js';
+import { proyeccionCdt } from './domain/deudas.js';
 import { cargar, guardar as guardarDb } from './db.js';
 import { migrar } from './services/migraciones.js';
 import { exportable, validarCopia, cifrar, descifrar, estaCifrado } from './services/backup.js';
@@ -197,7 +198,7 @@ import { activarCombobox } from './ui/combobox.js';
     const sel = document.getElementById('pocketAccount');
     if(!sel) return;
     if(data.accounts.length===0){
-      sel.innerHTML = '<option value="">Sin cuenta asociada</option>';
+      sel.innerHTML = '<option value="">Sin cuenta</option>';
       return;
     }
     sel.innerHTML = data.accounts.map(a=>`<option value="${a.id}">${escapeAttr(a.name)}</option>`).join('');
@@ -207,7 +208,7 @@ import { activarCombobox } from './ui/combobox.js';
     const sel = document.getElementById('txAccount');
     const valor = sel.value;
     const tarjetas = data.tarjetas.filter(t=>t.estado!=='cerrada').map(t=>`<option value="tarjeta:${escapeAttr(t.id)}">Tarjeta ${escapeAttr(t.alias)}</option>`).join('');
-    sel.innerHTML = '<option value="">Sin cuenta asociada</option>' + data.accounts.map(a=>`<option value="${a.id}">${escapeAttr(a.name)}</option>`).join('') + tarjetas;
+    sel.innerHTML = '<option value="">Sin cuenta</option>' + data.accounts.map(a=>`<option value="${a.id}">${escapeAttr(a.name)}</option>`).join('') + tarjetas;
     if([...sel.options].some(o=>o.value===valor)) sel.value = valor;
   }
 
@@ -278,7 +279,8 @@ import { activarCombobox } from './ui/combobox.js';
           ${opts.map(o=>`<option value="${o}" ${acc.type===o?'selected':''}>${o==='Digital'?'Billetera digital':o}</option>`).join('')}
         </select></div>
         <div class="modal-field"><label>Saldo inicial (COP)</label><input type="number" id="editAccBalance" value="${acc.startBalance||0}" min="0" step="1000"></div>
-        <div class="modal-field"><label>Últimos 4 dígitos (para asociar mensajes del banco)</label><input type="text" inputmode="numeric" maxlength="4" id="editAccUltimos4" value="${escapeAttr(acc.ultimos4||'')}"></div>`;
+        <div class="modal-field"><label>Últimos 4 dígitos de la cuenta</label><input type="text" inputmode="numeric" maxlength="4" id="editAccUltimos4" value="${escapeAttr(acc.ultimos4||'')}"></div>
+        <div class="modal-field"><label>Últimos 4 de la tarjeta débito (T.Deb, para compras y retiros)</label><input type="text" inputmode="numeric" maxlength="4" id="editAccUltimos4Debito" value="${escapeAttr(acc.ultimos4Debito||'')}"></div>`;
 
     } else if(type==='pocket'){
       const p = data.pockets.find(x=>x.id===id); if(!p) return;
@@ -353,8 +355,10 @@ import { activarCombobox } from './ui/combobox.js';
       const name = document.getElementById('editAccName').value.trim();
       if(!name) return;
       const ultimos4 = document.getElementById('editAccUltimos4').value.trim();
-      if(ultimos4 && !/^\d{4}$/.test(ultimos4)){ showToast('Escribe solo los últimos 4 dígitos'); return; }
+      const ultimos4Debito = document.getElementById('editAccUltimos4Debito').value.trim();
+      if((ultimos4 && !/^\d{4}$/.test(ultimos4)) || (ultimos4Debito && !/^\d{4}$/.test(ultimos4Debito))){ showToast('Escribe solo los últimos 4 dígitos'); return; }
       acc.ultimos4 = ultimos4 || null;
+      acc.ultimos4Debito = ultimos4Debito || null;
       acc.name = name;
       acc.type = document.getElementById('editAccType').value;
       acc.tipo = TIPO_CUENTA[acc.type] ?? acc.tipo;
@@ -460,10 +464,11 @@ import { activarCombobox } from './ui/combobox.js';
     const startBalance = aEntero(parseFloat(document.getElementById('accBalance').value)) || 0;
     if(!name) return;
     const ultimos4 = document.getElementById('accUltimos4').value.trim();
-    if(ultimos4 && !/^\d{4}$/.test(ultimos4)){ showToast('Escribe solo los últimos 4 dígitos'); return; }
-    data.accounts.push({id:'a'+Date.now(), name, type, startBalance, tipo: TIPO_CUENTA[type] ?? 'ahorros', alias: name, ultimos4: ultimos4 || null});
+    const ultimos4Debito = document.getElementById('accUltimos4Debito').value.trim();
+    if((ultimos4 && !/^\d{4}$/.test(ultimos4)) || (ultimos4Debito && !/^\d{4}$/.test(ultimos4Debito))){ showToast('Escribe solo los últimos 4 dígitos'); return; }
+    data.accounts.push({id:'a'+Date.now(), name, type, startBalance, tipo: TIPO_CUENTA[type] ?? 'ahorros', alias: name, ultimos4: ultimos4 || null, ultimos4Debito: ultimos4Debito || null});
     await saveData();
-    document.getElementById('accName').value=''; document.getElementById('accBalance').value=''; document.getElementById('accUltimos4').value='';
+    document.getElementById('accName').value=''; document.getElementById('accBalance').value=''; document.getElementById('accUltimos4').value=''; document.getElementById('accUltimos4Debito').value='';
     accFormShown = false;
     document.getElementById('accFormFields').classList.remove('show');
     document.getElementById('accFormToggle').textContent = '+ agregar cuenta';
@@ -530,7 +535,9 @@ import { activarCombobox } from './ui/combobox.js';
     const thisMonthKey = toKey(now).slice(0,7);
     const { income, expense, balance, savingsRate } = monthStats(thisMonthKey);
 
-    document.getElementById('wheelPct').textContent = Math.max(0,Math.min(100,savingsRate)) + '%';
+    const wheelPct = document.getElementById('wheelPct');
+    wheelPct.textContent = textoTasaAhorro({ income, expense, savingsRate });
+    wheelPct.classList.toggle('texto', !/%$/.test(wheelPct.textContent));
     const monthName = monthLabel(thisMonthKey);
     document.getElementById('monthHeadline').textContent = balance>=0
       ? `Vas positivo este mes en ${monthName}`
@@ -968,9 +975,11 @@ import { activarCombobox } from './ui/combobox.js';
     // Los aportes adicionales posteriores (abonos vinculados) se suman a
     // valor nominal, sin capitalizar por separado — simplificación razonable
     // para un seguimiento personal.
-    const projected = inv.amount * Math.pow(1 + (inv.rate/100), totalDays/365) + investmentExtra(inv);
+    // Lo que llega a la cuenta es el neto: el banco retiene el 4 % del rendimiento.
+    const cdt = proyeccionCdt({ monto: inv.amount, tasaEA: inv.rate, dias: totalDays });
+    const projected = cdt.neto + investmentExtra(inv);
     const daysLeft = Math.ceil((maturity - new Date(toKey(new Date())+'T00:00:00'))/86400000);
-    return { maturityKey: toKey(maturity), projected, daysLeft };
+    return { maturityKey: toKey(maturity), projected, daysLeft, rendimiento: cdt.rendimiento, retencion: cdt.retencion };
   }
 
   function renderInvestments(){
@@ -980,7 +989,7 @@ import { activarCombobox } from './ui/combobox.js';
       return;
     }
     listEl.innerHTML = data.investments.slice().sort((a,b)=>investmentMaturity(a).daysLeft-investmentMaturity(b).daysLeft).map(inv=>{
-      const { maturityKey, projected, daysLeft } = investmentMaturity(inv);
+      const { maturityKey, projected, daysLeft, rendimiento, retencion } = investmentMaturity(inv);
       const matured = daysLeft <= 0;
       const soon = !matured && daysLeft<=7;
       const statusCls = matured ? 'matured' : (soon ? 'soon' : 'active');
@@ -995,7 +1004,9 @@ import { activarCombobox } from './ui/combobox.js';
           <div>Vence<b>${maturityFmt}</b></div>
           <div>${matured?'Venció hace':'Días restantes'}<b>${Math.abs(daysLeft)}</b></div>
           ${extra ? `<div class="celda-ancha">Aportes adicionales<b>${formatCOP(extra)}</b></div>` : ''}
-          <div class="celda-ancha">Valor proyectado al vencimiento<b>${formatCOP(projected)}</b></div>
+          <div>Rendimiento bruto<b>${formatCOP(rendimiento)}</b></div>
+          <div>Retención (4 %)<b>−${formatCOP(retencion)}</b></div>
+          <div class="celda-ancha">Recibirás al vencimiento (neto)<b>${formatCOP(projected)}</b></div>
         </div>
         ${data.accounts.length===0 ? '<div class="mini-hint">Crea una cuenta para poder aportar o retirar de este CDT.</div>' : `
         <div class="mini-transfer-row" data-inv-transfer="${inv.id}">

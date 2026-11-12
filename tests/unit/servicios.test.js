@@ -30,7 +30,7 @@ import { agregados, promptReporte } from '../../js/services/reportes.js';
 import { celdaCsv, aCsv, tablasPowerBi, archivosCsv } from '../../js/services/exportacion.js';
 import { registrar } from '../../js/services/registro.js';
 import { crearRegistro } from '../../js/parsers/registry.js';
-import { estadisticasMes, saldoCuenta } from '../../js/domain/movimientos.js';
+import { estadisticasMes, saldoCuenta, textoTasaAhorro } from '../../js/domain/movimientos.js';
 import { saldoTarjeta } from '../../js/domain/tarjetas.js';
 
 const leer = (r) => JSON.parse(readFileSync(new URL(r, import.meta.url), 'utf8'));
@@ -296,6 +296,66 @@ test('ingesta: retiro va a la cuenta de efectivo y no es gasto', () => {
   confirmar(d, id);
   assert.equal(saldoCuenta(d.accounts[1], d.transactions), 200000);
   assert.equal(estadisticasMes(d.transactions, '2026-11').expense, 0);
+});
+
+const RETIRO_REAL =
+  'Bancolombia: Retiraste $150.000,00 en METR_BELLO6 de tu T.Deb **2436 el 28/10/2026 a las 18:14. ¿Dudas?, llamanos al 6045109095. Estamos cerca';
+
+test('retiro real con T.Deb: se asocia por los dígitos de la tarjeta débito y se confirma solo', () => {
+  const d = base();
+  d.accounts[0].ultimos4Debito = '2436';
+  d.accounts.push({ id: 'e', name: 'Efectivo', tipo: 'efectivo', startBalance: 0 });
+  const r = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'sms'), ctx);
+  assert.equal(r.resultado, 'confirmado');
+  const mov = d.transactions.find((t) => t.id === r.movimientoId);
+  assert.equal(mov.type, 'transferencia');
+  assert.equal(mov.accountId, 'a');
+  assert.equal(mov.cuentaDestinoId, 'e');
+  assert.equal(mov.comercio, 'METR BELLO6');
+  assert.equal(mov.date, '2026-10-28');
+  assert.equal(mov.hora, '18:14');
+  // Banco baja, efectivo sube, y no cuenta como gasto del mes.
+  assert.equal(saldoCuenta(d.accounts[0], d.transactions), 1000000 - 150000);
+  assert.equal(saldoCuenta(d.accounts[1], d.transactions), 150000);
+  assert.equal(estadisticasMes(d.transactions, '2026-10').expense, 0);
+  // El mismo retiro por correo se fusiona; no se duplica.
+  assert.equal(procesarMensaje(d, msg('rr2', RETIRO_REAL, 'gmail'), ctx).resultado, 'duplicado');
+  assert.equal(saldoCuenta(d.accounts[1], d.transactions), 150000);
+});
+
+test('retiro real sin dígitos de débito registrados queda en revisión, no en una cuenta equivocada', () => {
+  const d = base();
+  d.accounts.push({ id: 'e', name: 'Efectivo', tipo: 'efectivo', startBalance: 0 });
+  const r = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'sms'), ctx);
+  assert.equal(r.resultado, 'pendiente');
+  assert.equal(d.transactions.find((t) => t.id === r.movimientoId).accountId, null);
+});
+
+test('retiro real sin cuenta de efectivo queda en revisión', () => {
+  const d = base();
+  d.accounts[0].ultimos4Debito = '2436';
+  const r = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'sms'), ctx);
+  assert.equal(r.resultado, 'pendiente');
+});
+
+test('al confirmar a mano un retiro con T.Deb desconocida, la cuenta aprende esos dígitos', () => {
+  const d = base();
+  d.accounts.push({ id: 'e', name: 'Efectivo', tipo: 'efectivo', startBalance: 0 });
+  const r1 = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'sms'), ctx);
+  assert.equal(r1.resultado, 'pendiente');
+  confirmar(d, r1.movimientoId, { accountId: 'a', cuentaDestinoId: 'e' });
+  assert.equal(d.accounts[0].ultimos4, '1234', 'no pisa los dígitos de la cuenta');
+  assert.equal(d.accounts[0].ultimos4Debito, '2436');
+  assert.equal(d.accounts[1].ultimos4Debito, undefined, 'el efectivo no aprende dígitos');
+  const otro = RETIRO_REAL.replace('28/10/2026', '30/10/2026');
+  assert.equal(procesarMensaje(d, msg('rr2', otro, 'sms'), ctx).resultado, 'confirmado');
+});
+
+test('una cuenta sin dígitos sigue siendo la única candidata', () => {
+  const d = base();
+  d.accounts[0].ultimos4 = null;
+  d.accounts.push({ id: 'e', name: 'Efectivo', tipo: 'efectivo', startBalance: 0 });
+  assert.equal(procesarMensaje(d, msg('rr1', RETIRO_REAL, 'sms'), ctx).resultado, 'confirmado');
 });
 
 test('revisión: confirmar, descartar y dividir', () => {
@@ -690,4 +750,12 @@ test('registro local: acotado y sin tokens', () => {
   assert.ok(!log[1].mensaje.includes('0123456789abcdef'));
   for (let i = 0; i < 250; i++) registrar(log, 'info', 'x');
   assert.equal(log.length, 200);
+});
+
+test('tasa de ahorro: mismo texto en todas las pantallas, sin porcentajes absurdos', () => {
+  assert.equal(textoTasaAhorro({ income: 1000, expense: 800, savingsRate: 20 }), '20 %');
+  assert.equal(textoTasaAhorro({ income: 1000, expense: 1500, savingsRate: -50 }), '-50 %');
+  assert.equal(textoTasaAhorro({ income: 116500, expense: 605500, savingsRate: -420 }), 'Déficit');
+  assert.equal(textoTasaAhorro({ income: 0, expense: 10, savingsRate: 0 }), 'Sin ingresos');
+  assert.equal(textoTasaAhorro({ income: 0, expense: 0, savingsRate: 0 }), '0 %');
 });

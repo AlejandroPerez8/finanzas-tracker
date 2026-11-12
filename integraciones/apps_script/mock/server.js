@@ -21,10 +21,16 @@ const TIPOS = {
 export const TOKEN_MOCK = 'token-de-prueba-local-0123456789abcdef';
 
 /** Crea el servidor con estado propio, para que cada prueba quede aislada. */
-export function crearMock({ token = TOKEN_MOCK, servirApp = false, limitePorMinuto = Infinity } = {}) {
+export function crearMock({
+  token = TOKEN_MOCK,
+  servirApp = false,
+  limitePorMinuto = Infinity,
+  // `legado`: imita un Code.gs anterior a 5.2, que solo aceptaba SMS por POST.
+  legado = false,
+} = {}) {
   const filas = [];
   let peticiones = 0;
-  const estado = { filas, peticionesAck: [], fallarProximas: 0 };
+  const estado = { filas, peticionesAck: [], fallarProximas: 0, tokensEnUrl: 0 };
 
   function agregar(source, messageId, receivedAt, textoRelevante) {
     const existente = filas.find((f) => f.messageId === messageId);
@@ -42,6 +48,44 @@ export function crearMock({ token = TOKEN_MOCK, servirApp = false, limitePorMinu
     return rowId;
   }
   estado.agregar = agregar;
+
+  /** ping, pending y ack: mismos parámetros por GET (legado) o en el cuerpo de un POST. */
+  function atender(q) {
+    const accion = q.action;
+    if (accion === 'ping')
+      return {
+        ok: true,
+        version: 1,
+        serverTime: new Date().toISOString(),
+        pendientes: filas.filter((f) => f.estado === 'nuevo').length,
+      };
+    if (accion === 'pending') {
+      const limite = Math.min(Math.max(Number(q.limit) || 50, 1), 100);
+      let i = Number(q.cursor) || 0;
+      const items = [];
+      for (; i < filas.length && items.length < limite; i++) {
+        if (filas[i].estado !== 'nuevo') continue;
+        const item = { ...filas[i] };
+        delete item.estado;
+        items.push(item);
+      }
+      return { ok: true, version: 1, serverTime: new Date().toISOString(), cursor: String(i), items };
+    }
+    if (accion === 'ack') {
+      const ids = (Array.isArray(q.ids) ? q.ids : String(q.ids ?? '').split(',')).filter(Boolean);
+      if (!ids.length) return { ok: false, error: 'bad_request' };
+      estado.peticionesAck.push(ids);
+      let acked = 0;
+      for (const f of filas) {
+        if (ids.includes(f.rowId)) {
+          f.estado = 'importado';
+          acked++;
+        }
+      }
+      return { ok: true, acked };
+    }
+    return { ok: false, error: 'bad_request' };
+  }
 
   const servidor = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
@@ -66,6 +110,7 @@ export function crearMock({ token = TOKEN_MOCK, servirApp = false, limitePorMinu
           return json({ ok: false, error: 'bad_request' });
         }
         if (p.token !== token) return json({ ok: false, error: 'unauthorized' });
+        if (p.action && !legado) return json(atender(p));
         if (p.source !== 'sms' || typeof p.text !== 'string' || !p.text.trim())
           return json({ ok: false, error: 'bad_request' });
         return json({
@@ -79,41 +124,9 @@ export function crearMock({ token = TOKEN_MOCK, servirApp = false, limitePorMinu
         });
       }
       const q = url.searchParams;
+      if (q.has('token')) estado.tokensEnUrl++;
       if (q.get('token') !== token) return json({ ok: false, error: 'unauthorized' });
-      const accion = q.get('action');
-      if (accion === 'ping')
-        return json({
-          ok: true,
-          version: 1,
-          serverTime: new Date().toISOString(),
-          pendientes: filas.filter((f) => f.estado === 'nuevo').length,
-        });
-      if (accion === 'pending') {
-        const limite = Math.min(Math.max(Number(q.get('limit')) || 50, 1), 100);
-        let i = Number(q.get('cursor')) || 0;
-        const items = [];
-        for (; i < filas.length && items.length < limite; i++) {
-          if (filas[i].estado !== 'nuevo') continue;
-          const item = { ...filas[i] };
-          delete item.estado;
-          items.push(item);
-        }
-        return json({ ok: true, version: 1, serverTime: new Date().toISOString(), cursor: String(i), items });
-      }
-      if (accion === 'ack') {
-        const ids = (q.get('ids') ?? '').split(',').filter(Boolean);
-        if (!ids.length) return json({ ok: false, error: 'bad_request' });
-        estado.peticionesAck.push(ids);
-        let acked = 0;
-        for (const f of filas) {
-          if (ids.includes(f.rowId)) {
-            f.estado = 'importado';
-            acked++;
-          }
-        }
-        return json({ ok: true, acked });
-      }
-      return json({ ok: false, error: 'bad_request' });
+      return json(atender(Object.fromEntries(q)));
     }
     if (!servirApp) return json({ ok: false, error: 'bad_request' }, 404);
     try {

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { crearRegistro } from '../../js/parsers/registry.js';
+import { normalizarComercio } from '../../js/domain/categorias.js';
 
 const leer = (r) => JSON.parse(readFileSync(new URL(r, import.meta.url), 'utf8'));
 const registro = crearRegistro(leer('../../js/parsers/bancolombia/patrones.json'));
@@ -16,6 +17,8 @@ function comprobar(caso) {
   if (caso.esperado.hora) assert.equal(r.hora, caso.esperado.hora);
   if (caso.esperado.ultimos4) assert.equal(r.ultimos4, caso.esperado.ultimos4);
   if (caso.esperado.cuotas) assert.equal(r.cuotas, caso.esperado.cuotas);
+  // El comercio define la categoría: un comercio mal recortado categoriza mal sin que nada falle.
+  if (caso.esperado.comercio) assert.equal(r.comercio, normalizarComercio(caso.esperado.comercio));
 }
 
 test('formatos verificados en correos reales (anonimizados)', async (t) => {
@@ -100,6 +103,14 @@ test('formatos verificados en correos reales (anonimizados)', async (t) => {
       '16:01',
       '1234',
     ],
+    [
+      'retiro_cajero',
+      'Bancolombia: Retiraste $150.000,00 en METR_BELLO6 de tu T.Deb **1234 el 28/10/2026 a las 18:14. ¿Dudas?, llamanos al 6045109095. Estamos cerca',
+      150000,
+      '2026-10-28',
+      '18:14',
+      '1234',
+    ],
   ];
   for (const [tipo, texto, monto, fecha, hora, ultimos4] of casos) {
     await t.test(tipo, () => {
@@ -121,6 +132,20 @@ test('nómina: el tipo de cuenta se captura cuando no hay últimos 4', () => {
   );
   assert.equal(r.ultimos4, null);
   assert.equal(r.tipoCuenta, 'Ahorros');
+});
+
+test('retiro en cajero (formato real): llega igual por SMS y correo y conserva el cajero', () => {
+  const texto =
+    'Bancolombia: Retiraste $150.000,00 en METR_BELLO6 de tu T.Deb **1234 el 28/10/2026 a las 18:14. ¿Dudas?, llamanos al 6045109095. Estamos cerca';
+  for (const fuente of ['sms', 'gmail']) {
+    const r = registro.analizar(texto, { fuente, recibidoEn: RECIBIDO });
+    assert.equal(r.tipo, 'retiro_cajero', fuente);
+    assert.equal(r.patronId, 'retiro_cajero_verificado', fuente);
+    assert.equal(r.monto, 150000, fuente);
+    assert.equal(r.comercio, 'METR BELLO6', fuente);
+    assert.equal(r.ultimos4, '1234', fuente);
+    assert.ok(r.confianza >= 0.9, `${fuente}: confianza ${r.confianza}`);
+  }
 });
 
 test('la publicidad del banco se identifica', () => {

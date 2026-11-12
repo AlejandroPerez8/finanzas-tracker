@@ -3,8 +3,13 @@
 import { h, montar, monto, campo, entradaMonto, selector, vacio, encabezado, seguro } from './dom.js';
 import { aEntero, formatear } from '../domain/money.js';
 import { diaBogota } from '../domain/fechas.js';
-import { patrimonio, avancePresupuestos, detectarRecurrentes } from '../domain/presupuesto.js';
-import { estadisticasMes } from '../domain/movimientos.js';
+import {
+  patrimonio,
+  avancePresupuestos,
+  detectarRecurrentes,
+  efectivoDelMes,
+} from '../domain/presupuesto.js';
+import { estadisticasMes, textoTasaAhorro } from '../domain/movimientos.js';
 import {
   saldoTarjeta,
   utilizacion,
@@ -17,7 +22,7 @@ import { tamanoDatos } from '../db.js';
 import { VERSION_ACTUAL } from '../services/migraciones.js';
 import { CATEGORIAS_GASTO } from '../domain/categorias.js';
 
-export const VERSION_APP = '5.0.1';
+export const VERSION_APP = '5.2.0';
 const ITERACIONES_PIN = 200000;
 
 async function hashPin(pin, salBase64) {
@@ -45,6 +50,7 @@ export function crearPanelUI(ctx, ingesta) {
     const p = patrimonio(datos);
     const mes = hoy().slice(0, 7);
     const s = estadisticasMes(datos.transactions, mes);
+    const efectivo = efectivoDelMes(datos, mes);
     const tarjetas = datos.tarjetas.filter((t) => t.estado !== 'cerrada');
     const cupo = tarjetas.reduce((a, t) => a + aEntero(t.cupoTotal), 0);
     const usado = tarjetas.reduce((a, t) => a + Math.max(0, saldoTarjeta(t, datos.transactions)), 0);
@@ -88,7 +94,7 @@ export function crearPanelUI(ctx, ingesta) {
           h(
             'div',
             { class: 'kpi' },
-            h('div', { class: 'kpi-valor' }, `${s.savingsRate} %`),
+            h('div', { class: 'kpi-valor' }, textoTasaAhorro(s)),
             h('div', { class: 'kpi-etiqueta' }, 'Tasa de ahorro'),
           ),
           kpi(formatear(p.desglose.tarjetas + p.desglose.otrasDeudas), 'Deuda total'),
@@ -101,6 +107,14 @@ export function crearPanelUI(ctx, ingesta) {
         ),
         vencimientos.length
           ? h('p', { class: 'nota' }, `Próximo pago: ${vencimientos[0].alias}, ${vencimientos[0].fecha}.`)
+          : null,
+        efectivo.sinRastrear > 0
+          ? h(
+              'div',
+              { class: 'chip chip-aviso' },
+              `Retiraste ${formatear(efectivo.retirado)} en efectivo este mes y registraste ${formatear(efectivo.gastado)} en gastos con él. ` +
+                `${formatear(efectivo.sinRastrear)} sin rastrear: mientras no los anotes, tu tasa de ahorro se ve mejor de lo que es.`,
+            )
           : null,
         urgentes.map((a) =>
           h('div', { class: `chip ${a.nivel === 'urgente' ? 'chip-urgente' : 'chip-aviso'}` }, a.mensaje),
