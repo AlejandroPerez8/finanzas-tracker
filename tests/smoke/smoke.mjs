@@ -332,6 +332,86 @@ prueba(
   },
 );
 
+prueba('duplicar un movimiento del banco crea una copia manual que sí se concilia', async () => {
+  const { pagina: p, contexto } = await nuevaPagina();
+  await p.goto(BASE);
+  await p.waitForSelector('#vistaPanel .patrimonio-neto');
+  await tab(p, 'Ahorro');
+  await p.click('#accFormToggle');
+  await p.fill('#accName', 'Ahorros');
+  await p.fill('#accBalance', '500000');
+  await p.fill('#accUltimos4', '1234');
+  await p.fill('#accUltimos4Debito', '2436');
+  await p.click('#addAccBtn');
+  await tab(p, 'Movs');
+  const hoy = await p.inputValue('#txDate');
+  const [a, m, d] = hoy.split('-');
+  const sms = (comercio) =>
+    `Bancolombia: Compraste $18.000,00 en ${comercio} con tu T.Deb **2436, el ${d}/${m}/${a} a las 12:30.`;
+  await p.locator('.subtab', { hasText: 'Importar' }).click();
+  await p.getByLabel('Mensajes del banco').fill(sms('ALMUERZO EJEMPLO'));
+  await p.getByRole('button', { name: 'Importar mensajes' }).click();
+  await p.waitForTimeout(300);
+  const original = (await datos(p)).transactions.find((t) => t.amount === 18000);
+  await p.locator(`button[data-act="dup"][data-id="${original.id}"]`).click();
+  await p.waitForTimeout(300);
+  const copia = (await datos(p)).transactions.find((t) => t.amount === 18000 && t.id !== original.id);
+  assert.equal(copia.origen, 'manual');
+  assert.deepEqual(copia.fuentes, []);
+  // Más tarde llega el mensaje real de ese segundo almuerzo: se propone conciliar, no se duplica.
+  await p.locator('.subtab', { hasText: 'Importar' }).click();
+  await p.getByLabel('Mensajes del banco').fill(sms('OTRO ALMUERZO'));
+  await p.getByRole('button', { name: 'Importar mensajes' }).click();
+  await p.waitForTimeout(300);
+  const nuevo = (await datos(p)).transactions.find(
+    (t) => t.amount === 18000 && t.id !== original.id && t.id !== copia.id,
+  );
+  assert.equal(nuevo.conciliarCon, copia.id);
+  await contexto.close();
+});
+
+prueba(
+  'nombres e ids con HTML (de un respaldo o escritos por el usuario) se muestran como texto',
+  async () => {
+    const mal = '<img src=x data-inyectado=1><b data-inyectado=1>X</b>';
+    const datosMal = datosReales();
+    datosMal.pockets[0].name = `Bolsillo ${mal}`;
+    datosMal.investments[0].entity = `CDT ${mal}`;
+    datosMal.goals[0] = {
+      ...datosMal.goals[0],
+      id: 'g" data-inyectado="1',
+      name: `Meta ${mal}`,
+      pocketIds: ['p1'],
+      investmentIds: ['i1'],
+    };
+    datosMal.accounts[0].name = `Cuenta ${mal}`;
+    datosMal.tarjetas[0].alias = `Visa ${mal}`;
+    const { pagina: p, contexto } = await nuevaPagina();
+    await p.goto(BASE);
+    await p.evaluate(
+      (valor) =>
+        new Promise((res) => {
+          const r = indexedDB.open('finanzas-tracker-db', 1);
+          r.onupgradeneeded = () => r.result.createObjectStore('kv');
+          r.onsuccess = () => {
+            const tx = r.result.transaction('kv', 'readwrite');
+            tx.objectStore('kv').put(valor, 'finance-data');
+            tx.oncomplete = res;
+          };
+        }),
+      JSON.stringify(datosMal),
+    );
+    await p.reload();
+    await p.waitForSelector('#vistaPanel .patrimonio-neto');
+    for (const t of ['Inicio', 'Movs', 'Tarjetas', 'Ahorro', 'Más']) {
+      await tab(p, t);
+      await p.evaluate(() => document.querySelectorAll('details').forEach((d) => (d.open = true)));
+      assert.equal(await p.locator('[data-inyectado]').count(), 0, `HTML inyectado en ${t}`);
+    }
+    await contexto.close();
+  },
+);
+
 let fallos = 0;
 for (const [nombre, fn] of pruebas) {
   try {

@@ -29,6 +29,8 @@ export function tablasPowerBi(datos, hoy) {
     monto: aEntero(t.amount),
     tipo: tipoCanonico(t.type),
     cuenta_id: t.accountId ?? '',
+    // Destino de traslados entre cuentas propias (p. ej. retiro: banco → efectivo).
+    cuenta_destino_id: t.type === 'transferencia' ? (t.cuentaDestinoId ?? '') : '',
     tarjeta_id: t.tarjetaId ?? '',
     categoria: t.category ?? '',
     comercio: t.comercio ?? '',

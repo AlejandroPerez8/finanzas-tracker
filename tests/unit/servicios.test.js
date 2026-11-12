@@ -14,6 +14,7 @@ import {
   descartar,
   dividir,
   proponerRegla,
+  elegirComercio,
   purgarTextos,
   hashTexto,
   registrarDiferida,
@@ -774,4 +775,61 @@ test('tasa de ahorro: mismo texto en todas las pantallas, sin porcentajes absurd
   assert.equal(textoTasaAhorro({ income: 116500, expense: 605500, savingsRate: -420 }), 'Déficit');
   assert.equal(textoTasaAhorro({ income: 0, expense: 10, savingsRate: 0 }), 'Sin ingresos');
   assert.equal(textoTasaAhorro({ income: 0, expense: 0, savingsRate: 0 }), '0 %');
+});
+
+test('enseñar: el comercio es el que sigue a "a/en/para", no una sigla como PSE', () => {
+  const primero =
+    'Bancolombia: Hiciste un pago PSE por $230.000,00 a ETB COLOMBIA desde tu cuenta *1234 el 10/11/2026 a las 11:20.';
+  const regla = proponerRegla(primero, 'pago_servicio');
+  const r = crearRegistro({ patrones: [] }, [regla]);
+  assert.equal(r.analizar(primero, { fuente: 'sms' }).comercio, 'ETB COLOMBIA');
+  const segundo = r.analizar(
+    'Bancolombia: Hiciste un pago PSE por $54.900,00 a CLARO COLOMBIA desde tu cuenta *1234 el 11/11/2026 a las 08:05.',
+    { fuente: 'sms' },
+  );
+  assert.equal(segundo.monto, 54900);
+  assert.equal(segundo.comercio, 'CLARO COLOMBIA');
+  assert.equal(segundo.fecha, '2026-11-11');
+  assert.equal(elegirComercio('Compraste $9.900 en DLO*Didi con tu T.Deb *1234'), 'DLO*Didi');
+  assert.equal(
+    elegirComercio('Pago QR exitoso por $12.000 en PANADERIA LA 80 desde tu cuenta'),
+    'PANADERIA LA 80',
+  );
+  assert.equal(elegirComercio('Abonaste $45.000 al fondo X desde **1234'), null);
+});
+
+test('Power BI: un retiro exporta su cuenta destino y el saldo del efectivo se puede reconstruir', () => {
+  const d = base();
+  d.accounts.push({ id: 'e', name: 'Efectivo', tipo: 'efectivo', startBalance: 20000 });
+  d.transactions.push(
+    {
+      id: 'r',
+      date: '2026-11-10',
+      type: 'transferencia',
+      amount: 150000,
+      accountId: 'a',
+      cuentaDestinoId: 'e',
+      estado: 'confirmado',
+    },
+    {
+      id: 'g',
+      date: '2026-11-11',
+      type: 'expense',
+      amount: 40000,
+      accountId: 'e',
+      category: 'Transporte',
+      estado: 'confirmado',
+    },
+  );
+  const { movimientos } = tablasPowerBi(d, '2026-11-12');
+  const retiro = movimientos.find((m) => m.id === 'r');
+  assert.equal(retiro.cuenta_id, 'a');
+  assert.equal(retiro.cuenta_destino_id, 'e');
+  assert.equal(movimientos.find((m) => m.id === 'g').cuenta_destino_id, '');
+  const efectivo = movimientos.reduce((s, m) => {
+    if (m.cuenta_destino_id === 'e') s += m.monto;
+    if (m.cuenta_id === 'e' && m.tipo === 'gasto') s -= m.monto;
+    return s;
+  }, 20000);
+  assert.equal(efectivo, saldoCuenta(d.accounts[1], d.transactions));
 });

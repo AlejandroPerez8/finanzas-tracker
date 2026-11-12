@@ -1,5 +1,33 @@
 # Cambios
 
+## 5.3.5
+Tercera verificación iterativa (enseñar, conciliar, ahorro, seguridad y exportes).
+
+### Corregido
+- **"Enseñar a la app" tomaba la sigla PSE como comercio.** En "pago PSE por $X a ETB COLOMBIA" el
+  movimiento quedaba con comercio "PSE" y la regla aprendida solo servía para ETB: el siguiente pago
+  PSE a otro comercio no se reconocía. Ahora se elige el nombre que sigue a "a/en/para/de/con" y se
+  descartan siglas (PSE, QR, ACH…); también nombres pegados como "DLO*Didi".
+- **Duplicar un movimiento del banco heredaba su fuente.** La copia quedaba marcada como llegada por
+  SMS/correo y el mensaje real de ese nuevo gasto no se conciliaba con ella: se contaba dos veces.
+  Ahora la copia es un registro manual limpio y el mensaje se ofrece para conciliar.
+- **Inyección de HTML** en el formulario y la tarjeta de metas (nombres de bolsillos y CDT sin escapar)
+  y en atributos con ids de un respaldo importado. La CSP ya impedía ejecutar scripts; ahora tampoco
+  entra marcado.
+- **Exporte de Power BI sin cuenta destino**: los retiros (banco → efectivo) no permitían reconstruir el
+  saldo del efectivo. Nueva columna `movimientos.cuenta_destino_id` y guía de saldos en
+  `docs/EXPORT_POWERBI.md`.
+
+### Pruebas
+- Humo: duplicar crea copia manual que se concilia; nombres e ids con HTML se muestran como texto.
+- Unidad: elección de comercio al enseñar; cuenta destino en el exporte.
+
+### Verificado sin hallazgos
+- Conciliación ("Es el mismo" deja un movimiento y descuenta una vez), dividir (y su error por exceso),
+  bolsillos/metas/CDT con doble contabilidad, editar, borrar con deshacer, borrar un abono (ambos lados),
+  sin IndexedDB (respaldo en localStorage), datos corruptos (aviso claro, nunca se sobrescriben),
+  reporte mensual y prompt sin datos personales, CSV con BOM.
+
 ## 5.3.4
 Segunda verificación iterativa completa (actualización del celular, tarjetas, fechas y accesibilidad).
 
