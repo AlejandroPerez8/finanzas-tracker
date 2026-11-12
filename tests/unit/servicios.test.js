@@ -351,6 +351,22 @@ test('al confirmar a mano un retiro con T.Deb desconocida, la cuenta aprende eso
   assert.equal(procesarMensaje(d, msg('rr2', otro, 'sms'), ctx).resultado, 'confirmado');
 });
 
+test('confirmar una compra con tarjeta de crédito no registrada no enseña esos dígitos a la cuenta', () => {
+  const d = base();
+  const r = procesarMensaje(
+    d,
+    msg(
+      'cc1',
+      'Bancolombia: Compraste $250,000.00 con tu T.Cred *9988 en ALKOSTO el 05/11/2026 a las 10:00.',
+    ),
+    ctx,
+  );
+  assert.equal(r.resultado, 'pendiente');
+  confirmar(d, r.movimientoId, { accountId: 'a', tarjetaId: null });
+  assert.equal(d.accounts[0].ultimos4Debito, undefined);
+  assert.notEqual(d.accounts[0].ultimos4, '9988');
+});
+
 test('una cuenta sin dígitos sigue siendo la única candidata', () => {
   const d = base();
   d.accounts[0].ultimos4 = null;
