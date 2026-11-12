@@ -36,6 +36,7 @@ import {
   alertasTarjeta,
   cicloVigente,
   actualizarCiclos,
+  sincronizarCiclos,
 } from '../../js/domain/tarjetas.js';
 import {
   simular,
@@ -543,4 +544,27 @@ test('efectivo del mes: retiros frente a gastos en efectivo', () => {
   });
   datos.transactions.push({ type: 'expense', accountId: 'e', amount: 200000, date: '2026-10-30' });
   assert.equal(efectivoDelMes(datos, '2026-10').sinRastrear, 0);
+});
+
+test('ciclos: el estado pagado se recalcula en ambos sentidos y para todas las tarjetas', () => {
+  const ciclo = { tarjetaId: 'v', fechaCorte: '2026-11-12', pagoMinimo: 100000, pagado: false };
+  const pago = {
+    type: 'pago_tarjeta',
+    tarjetaId: 'v',
+    amount: 168861,
+    date: '2026-11-12',
+    estado: 'confirmado',
+  };
+  // Pago registrado antes que el extracto (o llegado por mensaje del banco): igual cuenta.
+  const d = { tarjetas: [{ id: 'v' }, { id: 'm' }], ciclos: [ciclo], transactions: [pago] };
+  sincronizarCiclos(d);
+  assert.equal(d.ciclos[0].pagado, true);
+  // Si el pago se borra o se descarta, el ciclo vuelve a estar pendiente y su alerta regresa.
+  d.transactions = [{ ...pago, estado: 'descartado' }];
+  sincronizarCiclos(d);
+  assert.equal(d.ciclos[0].pagado, false);
+  // Un pago anterior al corte no paga ese extracto.
+  d.transactions = [{ ...pago, date: '2026-11-11' }];
+  assert.equal(sincronizarCiclos(d).ciclos[0].pagado, false);
+  assert.deepEqual(sincronizarCiclos({ tarjetas: [], transactions: [] }).ciclos, []);
 });

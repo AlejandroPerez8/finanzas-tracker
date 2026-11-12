@@ -281,13 +281,56 @@ prueba('montos de millones en 320, 360 y 390 px: sin desbordes ni cifras recorta
         cifrasCortadas: [...document.querySelectorAll('.monto, .kpi-valor, .sum-card .val')]
           .filter((e) => e.offsetParent && e.scrollWidth > e.clientWidth + 1)
           .map((e) => e.textContent.trim()),
+        // Ni partida en dos líneas ("$3.200.0" / "00").
+        cifrasPartidas: [...document.querySelectorAll('.monto, .kpi-valor, .sum-card .val')]
+          .filter((e) => e.offsetParent && /\$\s?[\d.]+/.test(e.textContent))
+          .filter((e) => {
+            const rango = document.createRange();
+            rango.selectNodeContents(e);
+            return new Set([...rango.getClientRects()].map((x) => Math.round(x.top))).size > 1;
+          })
+          .map((e) => e.textContent.trim()),
       }));
       assert.ok(r.desborde <= 0, `${ancho}px ${t}: desborde de ${r.desborde}px`);
       assert.deepEqual(r.cifrasCortadas, [], `${ancho}px ${t}: cifras recortadas`);
+      assert.deepEqual(r.cifrasPartidas, [], `${ancho}px ${t}: cifras partidas en dos líneas`);
     }
     await contexto.close();
   }
 });
+
+prueba(
+  'celular en otra zona horaria (Punta Cana, UTC): todas las pantallas usan el día de Bogotá',
+  async () => {
+    // 23:30 del 30 de noviembre en Bogotá ya es 1 de diciembre en Punta Cana y en UTC.
+    const instante = Date.parse('2026-11-30T23:30:00-05:00');
+    for (const zona of ['America/Santo_Domingo', 'UTC']) {
+      const { pagina: p, contexto } = await nuevaPagina({ timezoneId: zona });
+      await contexto.addInitScript((ms) => {
+        const D = Date;
+        Date = class extends D {
+          constructor(...a) {
+            super(...(a.length ? a : [ms]));
+          }
+          static now() {
+            return ms;
+          }
+        };
+      }, instante);
+      await p.goto(BASE);
+      await p.waitForSelector('#vistaPanel .patrimonio-neto');
+      const r = await p.evaluate(() => ({
+        titular: document.getElementById('monthHeadline').textContent,
+        historial: document.getElementById('historyMonth').value,
+        registro: document.getElementById('txDate').value,
+      }));
+      assert.match(r.titular, /noviembre/, `${zona}: ${r.titular}`);
+      assert.equal(r.historial, '2026-11', zona);
+      assert.equal(r.registro, '2026-11-30', zona);
+      await contexto.close();
+    }
+  },
+);
 
 let fallos = 0;
 for (const [nombre, fn] of pruebas) {

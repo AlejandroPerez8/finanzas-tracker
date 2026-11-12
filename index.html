@@ -156,7 +156,7 @@
       </div>
       <div class="weight-input-row">
         <select id="txAccount" aria-label="Medio de pago"></select>
-        <input type="date" id="txDate">
+        <input type="date" id="txDate" aria-label="Fecha del movimiento">
       </div>
       <div class="weight-input-row">
         <input type="text" id="txComercio" list="listaComercios" aria-label="Comercio" placeholder="Comercio" autocomplete="off">
@@ -181,7 +181,7 @@
   <section data-tab="movimientos">
     <div class="section-head">
       <h2>Historial</h2>
-      <input type="month" id="historyMonth" class="mes-compacto">
+      <input type="month" id="historyMonth" class="mes-compacto" aria-label="Mes del historial">
     </div>
     <div class="card">
       <div class="weight-list lista-con-scroll" id="historyList"></div>
@@ -269,7 +269,7 @@
           <div class="lbl">Hora del aviso</div>
           <div class="desc">Se muestra dentro de la app desde esta hora</div>
         </div>
-        <input type="number" class="hour-input" id="reminderHour" min="0" max="23">
+        <input type="number" class="hour-input" id="reminderHour" min="0" max="23" aria-label="Hora del recordatorio (0 a 23)">
       </div>
       <div class="settings-row">
         <div>

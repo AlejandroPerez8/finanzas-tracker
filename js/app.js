@@ -7,6 +7,8 @@ import { CATEGORIAS_GASTO, CATEGORIAS_INGRESO } from './domain/categorias.js';
 import { saldoCuenta, estadisticasMes, cuenta as esVigente, textoTasaAhorro } from './domain/movimientos.js';
 import { patrimonio } from './domain/presupuesto.js';
 import { proyeccionCdt } from './domain/deudas.js';
+import { diaBogota } from './domain/fechas.js';
+import { sincronizarCiclos } from './domain/tarjetas.js';
 import { cargar, guardar as guardarDb } from './db.js';
 import { migrar } from './services/migraciones.js';
 import { exportable, validarCopia, cifrar, descifrar, estaCifrado } from './services/backup.js';
@@ -34,12 +36,15 @@ import { activarCombobox } from './ui/combobox.js';
   const HISTORY_PAGE = 60;
   let historyLimit = HISTORY_PAGE;
   let currentTxType = 'income';
-  let historyMonthKey = toKey(new Date()).slice(0,7);
+  let historyMonthKey = hoyKey().slice(0,7);
   let extraShown = false, goalFormShown = false, invFormShown = false, accFormShown = false, pocketFormShown = false;
 
   function pad(n){ return String(n).padStart(2,'0'); }
   function toKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
   function fromKey(k){ const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d); }
+  // "Hoy" siempre en hora de Bogotá, como los mensajes del banco y el panel: un celular en otra zona
+  // (de viaje o mal configurado) no debe ver un mes en una pantalla y otro en la de al lado.
+  function hoyKey(){ return diaBogota(); }
   function monthOf(key){ return key.slice(0,7); }
   const formatCOP = formatear;
   function addMonths(monthKey, n){
@@ -65,6 +70,8 @@ import { activarCombobox } from './ui/combobox.js';
   let bloqueoGuardado = null;
   async function saveData(){
     if(bloqueoGuardado) throw new Error(bloqueoGuardado);
+    // Un pago puede llegar por el banco, por revisión o a mano: el estado de los ciclos se recalcula siempre.
+    sincronizarCiclos(data);
     await guardarDb(data);
   }
 
@@ -129,7 +136,7 @@ import { activarCombobox } from './ui/combobox.js';
       const ok = await askConfirm(`La cuenta "${acc.name}" tiene un saldo disponible de ${formatCOP(bal)}, menor al abono de ${formatCOP(amount)}. ¿Deseas continuar de todas formas?`);
       if(!ok) return false;
     }
-    await createTransfer({direction:'in', amount, date: toKey(new Date()), accountId, targetType, targetId, note:''});
+    await createTransfer({direction:'in', amount, date: hoyKey(), accountId, targetType, targetId, note:''});
     return true;
   }
 
@@ -143,7 +150,7 @@ import { activarCombobox } from './ui/combobox.js';
       const ok = await askConfirm(`El saldo disponible en ${targetLabel(targetType,targetId)} es de ${formatCOP(targetBal)}, menor al retiro de ${formatCOP(amount)}. ¿Deseas continuar de todas formas?`);
       if(!ok) return false;
     }
-    await createTransfer({direction:'out', amount, date: toKey(new Date()), accountId: accountId||null, targetType, targetId, note:''});
+    await createTransfer({direction:'out', amount, date: hoyKey(), accountId: accountId||null, targetType, targetId, note:''});
     return true;
   }
 
@@ -173,7 +180,7 @@ import { activarCombobox } from './ui/combobox.js';
     }
   }
   function duplicateTransaction(t){
-    const today = toKey(new Date());
+    const today = hoyKey();
     if(t.transferencia_id){
       const pair = data.transactions.find(x=>x.transferencia_id===t.transferencia_id && x.id!==t.id);
       const newTid = uid('tr');
@@ -490,7 +497,7 @@ import { activarCombobox } from './ui/combobox.js';
     const amount = aEntero(parseFloat(amountInput.value));
     if(!amount || amount<=0) return;
     const category = document.getElementById('txCategory').value.trim() || 'Otros';
-    const date = document.getElementById('txDate').value || toKey(new Date());
+    const date = document.getElementById('txDate').value || hoyKey();
     const medio = document.getElementById('txAccount').value;
     const tarjetaId = medio.startsWith('tarjeta:') ? medio.slice(8) : null;
     if(tarjetaId && currentTxType!=='expense'){ showToast('Una tarjeta solo registra gastos'); return; }
@@ -521,8 +528,7 @@ import { activarCombobox } from './ui/combobox.js';
 
   // average monthly net savings over completed months with data (excludes current month)
   function avgMonthlyCapacity(){
-    const now = new Date();
-    const thisMonthKey = toKey(now).slice(0,7);
+    const thisMonthKey = hoyKey().slice(0,7);
     const seen = new Set(data.transactions.map(t=>monthOf(t.date)));
     const completed = [...seen].filter(m=>m<thisMonthKey).sort().slice(-6);
     if(completed.length===0) return null;
@@ -532,7 +538,7 @@ import { activarCombobox } from './ui/combobox.js';
 
   function renderWheelAndHeader(){
     const now = new Date();
-    const thisMonthKey = toKey(now).slice(0,7);
+    const thisMonthKey = hoyKey().slice(0,7);
     const { income, expense, balance, savingsRate } = monthStats(thisMonthKey);
 
     const wheelPct = document.getElementById('wheelPct');
@@ -553,7 +559,7 @@ import { activarCombobox } from './ui/combobox.js';
         stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ*(1-frac)}"
         transform="rotate(-90 ${cx} ${cy})"/>`;
 
-    let streak = 0; let cursor = new Date(now); cursor.setHours(0,0,0,0);
+    let streak = 0; let cursor = fromKey(hoyKey());
     while(true){
       const key = toKey(cursor);
       const has = data.transactions.some(t=>t.date===key);
@@ -565,7 +571,7 @@ import { activarCombobox } from './ui/combobox.js';
 
     const banner = document.getElementById('reminderBanner');
     const bannerTime = document.getElementById('bannerTime');
-    const todayKey = toKey(now);
+    const todayKey = hoyKey();
     const hasToday = data.transactions.some(t=>t.date===todayKey);
     const hour = now.getHours();
     if(data.settings.reminderOn && !hasToday && hour >= Number(data.settings.reminderHour)){
@@ -627,8 +633,8 @@ import { activarCombobox } from './ui/combobox.js';
         </div>
         ${noAccounts ? '<div class="mini-hint">Crea una cuenta para poder abonar o retirar de este bolsillo.</div>' : `
         <div class="mini-transfer-row" data-pocket-transfer="${p.id}">
-          <select class="mini-acc-select">${accountTransferOptions()}</select>
-          <input type="number" class="mini-amt-input" placeholder="Monto" min="0" step="1000">
+          <select class="mini-acc-select" aria-label="Cuenta de origen o destino">${accountTransferOptions()}</select>
+          <input type="number" class="mini-amt-input" placeholder="Monto" aria-label="Monto a abonar o retirar" min="0" step="1000">
           <button class="btn-accent mini-abono-btn">Abonar</button>
           <button class="btn-ghost mini-retiro-btn">Retirar</button>
         </div>`}`;
@@ -699,8 +705,7 @@ import { activarCombobox } from './ui/combobox.js';
   }
 
   function renderSummary(){
-    const now = new Date();
-    const thisMonthKey = toKey(now).slice(0,7);
+    const thisMonthKey = hoyKey().slice(0,7);
     document.getElementById('summaryMonthLabel').textContent = monthLabel(thisMonthKey);
     const { income, expense, balance, byCategory } = monthStats(thisMonthKey);
     document.getElementById('sumIncome').textContent = formatCOP(income);
@@ -874,7 +879,7 @@ import { activarCombobox } from './ui/combobox.js';
       const remaining = Math.max(0, g.target - current);
       let dueStr = '', planHtml = '';
       if(g.targetDate){
-        const days = Math.ceil((fromKey(g.targetDate) - new Date(toKey(new Date())+'T00:00:00'))/86400000);
+        const days = Math.ceil((fromKey(g.targetDate) - new Date(hoyKey()+'T00:00:00'))/86400000);
         dueStr = days>=0 ? `${days} días restantes` : 'vencida';
         const monthsLeft = Math.max(1, days/30.44);
         const monthlyNeeded = remaining>0 ? remaining/monthsLeft : 0;
@@ -902,8 +907,8 @@ import { activarCombobox } from './ui/combobox.js';
         <div class="goal-sources-summary">Fuentes: ${selectedGoalSources(g)}</div>
         ${data.accounts.length===0 ? '<div class="mini-hint">Crea una cuenta para poder abonar a esta meta.</div>' : `
         <div class="mini-transfer-row" data-goal-transfer="${g.id}">
-          <select class="mini-acc-select">${accountTransferOptions()}</select>
-          <input type="number" class="mini-amt-input" placeholder="Monto" min="0" step="10000">
+          <select class="mini-acc-select" aria-label="Cuenta de origen o destino">${accountTransferOptions()}</select>
+          <input type="number" class="mini-amt-input" placeholder="Monto" aria-label="Monto a abonar o retirar" min="0" step="10000">
           <button class="btn-accent mini-abono-btn">Abonar</button>
           <button class="btn-ghost mini-retiro-btn">Retirar</button>
         </div>`}
@@ -978,7 +983,7 @@ import { activarCombobox } from './ui/combobox.js';
     // Lo que llega a la cuenta es el neto: el banco retiene el 4 % del rendimiento.
     const cdt = proyeccionCdt({ monto: inv.amount, tasaEA: inv.rate, dias: totalDays });
     const projected = cdt.neto + investmentExtra(inv);
-    const daysLeft = Math.ceil((maturity - new Date(toKey(new Date())+'T00:00:00'))/86400000);
+    const daysLeft = Math.ceil((maturity - new Date(hoyKey()+'T00:00:00'))/86400000);
     return { maturityKey: toKey(maturity), projected, daysLeft, rendimiento: cdt.rendimiento, retencion: cdt.retencion };
   }
 
@@ -1010,8 +1015,8 @@ import { activarCombobox } from './ui/combobox.js';
         </div>
         ${data.accounts.length===0 ? '<div class="mini-hint">Crea una cuenta para poder aportar o retirar de este CDT.</div>' : `
         <div class="mini-transfer-row" data-inv-transfer="${inv.id}">
-          <select class="mini-acc-select">${accountTransferOptions()}</select>
-          <input type="number" class="mini-amt-input" placeholder="Monto" min="0" step="10000">
+          <select class="mini-acc-select" aria-label="Cuenta de origen o destino">${accountTransferOptions()}</select>
+          <input type="number" class="mini-amt-input" placeholder="Monto" aria-label="Monto a abonar o retirar" min="0" step="10000">
           <button class="btn-accent mini-abono-btn">Aportar</button>
           <button class="btn-ghost mini-retiro-btn">Retirar</button>
         </div>`}
@@ -1051,7 +1056,7 @@ import { activarCombobox } from './ui/combobox.js';
     const amount = aEntero(parseFloat(document.getElementById('invAmount').value));
     const rate = parseFloat(document.getElementById('invRate').value);
     const termMonths = parseInt(document.getElementById('invTerm').value);
-    const startDate = document.getElementById('invStart').value || toKey(new Date());
+    const startDate = document.getElementById('invStart').value || hoyKey();
     if(!entity || !amount || amount<=0 || !rate || rate<0 || !termMonths || termMonths<=0) return;
     data.investments.push({id:'i'+Date.now(), entity, amount, rate, termMonths, startDate});
     await saveData();
@@ -1118,7 +1123,7 @@ import { activarCombobox } from './ui/combobox.js';
     // de inmediato un análisis local (reglas simples) y dejamos disponible la
     // opción de copiar un prompt para pedirle un análisis más completo a Claude.
     report.aiHtml = buildLocalFallbackReport(report.monthKey, stats);
-    report.aiDate = toKey(new Date());
+    report.aiDate = hoyKey();
     await saveData();
   }
 
@@ -1146,7 +1151,7 @@ import { activarCombobox } from './ui/combobox.js';
     const report = data.reports.find(r=>r.monthKey===monthKey);
     if(!report) return;
     report.aiText = text;
-    report.aiDate = toKey(new Date());
+    report.aiDate = hoyKey();
     await saveData();
     box.value = '';
     showToast('Análisis de Claude guardado');
@@ -1157,7 +1162,7 @@ import { activarCombobox } from './ui/combobox.js';
     const stats = monthStats(monthKey);
     let report = data.reports.find(r=>r.monthKey===monthKey);
     if(!report){
-      report = { id:'r'+Date.now(), monthKey, generatedAt: toKey(new Date()) };
+      report = { id:'r'+Date.now(), monthKey, generatedAt: hoyKey() };
       data.reports.unshift(report);
     }
     Object.assign(report, stats);
@@ -1171,8 +1176,7 @@ import { activarCombobox } from './ui/combobox.js';
   }
 
   function checkAutoReport(){
-    const now = new Date();
-    const thisMonthKey = toKey(now).slice(0,7);
+    const thisMonthKey = hoyKey().slice(0,7);
     const prevMonthKey = addMonths(thisMonthKey, -1);
     const reportBanner = document.getElementById('reportBanner');
     const hasPrevData = data.transactions.some(t=>monthOf(t.date)===prevMonthKey);
@@ -1193,8 +1197,7 @@ import { activarCombobox } from './ui/combobox.js';
   document.getElementById('genReportBtn').addEventListener('click', async (e)=>{
     const btn = e.target;
     btn.disabled = true; btn.textContent = 'Generando...';
-    const now = new Date();
-    await generateReport(toKey(now).slice(0,7), true);
+    await generateReport(hoyKey().slice(0,7), true);
     btn.disabled = false; btn.textContent = 'Generar reporte de este mes';
   });
 
@@ -1280,7 +1283,7 @@ import { activarCombobox } from './ui/combobox.js';
     try{
       const clave = document.getElementById('exportClave').value;
       const contenido = clave ? await cifrar(exportable(data), clave) : exportable(data);
-      descargar(`finanzas-backup-${toKey(new Date())}${clave ? '.cifrado' : ''}.json`, JSON.stringify(contenido, null, 2), 'application/json');
+      descargar(`finanzas-backup-${hoyKey()}${clave ? '.cifrado' : ''}.json`, JSON.stringify(contenido, null, 2), 'application/json');
       document.getElementById('exportClave').value='';
       showToast('Copia descargada');
     }catch(err){ showToast(err.message); }
@@ -1377,7 +1380,7 @@ import { activarCombobox } from './ui/combobox.js';
   }
 
   (async function init(){
-    document.getElementById('txDate').value = toKey(new Date());
+    document.getElementById('txDate').value = hoyKey();
     const carga = await cargar();
     if(carga.error){
       // Los datos siguen intactos en el dispositivo: se bloquea la escritura y se avisa.
