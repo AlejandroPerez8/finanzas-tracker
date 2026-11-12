@@ -334,10 +334,9 @@ export function proponerRegla(texto, tipo) {
     const m = re.exec(util);
     if (m) regex = regex.replace(escapar(m[0]), () => grupo);
   };
-  // El primer nombre en mayúsculas después del prefijo es el comercio o la persona.
   const cuerpo = util.replace(/^Bancolombia:? ?/i, '');
-  const nombre = /\b[A-Z][A-Z0-9&*]+(?: [A-Z0-9&*]+)*\b/.exec(cuerpo);
-  if (nombre) regex = regex.replace(escapar(nombre[0]), () => '(?<comercio>.+?)');
+  const nombre = elegirComercio(cuerpo);
+  if (nombre) regex = regex.replace(escapar(nombre), () => '(?<comercio>.+?)');
   reemplazar(montoRe, '\\$?\\s*(?<monto>[\\d.,]*\\d)');
   reemplazar(ultimosRe, '\\*{1,2}(?<ultimos4>\\d{4})');
   reemplazar(fechaRe, '(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)');
@@ -350,6 +349,28 @@ export function proponerRegla(texto, tipo) {
     origen: 'usuario',
     regex: regex.replace(/^Bancolombia: ?/i, ''),
   };
+}
+
+/** Siglas del banco o del medio de pago que van en mayúsculas pero nunca son el comercio. */
+const SIGLAS_NO_COMERCIO = new Set(['PSE', 'QR', 'ACH', 'COP', 'ATM', 'CDT', 'GMF', 'IVA']);
+
+/**
+ * Elige el comercio o la persona de un mensaje: entre los nombres en mayúsculas, prefiere el que
+ * sigue a "a", "en", "para", "de" o "con" ("pago PSE por $X a ETB COLOMBIA" → ETB COLOMBIA) y
+ * descarta siglas como PSE o QR. Entre candidatos igual de buenos, el más largo.
+ */
+export function elegirComercio(cuerpo) {
+  let mejor = null;
+  for (const m of cuerpo.matchAll(/\b[A-Z][A-Z0-9&*]+(?: [A-Z0-9&*]+)*\b/g)) {
+    if (m[0].split(' ').every((w) => SIGLAS_NO_COMERCIO.has(w))) continue;
+    const trasPreposicion = /\b(?:a|al|en|para|de|con)\s+$/i.test(cuerpo.slice(0, m.index));
+    // Un nombre pegado a minúsculas sin espacio sigue siendo el mismo comercio ("DLO*Didi").
+    const cola = (/^[^\s.,;:]+/.exec(cuerpo.slice(m.index + m[0].length)) ?? [''])[0];
+    const texto = m[0] + cola;
+    const puntaje = (trasPreposicion ? 1000 : 0) + texto.length;
+    if (!mejor || puntaje > mejor.puntaje) mejor = { texto, puntaje };
+  }
+  return mejor?.texto ?? null;
 }
 
 /** Borra textos de mensajes no reconocidos con más de N días. */

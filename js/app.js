@@ -169,7 +169,7 @@ import { activarCombobox } from './ui/combobox.js';
   function investmentTotal(inv){ return (Number(inv.amount)||0) + investmentExtra(inv); }
 
   function accountTransferOptions(){
-    return data.accounts.map(a=>`<option value="${a.id}">${escapeAttr(a.name)}</option>`).join('');
+    return data.accounts.map(a=>`<option value="${escapeAttr(a.id)}">${escapeAttr(a.name)}</option>`).join('');
   }
 
   function deleteTransaction(t){
@@ -179,15 +179,20 @@ import { activarCombobox } from './ui/combobox.js';
       data.transactions = data.transactions.filter(x=>x.id!==t.id);
     }
   }
+  // Una copia es un registro manual nuevo: no hereda la fuente del banco ni sus datos. Si heredara
+  // `fuentes`, el mensaje real de ese nuevo gasto no se conciliaría con ella y se contaría dos veces.
+  function copiaManual(t, extra){
+    const { fuentes, origen, hora, referenciaBanco, conciliarCon, divididoDe, montoIngerido, tipoMensaje, confianza, ultimos4, estado, ...resto } = t;
+    return { ...resto, ...extra, id: uid('t'), date: hoyKey(), origen: 'manual', fuentes: [], estado: 'confirmado' };
+  }
   function duplicateTransaction(t){
-    const today = hoyKey();
     if(t.transferencia_id){
       const pair = data.transactions.find(x=>x.transferencia_id===t.transferencia_id && x.id!==t.id);
       const newTid = uid('tr');
-      data.transactions.push({...t, id:uid('t'), transferencia_id:newTid, date: today});
-      if(pair) data.transactions.push({...pair, id:uid('t'), transferencia_id:newTid, date: today});
+      data.transactions.push(copiaManual(t, { transferencia_id:newTid }));
+      if(pair) data.transactions.push(copiaManual(pair, { transferencia_id:newTid }));
     } else {
-      data.transactions.push({...t, id:uid('t'), date: today});
+      data.transactions.push(copiaManual(t, {}));
     }
   }
 
@@ -208,14 +213,14 @@ import { activarCombobox } from './ui/combobox.js';
       sel.innerHTML = '<option value="">Sin cuenta</option>';
       return;
     }
-    sel.innerHTML = data.accounts.map(a=>`<option value="${a.id}">${escapeAttr(a.name)}</option>`).join('');
+    sel.innerHTML = data.accounts.map(a=>`<option value="${escapeAttr(a.id)}">${escapeAttr(a.name)}</option>`).join('');
   }
 
   function populateAccountSelect(){
     const sel = document.getElementById('txAccount');
     const valor = sel.value;
     const tarjetas = data.tarjetas.filter(t=>t.estado!=='cerrada').map(t=>`<option value="tarjeta:${escapeAttr(t.id)}">Tarjeta ${escapeAttr(t.alias)}</option>`).join('');
-    sel.innerHTML = '<option value="">Sin cuenta</option>' + data.accounts.map(a=>`<option value="${a.id}">${escapeAttr(a.name)}</option>`).join('') + tarjetas;
+    sel.innerHTML = '<option value="">Sin cuenta</option>' + data.accounts.map(a=>`<option value="${escapeAttr(a.id)}">${escapeAttr(a.name)}</option>`).join('') + tarjetas;
     if([...sel.options].some(o=>o.value===valor)) sel.value = valor;
   }
 
@@ -292,7 +297,7 @@ import { activarCombobox } from './ui/combobox.js';
     } else if(type==='pocket'){
       const p = data.pockets.find(x=>x.id===id); if(!p) return;
       titleEl.textContent = 'Editar bolsillo';
-      const accOptions = data.accounts.map(a=>`<option value="${a.id}" ${p.accountId===a.id?'selected':''}>${escapeAttr(a.name)}</option>`).join('');
+      const accOptions = data.accounts.map(a=>`<option value="${escapeAttr(a.id)}" ${p.accountId===a.id?'selected':''}>${escapeAttr(a.name)}</option>`).join('');
       fieldsEl.innerHTML = `
         <div class="modal-field"><label>Nombre</label><input type="text" id="editPocketName" value="${escapeAttr(p.name)}"></div>
         <div class="modal-field"><label>Cuenta asociada</label><select id="editPocketAccount"><option value="">Sin asociar</option>${accOptions}</select></div>
@@ -301,8 +306,8 @@ import { activarCombobox } from './ui/combobox.js';
     } else if(type==='goal'){
       const g = data.goals.find(x=>x.id===id); if(!g) return;
       titleEl.textContent = 'Editar meta';
-      const pocketOpts = data.pockets.map(p=>`<label><input type="checkbox" class="edit-goal-pocket-check" value="${p.id}" ${(g.pocketIds||[]).includes(p.id)?'checked':''}> ${escapeAttr(p.name)} — ${formatCOP(pocketBalance(p))}</label>`).join('') || '<div class="empty vacio-compacto">No hay bolsillos creados.</div>';
-      const invOpts = data.investments.map(i=>`<label><input type="checkbox" class="edit-goal-investment-check" value="${i.id}" ${(g.investmentIds||[]).includes(i.id)?'checked':''}> ${escapeAttr(i.entity)} — ${formatCOP(investmentTotal(i))}</label>`).join('') || '<div class="empty vacio-compacto">No hay CDT registrados.</div>';
+      const pocketOpts = data.pockets.map(p=>`<label><input type="checkbox" class="edit-goal-pocket-check" value="${escapeAttr(p.id)}" ${(g.pocketIds||[]).includes(p.id)?'checked':''}> ${escapeAttr(p.name)} — ${formatCOP(pocketBalance(p))}</label>`).join('') || '<div class="empty vacio-compacto">No hay bolsillos creados.</div>';
+      const invOpts = data.investments.map(i=>`<label><input type="checkbox" class="edit-goal-investment-check" value="${escapeAttr(i.id)}" ${(g.investmentIds||[]).includes(i.id)?'checked':''}> ${escapeAttr(i.entity)} — ${formatCOP(investmentTotal(i))}</label>`).join('') || '<div class="empty vacio-compacto">No hay CDT registrados.</div>';
       fieldsEl.innerHTML = `
         <div class="modal-field"><label>Nombre</label><input type="text" id="editGoalName" value="${escapeAttr(g.name)}"></div>
         <div class="modal-field"><label>Monto objetivo (COP)</label><input type="number" id="editGoalTarget" value="${g.target}" min="0" step="10000"></div>
@@ -331,7 +336,7 @@ import { activarCombobox } from './ui/combobox.js';
       if(t.type==='income' || t.type==='expense'){
         titleEl.textContent = t.type==='income' ? 'Editar ingreso' : 'Editar gasto';
         const listId = t.type==='income' ? 'incomeCategoryList' : 'expenseCategoryList';
-        const accOptions = '<option value="">Sin cuenta asociada</option>' + data.accounts.map(a=>`<option value="${a.id}" ${t.accountId===a.id?'selected':''}>${escapeAttr(a.name)}</option>`).join('');
+        const accOptions = '<option value="">Sin cuenta asociada</option>' + data.accounts.map(a=>`<option value="${escapeAttr(a.id)}" ${t.accountId===a.id?'selected':''}>${escapeAttr(a.name)}</option>`).join('');
         fieldsEl.innerHTML = `
           <div class="modal-field"><label>Monto (COP)</label><input type="number" id="editTxAmount" value="${t.amount}" min="0" step="1000"></div>
           <div class="modal-field"><label>Categoría</label><input type="text" id="editTxCategory" list="${listId}" value="${escapeAttr(t.category||'')}"></div>
@@ -438,7 +443,7 @@ import { activarCombobox } from './ui/combobox.js';
     } else {
       listEl.innerHTML = data.accounts.map(a=>{
         const bal = accountBalance(a);
-        return `<div class="acc-row" data-acc="${a.id}">
+        return `<div class="acc-row" data-acc="${escapeAttr(a.id)}">
           <div class="info"><div class="name">${escapeAttr(a.name)}</div><div class="meta">${escapeAttr(a.type)}</div></div>
           <div class="bal">${formatCOP(bal)}</div>
           <div class="row-actions">
@@ -623,7 +628,7 @@ import { activarCombobox } from './ui/combobox.js';
       const noAccounts = data.accounts.length===0;
       listEl.innerHTML = data.pockets.map(p=>{
         const acc = data.accounts.find(a=>a.id===p.accountId);
-        return `<div class="pocket-row" data-pocket="${p.id}">
+        return `<div class="pocket-row" data-pocket="${escapeAttr(p.id)}">
           <div class="info"><div class="name">▣ ${escapeAttr(p.name)}</div><div class="meta">${acc ? escapeAttr(acc.name) : 'Cuenta no asociada'}</div></div>
           <div class="bal">${formatCOP(pocketBalance(p))}</div>
           <div class="row-actions">
@@ -632,7 +637,7 @@ import { activarCombobox } from './ui/combobox.js';
           </div>
         </div>
         ${noAccounts ? '<div class="mini-hint">Crea una cuenta para poder abonar o retirar de este bolsillo.</div>' : `
-        <div class="mini-transfer-row" data-pocket-transfer="${p.id}">
+        <div class="mini-transfer-row" data-pocket-transfer="${escapeAttr(p.id)}">
           <select class="mini-acc-select" aria-label="Cuenta de origen o destino">${accountTransferOptions()}</select>
           <input type="number" class="mini-amt-input" placeholder="Monto" aria-label="Monto a abonar o retirar" min="0" step="1000">
           <button class="btn-accent mini-abono-btn">Abonar</button>
@@ -681,10 +686,10 @@ import { activarCombobox } from './ui/combobox.js';
     const invEl=document.getElementById('goalInvestmentOptions');
     if(!pocketEl || !invEl) return;
     pocketEl.innerHTML=data.pockets.length
-      ? data.pockets.map(p=>`<label><input type="checkbox" class="goal-pocket-check" value="${p.id}"> ${p.name} — ${formatCOP(pocketBalance(p))}</label>`).join('')
+      ? data.pockets.map(p=>`<label><input type="checkbox" class="goal-pocket-check" value="${escapeAttr(p.id)}"> ${escapeAttr(p.name)} — ${formatCOP(pocketBalance(p))}</label>`).join('')
       : '<div class="empty vacio-compacto">No hay bolsillos creados.</div>';
     invEl.innerHTML=data.investments.length
-      ? data.investments.map(i=>`<label><input type="checkbox" class="goal-investment-check" value="${i.id}"> ${i.entity} — ${formatCOP(investmentTotal(i))}</label>`).join('')
+      ? data.investments.map(i=>`<label><input type="checkbox" class="goal-investment-check" value="${escapeAttr(i.id)}"> ${escapeAttr(i.entity)} — ${formatCOP(investmentTotal(i))}</label>`).join('')
       : '<div class="empty vacio-compacto">No hay CDT registrados.</div>';
   }
 
@@ -899,14 +904,14 @@ import { activarCombobox } from './ui/combobox.js';
       } else {
         planHtml = `<div class="goal-plan unknown">Agrega una fecha objetivo para calcular cuánto ahorrar al mes.</div>`;
       }
-      return `<div class="goal-card" data-goal="${g.id}">
+      return `<div class="goal-card" data-goal="${escapeAttr(g.id)}">
         <div class="goal-top"><span class="name">${escapeAttr(g.name)}</span><span class="due">${dueStr}</span></div>
         <div class="goal-progress-track"><div class="goal-progress-fill" data-pct="${pct}"></div></div>
         <div class="goal-nums"><span><b>${formatCOP(current)}</b> de ${formatCOP(g.target)}</span><span>${pct}%</span></div>
         ${planHtml}
-        <div class="goal-sources-summary">Fuentes: ${selectedGoalSources(g)}</div>
+        <div class="goal-sources-summary">Fuentes: ${escapeAttr(selectedGoalSources(g))}</div>
         ${data.accounts.length===0 ? '<div class="mini-hint">Crea una cuenta para poder abonar a esta meta.</div>' : `
-        <div class="mini-transfer-row" data-goal-transfer="${g.id}">
+        <div class="mini-transfer-row" data-goal-transfer="${escapeAttr(g.id)}">
           <select class="mini-acc-select" aria-label="Cuenta de origen o destino">${accountTransferOptions()}</select>
           <input type="number" class="mini-amt-input" placeholder="Monto" aria-label="Monto a abonar o retirar" min="0" step="10000">
           <button class="btn-accent mini-abono-btn">Abonar</button>
@@ -1001,7 +1006,7 @@ import { activarCombobox } from './ui/combobox.js';
       const statusTxt = matured ? 'Vencido' : (soon ? 'Vence pronto' : 'Activo');
       const maturityFmt = fromKey(maturityKey).toLocaleDateString('es-CO', {day:'numeric', month:'short', year:'numeric'});
       const extra = investmentExtra(inv);
-      return `<div class="inv-card" data-inv="${inv.id}">
+      return `<div class="inv-card" data-inv="${escapeAttr(inv.id)}">
         <div class="inv-top"><span class="name">${escapeAttr(inv.entity)}</span><span class="inv-status ${statusCls}">${statusTxt}</span></div>
         <div class="inv-grid">
           <div>Monto invertido<b>${formatCOP(inv.amount)}</b></div>
@@ -1014,7 +1019,7 @@ import { activarCombobox } from './ui/combobox.js';
           <div class="celda-ancha">Recibirás al vencimiento (neto)<b>${formatCOP(projected)}</b></div>
         </div>
         ${data.accounts.length===0 ? '<div class="mini-hint">Crea una cuenta para poder aportar o retirar de este CDT.</div>' : `
-        <div class="mini-transfer-row" data-inv-transfer="${inv.id}">
+        <div class="mini-transfer-row" data-inv-transfer="${escapeAttr(inv.id)}">
           <select class="mini-acc-select" aria-label="Cuenta de origen o destino">${accountTransferOptions()}</select>
           <input type="number" class="mini-amt-input" placeholder="Monto" aria-label="Monto a abonar o retirar" min="0" step="10000">
           <button class="btn-accent mini-abono-btn">Aportar</button>

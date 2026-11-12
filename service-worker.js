@@ -1,5 +1,5 @@
 // Offline primero: la app completa queda en caché. Cambia VERSION en cada entrega.
-const VERSION = '5.3.4';
+const VERSION = '5.3.5';
 const CACHE_NAME = `finanzas-tracker-${VERSION}`;
 const APP_SHELL = [
   './', './index.html', './manifest.json', './css/styles.css', './css/componentes.css',
