@@ -696,3 +696,5 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .salud-estado.salud-mal { color: var(--warn); }
 .salud-estado.salud-sin_datos { color: var(--muted); }
 .salud-consejo { font-size: 13px; line-height: 1.45; margin: 6px 0 0; color: var(--text); }
+/* Los avisos del panel son frases completas: deben partirse en varias líneas (5.3.1). */
+#vistaPanel .chip { display: block; white-space: normal; line-height: 1.4; margin: 8px 0 0; }

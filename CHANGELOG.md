@@ -1,5 +1,14 @@
 # Cambios
 
+## 5.3.1
+### Corregido
+- El aviso de "efectivo sin rastrear" no partía líneas y desbordaba la pantalla de Inicio 688 px
+  hacia la derecha. Encontrado al verificar la 5.3.0 publicada.
+
+### Nuevo
+- `npm run test:vivo`: verificación de punta a punta contra la app publicada (o `VIVO_URL`), con
+  los mensajes reales de Bancolombia, en un perfil temporal de Chrome.
+
 ## 5.3.0
 ### Nuevo
 - **Salud financiera** en Inicio (`js/domain/salud.js`): fondo de emergencia (meses de gastos

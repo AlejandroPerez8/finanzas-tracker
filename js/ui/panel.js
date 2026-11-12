@@ -23,7 +23,7 @@ import { tamanoDatos } from '../db.js';
 import { VERSION_ACTUAL } from '../services/migraciones.js';
 import { CATEGORIAS_GASTO } from '../domain/categorias.js';
 
-export const VERSION_APP = '5.3.0';
+export const VERSION_APP = '5.3.1';
 const ITERACIONES_PIN = 200000;
 
 async function hashPin(pin, salBase64) {
