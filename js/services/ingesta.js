@@ -47,7 +47,12 @@ export function hashTexto(texto) {
 }
 
 /** "Ahorros"/"Corriente" del mensaje → tipo de cuenta tal como se guarda en accounts. */
-const TIPOS_CUENTA_TEXTO = { ahorro: 'ahorros', ahorros: 'ahorros', corriente: 'corriente', corrientes: 'corriente' };
+const TIPOS_CUENTA_TEXTO = {
+  ahorro: 'ahorros',
+  ahorros: 'ahorros',
+  corriente: 'corriente',
+  corrientes: 'corriente',
+};
 
 /** Si el mensaje dice el tipo de cuenta y solo una cuenta del usuario es de ese tipo, es ella. */
 function porTipoCuenta(cuentasBanco, tipoCuentaTexto) {
@@ -55,6 +60,11 @@ function porTipoCuenta(cuentasBanco, tipoCuentaTexto) {
   if (!tipo) return null;
   const coincidencias = cuentasBanco.filter((a) => a.tipo === tipo);
   return coincidencias.length === 1 ? coincidencias[0] : null;
+}
+
+/** Dígitos que identifican una cuenta: los de la cuenta y los de su tarjeta débito. */
+export function digitosDeCuenta(cuentaObj) {
+  return [cuentaObj.ultimos4, cuentaObj.ultimos4Debito].filter((d) => /^\d{4}$/.test(d ?? ''));
 }
 
 /** Resuelve cuenta y tarjeta por últimos 4; con una sola cuenta y sin coincidencia, usa esa. */
@@ -68,10 +78,16 @@ function asociar(parseado, regla, datos) {
   if (!usaTarjeta || regla.type === 'pago_tarjeta' || regla.type === 'avance') {
     // Si los dígitos ya identifican la tarjeta, no dicen nada sobre la cuenta.
     const digitosCuenta = tarjeta ? null : ultimos4;
-    const porUltimos = digitosCuenta ? cuentasBanco.find((a) => a.ultimos4 === digitosCuenta) : null;
+    // Los mensajes traen a veces los dígitos de la cuenta y a veces los de la tarjeta débito
+    // ("T.Deb **2436" en compras y retiros): ambos identifican la misma cuenta.
+    const porUltimos = digitosCuenta
+      ? cuentasBanco.find((a) => digitosDeCuenta(a).includes(digitosCuenta))
+      : null;
     // Con una sola cuenta se asume esa, salvo que tenga otros dígitos: sería una cuenta no registrada.
     const unica =
-      cuentasBanco.length === 1 && (!digitosCuenta || !cuentasBanco[0].ultimos4) ? cuentasBanco[0] : null;
+      cuentasBanco.length === 1 && (!digitosCuenta || !digitosDeCuenta(cuentasBanco[0]).length)
+        ? cuentasBanco[0]
+        : null;
     // Sin dígitos (ej. nómina que no los trae), el tipo de cuenta del mensaje desempata si es único.
     const porTipo = !digitosCuenta ? porTipoCuenta(cuentasBanco, parseado.tipoCuenta) : null;
     accountId = porUltimos?.id ?? unica?.id ?? porTipo?.id ?? null;
@@ -229,7 +245,26 @@ export function confirmar(datos, id, cambios = {}, contexto = {}) {
     if (!contexto.nuevoId) throw new Error('Falta el generador de identificadores para la compra a cuotas');
     registrarDiferida(datos, mov, contexto.nuevoId);
   }
+  aprenderDigitos(datos, mov);
   return mov;
+}
+
+/**
+ * Si el usuario asoció a mano un mensaje con dígitos desconocidos a una cuenta, la cuenta los
+ * aprende (en el campo libre) para que el próximo mensaje igual se asocie solo.
+ */
+function aprenderDigitos(datos, mov) {
+  const d = mov.ultimos4;
+  if (!/^\d{4}$/.test(d ?? '') || !mov.accountId || mov.tarjetaId) return;
+  const yaConocidos = [
+    ...datos.accounts.flatMap(digitosDeCuenta),
+    ...(datos.tarjetas || []).map((t) => t.ultimos4),
+  ];
+  if (yaConocidos.includes(d)) return;
+  const acc = datos.accounts.find((a) => a.id === mov.accountId);
+  if (!acc || acc.tipo === 'efectivo') return;
+  if (!acc.ultimos4) acc.ultimos4 = d;
+  else if (!acc.ultimos4Debito) acc.ultimos4Debito = d;
 }
 
 /** Descarta: el movimiento queda registrado para que el mensaje no reaparezca, sin afectar saldos. */
@@ -254,18 +289,16 @@ export function dividir(datos, id, partes, nuevoId) {
     throw new Error('Cada parte debe tener un monto positivo');
   if (suma !== mov.amount) throw new Error('Las partes deben sumar el total del movimiento');
   // Las partes nuevas no tienen fuentes: el mensaje del banco queda ligado a la primera.
-  const nuevos = partes
-    .slice(1)
-    .map((p) => ({
-      ...mov,
-      id: nuevoId(),
-      amount: aEntero(p.amount),
-      category: p.category,
-      divididoDe: mov.id,
-      fuentes: [],
-      esCuota: false,
-      cuotaInfo: null,
-    }));
+  const nuevos = partes.slice(1).map((p) => ({
+    ...mov,
+    id: nuevoId(),
+    amount: aEntero(p.amount),
+    category: p.category,
+    divididoDe: mov.id,
+    fuentes: [],
+    esCuota: false,
+    cuotaInfo: null,
+  }));
   mov.montoIngerido = mov.montoIngerido ?? mov.amount;
   mov.amount = aEntero(partes[0].amount);
   mov.category = partes[0].category;

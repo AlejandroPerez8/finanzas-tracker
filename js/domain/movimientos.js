@@ -82,3 +82,12 @@ export function estadisticasMes(transacciones, mes) {
   const savingsRate = income > 0 ? Math.round((balance / income) * 100) : 0;
   return { income, expense, balance, savingsRate, byCategory, count: delMes.length };
 }
+
+/**
+ * Tasa de ahorro para mostrar. Un déficit mayor al 100 % de los ingresos (o sin ingresos) no dice
+ * nada útil como porcentaje: se muestra como déficit para que todas las pantallas coincidan.
+ */
+export function textoTasaAhorro({ income, expense, savingsRate }) {
+  if (income <= 0) return expense > 0 ? 'Sin ingresos' : '0 %';
+  return savingsRate < -100 ? 'Déficit' : `${savingsRate} %`;
+}

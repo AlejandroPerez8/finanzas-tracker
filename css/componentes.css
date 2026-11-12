@@ -630,8 +630,9 @@ body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 .formulario select, .formulario input:not([type='checkbox']), .formulario textarea { width: 100%; }
 .campo select, .campo input { width: 100%; }
 .vacio { min-height: 96px; padding: 12px; }
-.subtabs { overflow-x: auto; margin: 10px 0; }
-.subtab { flex: none; }
+/* Cuadrícula 2×2: en 390 px las cuatro subpestañas no caben en fila y "Importar" quedaba oculta. */
+.subtabs { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; margin: 10px 0; border-radius: 18px; }
+.subtab { flex: none; border-radius: 14px; }
 
 /* Los estilos originales no cubrían estos tipos de campo. */
 input[type='password'], input[type='url'] { width: 100%; min-height: 48px; padding: 12px 14px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; font: inherit; font-size: 14px; }
@@ -676,3 +677,22 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .combobox-item:hover, .combobox-item:active { background: var(--surface); }
 
 .campo[hidden] { display: none; }
+
+/* Panel: ritmo diario y salud financiera (5.3). El color acompaña al texto, nunca lo reemplaza. */
+.ritmo small { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+.ritmo b { display: block; font-size: 32px; font-family: var(--font-mono); color: var(--bonus); margin: 2px 0 4px; }
+.ritmo b.negativo { color: var(--warn); }
+.salud-item { padding: 12px 0 12px 12px; border-left: 3px solid var(--border); margin-bottom: 4px; }
+.salud-item + .salud-item { border-top: 1px solid var(--border); }
+.salud-item.salud-ok { border-left-color: var(--bonus); }
+.salud-item.salud-alerta { border-left-color: var(--amber); }
+.salud-item.salud-mal { border-left-color: var(--warn); }
+.salud-item .fila-simple { gap: 8px; }
+.salud-item .fila-simple b { flex: 1; }
+.salud-valor { font-family: var(--font-mono); font-size: 15px; }
+.salud-estado { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: var(--surface-2); }
+.salud-estado.salud-ok { color: var(--bonus); }
+.salud-estado.salud-alerta { color: var(--amber); }
+.salud-estado.salud-mal { color: var(--warn); }
+.salud-estado.salud-sin_datos { color: var(--muted); }
+.salud-consejo { font-size: 13px; line-height: 1.45; margin: 6px 0 0; color: var(--text); }

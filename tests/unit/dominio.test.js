@@ -37,8 +37,19 @@ import {
   cicloVigente,
   actualizarCiclos,
 } from '../../js/domain/tarjetas.js';
-import { simular, compararEstrategias, flujoCaja, pagarVsCdt } from '../../js/domain/deudas.js';
-import { avancePresupuestos, detectarRecurrentes, patrimonio } from '../../js/domain/presupuesto.js';
+import {
+  simular,
+  compararEstrategias,
+  flujoCaja,
+  pagarVsCdt,
+  proyeccionCdt,
+} from '../../js/domain/deudas.js';
+import {
+  avancePresupuestos,
+  detectarRecurrentes,
+  patrimonio,
+  efectivoDelMes,
+} from '../../js/domain/presupuesto.js';
 
 test('money: redondeo y formato', () => {
   assert.equal(aEntero(10.5), 11);
@@ -494,4 +505,42 @@ test('patrimonio: la tarjeta suma al pasivo', () => {
     patrimonio({ accounts: [], pockets: [], goals: [], investments: [], transactions: [] }).pasivos,
     0,
   );
+});
+
+test('CDT: el neto descuenta la retención del 4 % solo sobre el rendimiento', () => {
+  // $10.000.000 al 10 % EA por 365 días: rinde $1.000.000, retención $40.000.
+  const p = proyeccionCdt({ monto: 10000000, tasaEA: 10, dias: 365 });
+  assert.deepEqual(p, { bruto: 11000000, rendimiento: 1000000, retencion: 40000, neto: 10960000 });
+  assert.equal(proyeccionCdt({ monto: 1000000, tasaEA: 10, dias: 0 }).neto, 1000000);
+  assert.equal(proyeccionCdt({ monto: 1000000, tasaEA: 12, dias: 180, retencion: 0 }).retencion, 0);
+});
+
+test('efectivo del mes: retiros frente a gastos en efectivo', () => {
+  const datos = {
+    accounts: [
+      { id: 'b', tipo: 'ahorros' },
+      { id: 'e', tipo: 'efectivo' },
+    ],
+    transactions: [
+      { type: 'transferencia', accountId: 'b', cuentaDestinoId: 'e', amount: 150000, date: '2026-10-28' },
+      {
+        type: 'transferencia',
+        accountId: 'b',
+        cuentaDestinoId: 'e',
+        amount: 50000,
+        date: '2026-10-29',
+        estado: 'pendiente_revision',
+      },
+      { type: 'transferencia', accountId: 'b', cuentaDestinoId: 'e', amount: 70000, date: '2026-09-30' },
+      { type: 'expense', accountId: 'e', amount: 40000, date: '2026-10-29' },
+      { type: 'expense', accountId: 'b', amount: 99000, date: '2026-10-29' },
+    ],
+  };
+  assert.deepEqual(efectivoDelMes(datos, '2026-10'), {
+    retirado: 150000,
+    gastado: 40000,
+    sinRastrear: 110000,
+  });
+  datos.transactions.push({ type: 'expense', accountId: 'e', amount: 200000, date: '2026-10-30' });
+  assert.equal(efectivoDelMes(datos, '2026-10').sinRastrear, 0);
 });

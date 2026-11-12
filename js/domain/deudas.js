@@ -139,3 +139,20 @@ export function pagarVsCdt({ monto, tasaTarjetaEA, tasaCdtEA, meses, retencion =
   const rendimientoCdt = rendimientoBruto - Math.round((rendimientoBruto * retencion) / 100);
   return { interesEvitado, rendimientoCdt, diferencia: interesEvitado - rendimientoCdt };
 }
+
+/**
+ * Valor de un CDT al vencimiento con interés compuesto EA y retención en la fuente sobre el
+ * rendimiento (4 % por defecto en Colombia). Lo que llega a la cuenta es el neto.
+ * @returns {{bruto:number, rendimiento:number, retencion:number, neto:number}}
+ */
+export function proyeccionCdt({ monto, tasaEA, dias, retencion = 4 }) {
+  const capital = aEntero(monto);
+  const rendimiento = Math.round(capital * (Math.pow(1 + Number(tasaEA) / 100, Math.max(0, dias) / 365) - 1));
+  const retenido = Math.round((rendimiento * retencion) / 100);
+  return {
+    bruto: capital + rendimiento,
+    rendimiento,
+    retencion: retenido,
+    neto: capital + rendimiento - retenido,
+  };
+}

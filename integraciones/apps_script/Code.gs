@@ -27,6 +27,7 @@ const CONSULTA_GMAIL_DEFECTO =
   '(from:bancolombia OR from:notificacionesbancolombia OR from:alertasynotificaciones) ' +
   'newer_than:' + DIAS_CAPTURA + 'd';
 const DIAS_PURGA_DEFECTO = 30;
+const DIAS_ARCHIVO_DEFECTO = 90;
 
 /* ---------- Instalación y mantenimiento (se ejecutan desde el editor) ---------- */
 
@@ -81,11 +82,16 @@ function doGet(e) {
   return responder_(function () {
     const p = (e && e.parameter) || {};
     exigirToken_(p.token);
-    if (p.action === 'ping') return accionPing_();
-    if (p.action === 'pending') return accionPending_(p);
-    if (p.action === 'ack') return accionAck_(p);
-    throw new ErrorApi_('bad_request');
+    return despachar_(p);
   });
+}
+
+/** ping, pending y ack. Por GET quedan por compatibilidad con apps anteriores a 5.2. */
+function despachar_(p) {
+  if (p.action === 'ping') return accionPing_();
+  if (p.action === 'pending') return accionPending_(p);
+  if (p.action === 'ack') return accionAck_(p);
+  throw new ErrorApi_('bad_request');
 }
 
 function doPost(e) {
@@ -97,6 +103,8 @@ function doPost(e) {
       throw new ErrorApi_('bad_request');
     }
     exigirToken_(cuerpo.token);
+    // Desde 5.2 la app consulta por POST: el token va en el cuerpo, no en la URL.
+    if (cuerpo.action) return despachar_(cuerpo);
     if (cuerpo.source !== 'sms' || typeof cuerpo.text !== 'string' || !cuerpo.text.trim()) {
       throw new ErrorApi_('bad_request');
     }
@@ -121,9 +129,13 @@ function accionPending_(p) {
   const filas = leerFilas_();
   const items = [];
   let cursor = desde;
-  for (let i = desde; i < filas.length && items.length < limite; i++) {
-    cursor = i + 1;
+  // El cursor es el número del último rowId revisado, no la posición de la fila: así archivar
+  // filas viejas no corre el cursor. Con la hoja sin archivar, ambos valores coinciden.
+  for (let i = 0; i < filas.length && items.length < limite; i++) {
     const f = filas[i];
+    const n = numeroFila_(f[COL.rowId]);
+    if (n <= desde) continue;
+    cursor = n;
     if (f[COL.estado] !== 'nuevo') continue;
     items.push({
       rowId: String(f[COL.rowId]),
@@ -138,7 +150,9 @@ function accionPending_(p) {
 }
 
 function accionAck_(p) {
-  const ids = String(p.ids || '').split(',').map(function (s) { return s.trim(); }).filter(String);
+  const ids = (Array.isArray(p.ids) ? p.ids : String(p.ids || '').split(','))
+    .map(function (s) { return String(s).trim(); })
+    .filter(String);
   if (!ids.length || ids.length > MAX_LIMIT) throw new ErrorApi_('bad_request');
   const buscados = {};
   ids.forEach(function (id) { buscados[id] = true; });
@@ -204,8 +218,39 @@ function recortarTexto_(texto) {
     .replace(/(?<![\d$.,]|COP\s|\$\s)\d{4,}(\d{4})(?!\d)/gi, '*$1');
 }
 
-/** Purga diaria: borra el texto de filas ya importadas con más de N días. */
+/** Purga diaria: borra el texto de lo importado con más de N días y archiva lo muy viejo. */
 function purgarTexto() {
+  purgarTextoViejo_();
+  archivarFilas_();
+}
+
+/**
+ * Borra de la hoja las filas importadas con más de DIAS_ARCHIVO días. Sin esto la hoja crece sin
+ * límite y cada consulta la lee entera. Es seguro: Gmail solo se revisa 7 días atrás y los
+ * reintentos de un SMS llegan en minutos, así que nada archivado vuelve a entrar.
+ */
+function archivarFilas_() {
+  const dias = parseInt(PropertiesService.getScriptProperties().getProperty('DIAS_ARCHIVO'), 10) || DIAS_ARCHIVO_DEFECTO;
+  const limite = Date.now() - dias * 86400000;
+  conBloqueo_(function () {
+    const hoja = hoja_();
+    const filas = leerFilas_();
+    siguienteNumero_(filas, true); // fija el contador antes de que desaparezcan filas
+    const quedan = filas.filter(function (f) {
+      return !(f[COL.estado] === 'importado' && new Date(f[COL.receivedAt]).getTime() < limite);
+    });
+    if (quedan.length === filas.length) return;
+    hoja.getRange(2, 1, filas.length, COLUMNAS.length).clearContent();
+    if (quedan.length) {
+      // Texto plano en la columna del mensaje: uno que empiece por "=" no debe volverse fórmula.
+      hoja.getRange(2, COL.texto + 1, quedan.length, 1).setNumberFormat('@');
+      hoja.getRange(2, 1, quedan.length, COLUMNAS.length).setValues(quedan);
+    }
+    Logger.log('Archivadas ' + (filas.length - quedan.length) + ' filas.');
+  });
+}
+
+function purgarTextoViejo_() {
   const dias = parseInt(PropertiesService.getScriptProperties().getProperty('DIAS_PURGA'), 10) || DIAS_PURGA_DEFECTO;
   const limite = Date.now() - dias * 86400000;
   conBloqueo_(function () {
@@ -241,7 +286,7 @@ function agregarFila_(fuente, messageId, fecha, senderTag, texto) {
     for (let i = filas.length - 1; i >= 0; i--) {
       if (filas[i][COL.messageId] === messageId) return String(filas[i][COL.rowId]);
     }
-    const rowId = 'r_' + ('000000' + (filas.length + 1)).slice(-6);
+    const rowId = 'r_' + ('000000' + siguienteNumero_(filas)).slice(-6);
     // El apóstrofo inicial evita que la hoja interprete el texto como fórmula.
     hoja.appendRow([rowId, fuente, messageId, aIso_(fecha), senderTag, "'" + texto, 'nuevo', '']);
     return rowId;
@@ -291,6 +336,26 @@ function conBloqueo_(fn) {
   } finally {
     bloqueo.releaseLock();
   }
+}
+
+function numeroFila_(rowId) {
+  return parseInt(String(rowId).replace(/^r_/, ''), 10) || 0;
+}
+
+/**
+ * Número del próximo rowId. Vive en una propiedad para no repetir números después de archivar;
+ * la primera vez parte del mayor rowId de la hoja. Se llama siempre dentro de conBloqueo_.
+ */
+function siguienteNumero_(filas, soloSincronizar) {
+  const props = PropertiesService.getScriptProperties();
+  let ultimo = parseInt(props.getProperty('ULTIMO_ROW'), 10);
+  if (isNaN(ultimo)) {
+    ultimo = filas.reduce(function (m, f) { return Math.max(m, numeroFila_(f[COL.rowId])); }, 0);
+    props.setProperty('ULTIMO_ROW', String(ultimo));
+  }
+  if (soloSincronizar) return ultimo;
+  props.setProperty('ULTIMO_ROW', String(ultimo + 1));
+  return ultimo + 1;
 }
 
 function hash_(texto) {

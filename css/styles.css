@@ -22,6 +22,7 @@ h1.app-title{font-size:34px; margin:0 0 6px; line-height:0.95;}
 .wheel-wrap{position:relative; flex-shrink:0; width:104px; height:104px;}
 .wheel-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
 .wheel-center .num{font-family:'Bebas Neue',sans-serif; font-size:24px; line-height:1;}
+.wheel-center .num.texto{font-size:17px;}
 .wheel-center .lbl{font-size:8.5px; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; margin-top:2px; text-align:center;}
 .week-summary{flex:1; min-width:0;}
 .week-summary .headline{font-size:14.5px; font-weight:600; margin:0 0 6px;}

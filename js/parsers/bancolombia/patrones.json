@@ -93,14 +93,21 @@
    "tipo": "compra_credito",
    "confianza": 0.8,
    "verificado": false,
-   "regex": "compr(?:a|aste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+(?:en\\s+)?(?<comercio>.+?)\\s+(?:con\\s+)?(?:tu\\s+)?(?:\\d{1,2}:\\d{2}[.,]?\\s+\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\s+)?(?:t\\.?\\s?cred|tarjeta de credito)\\s*\\*{0,2}(?<ultimos4>\\d{4}).*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+   "regex": "compr(?:a|aste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+(?:en\\s+)?(?<comercio>(?!(?:con|desde)\\s).+?)\\s+(?:con\\s+)?(?:tu\\s+)?(?:\\d{1,2}:\\d{2}[.,]?\\s+\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\s+)?(?:t\\.?\\s?cred|tarjeta de credito)\\s*\\*{0,2}(?<ultimos4>\\d{4}).*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
   },
   {
    "id": "compra_debito",
    "tipo": "compra_debito",
    "confianza": 0.8,
    "verificado": false,
-   "regex": "compr(?:a|aste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+(?:en\\s+)?(?<comercio>.+?)\\s+(?:con\\s+|desde\\s+)?(?:tu\\s+)?(?:t\\.?\\s?deb|tarjeta debito|cuenta|producto)\\s*\\*{0,2}(?<ultimos4>\\d{4}).*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+   "regex": "compr(?:a|aste)[^$\\d]*(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)\\s+(?:en\\s+)?(?<comercio>(?!(?:con|desde)\\s).+?)\\s+(?:con\\s+|desde\\s+)?(?:tu\\s+)?(?:t\\.?\\s?deb|tarjeta debito|cuenta|producto)\\s*\\*{0,2}(?<ultimos4>\\d{4}).*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
+  },
+  {
+   "id": "retiro_cajero_verificado",
+   "tipo": "retiro_cajero",
+   "confianza": 0.95,
+   "verificado": true,
+   "regex": "retiraste\\s+(?:\\$|COP)?\\s*(?<monto>[\\d.,]*\\d)\\s+en\\s+(?<comercio>.+?)\\s+de tu\\s+(?:t\\.?\\s?deb|tarjeta(?: debito)?|cuenta|producto)\\s*\\*{0,2}(?<ultimos4>\\d{4}),?\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?"
   },
   {
    "id": "retiro_cajero",

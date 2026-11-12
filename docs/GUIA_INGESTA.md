@@ -35,6 +35,14 @@ En **Automatización**, crea una con el disparador *Mensaje* que contenga "Banco
 2. Ejecuta `rotarToken`. El registro de abajo muestra el token nuevo.
 3. Actualízalo en la app y en MacroDroid o Atajos. El anterior deja de funcionar de inmediato.
 
+## 6b. Actualizar el script (versión 5.2)
+La 5.2 envía el token dentro de la petición y no en la URL, y archiva solas las filas viejas de la
+hoja. La app sigue funcionando con el script anterior, pero para tener ambas mejoras:
+1. Abre el proyecto de Apps Script y reemplaza el contenido de `Code.gs` por el del repositorio.
+2. **Implementar → Gestionar implementaciones → ✎ (editar) → Versión: Nueva versión → Implementar.**
+   Editar la implementación existente conserva la misma URL; crear una nueva cambiaría la URL.
+3. No hace falta volver a ejecutar `instalar()` ni cambiar el token.
+
 ## 7. Problemas comunes
 - **"Token incorrecto":** se copió mal o se rotó.
 - **"El script respondió una página":** esa no es la URL del despliegue. Debe terminar en `/exec`.

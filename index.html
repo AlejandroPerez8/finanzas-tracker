@@ -92,7 +92,9 @@
           </select>
           <input type="number" id="accBalance" placeholder="Saldo actual (COP)" min="0" step="1000">
         </div>
-        <input type="text" id="accUltimos4" inputmode="numeric" maxlength="4" aria-label="Últimos 4 dígitos de la cuenta" placeholder="Últimos 4 dígitos (para asociar mensajes del banco)" autocomplete="off">
+        <input type="text" id="accUltimos4" inputmode="numeric" maxlength="4" aria-label="Últimos 4 dígitos de la cuenta" placeholder="Últimos 4 de la cuenta (ej. *1234)" autocomplete="off">
+        <input type="text" id="accUltimos4Debito" inputmode="numeric" maxlength="4" aria-label="Últimos 4 dígitos de la tarjeta débito" placeholder="Últimos 4 de la tarjeta débito (T.Deb **)" autocomplete="off">
+        <div class="mini-hint">Los mensajes de compras y retiros traen los dígitos de la tarjeta débito; los de transferencias y pagos, los de la cuenta. Con ambos, la app los asocia sola.</div>
         <button class="btn-accent" id="addAccBtn">Guardar cuenta</button>
       </div>
     </div>
@@ -150,15 +152,15 @@
       </div>
       <div class="weight-input-row">
         <input type="number" id="txAmount" inputmode="numeric" aria-label="Monto en pesos" placeholder="Monto (COP)" min="0" step="1000">
-        <input type="text" id="txCategory" list="expenseCategoryList" placeholder="Categoría (escribe o elige)">
+        <input type="text" id="txCategory" list="expenseCategoryList" placeholder="Categoría" aria-label="Categoría (escribe o elige)">
       </div>
       <div class="weight-input-row">
         <select id="txAccount" aria-label="Medio de pago"></select>
         <input type="date" id="txDate">
       </div>
       <div class="weight-input-row">
-        <input type="text" id="txComercio" list="listaComercios" aria-label="Comercio" placeholder="Comercio (opcional)" autocomplete="off">
-        <input type="number" id="txCuotas" inputmode="numeric" aria-label="Número de cuotas" placeholder="Cuotas (si es tarjeta)" min="1" max="60" step="1">
+        <input type="text" id="txComercio" list="listaComercios" aria-label="Comercio" placeholder="Comercio" autocomplete="off">
+        <input type="number" id="txCuotas" inputmode="numeric" aria-label="Número de cuotas" placeholder="Cuotas (tarjeta)" min="1" max="60" step="1">
       </div>
       <datalist id="listaComercios"></datalist>
       <div class="extra-toggle-row"><span id="txExtraToggle" role="button" tabindex="0">+ agregar método o nota</span></div>

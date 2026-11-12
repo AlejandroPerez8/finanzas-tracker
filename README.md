@@ -8,6 +8,7 @@ PWA de finanzas personales para Colombia. Los datos viven en tu dispositivo: sin
 - **Ingesta automática de Bancolombia** (Gmail y SMS): reconoce los mensajes del banco, los categoriza y los concilia, sin copiar nada a mano.
 - **Tarjetas y deudas**: cupos, ciclos de corte y pago, amortización de cuota fija real (sistema francés), y simulador avalancha/bola de nieve para decidir cómo pagar más rápido.
 - **Comparador con CDT**: qué conviene más, pagar la tarjeta o invertir, con la retención de impuestos ya incluida en la cuenta.
+- **Salud financiera y gasto diario**: fondo de emergencia, tasa de ahorro, uso de tarjetas y carga de deuda con meta y qué hacer, más cuánto puedes gastar hoy sin pasarte del mes.
 - Reportes mensuales con análisis local (sin IA, sin conexión) y exportación lista para Power BI.
 - Seguridad pensada desde el diseño: CSP estricta, PIN, modo discreto y copias de respaldo cifradas. Ver [Seguridad](docs/SEGURIDAD.md).
 
@@ -42,13 +43,26 @@ Los formatos de mensajes se editan en `js/parsers/bancolombia/patrones.json`, si
 
 ```
 finanzas-tracker/
-├── index.html
-├── manifest.json
-├── service-worker.js
-└── icons/
-    ├── icon-192.png
-    └── icon-512.png
+├── index.html, manifest.json, service-worker.js
+├── css/                    estilos base y componentes
+├── js/
+│   ├── app.js              pantallas originales (cuentas, ahorro, historial, reportes)
+│   ├── db.js               IndexedDB con respaldo en localStorage
+│   ├── domain/             reglas de dinero puras: montos, fechas, tarjetas, deudas, presupuesto
+│   ├── parsers/            reconocimiento de mensajes; formatos en bancolombia/patrones.json
+│   ├── services/           ingesta, sincronización, deduplicación, respaldos, exportes
+│   └── ui/                 pantallas nuevas (panel, tarjetas, revisión de movimientos)
+├── data/comercios.json     diccionario comercio → categoría
+├── integraciones/apps_script/  script de Gmail/SMS y su mock local
+├── tests/                  unitarias, integración y humo en navegador
+└── docs/                   arquitectura, contrato, seguridad, decisiones
 ```
+
+### Asociar mensajes a tus cuentas
+En cada cuenta registra **dos** juegos de dígitos: los últimos 4 de la cuenta (aparecen en
+transferencias, pagos QR y recargas) y los de la **tarjeta débito** (aparecen como `T.Deb **1234`
+en compras y retiros). Para que un retiro en cajero se registre solo, crea además una cuenta de
+tipo **Efectivo**: el retiro mueve el dinero del banco a efectivo y no cuenta como gasto.
 
 ## Publicar en GitHub Pages
 
@@ -74,10 +88,8 @@ del repositorio.
 
 ## Actualizaciones futuras
 
-Cuando cambies `index.html` u otro archivo estático, sube de nuevo el
-`service-worker.js` incrementando `CACHE_NAME` (por ejemplo de `v2` a `v3`).
-Si no lo haces, algunos usuarios pueden seguir viendo la versión antigua
-cacheada por un tiempo.
+Al publicar cambios, sube `VERSION` en `service-worker.js` (y agrega a `APP_SHELL` cualquier
+archivo nuevo). Si no lo haces, el celular seguirá mostrando la versión guardada en caché.
 
 ## Sobre tus datos
 
