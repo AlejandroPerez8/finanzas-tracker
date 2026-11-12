@@ -10,6 +10,7 @@ import {
   efectivoDelMes,
 } from '../domain/presupuesto.js';
 import { estadisticasMes, textoTasaAhorro } from '../domain/movimientos.js';
+import { indicadoresSalud, ritmoDelMes } from '../domain/salud.js';
 import {
   saldoTarjeta,
   utilizacion,
@@ -22,7 +23,7 @@ import { tamanoDatos } from '../db.js';
 import { VERSION_ACTUAL } from '../services/migraciones.js';
 import { CATEGORIAS_GASTO } from '../domain/categorias.js';
 
-export const VERSION_APP = '5.2.0';
+export const VERSION_APP = '5.3.0';
 const ITERACIONES_PIN = 200000;
 
 async function hashPin(pin, salBase64) {
@@ -73,8 +74,59 @@ export function crearPanelUI(ctx, ingesta) {
         h('div', { class: 'kpi-etiqueta' }, etiqueta),
       );
     const porRevisar = ingesta.contarPendientes();
+    const ritmo = ritmoDelMes(datos, hoy());
+    const salud = indicadoresSalud(datos, mes);
+    // Los indicadores sin historia se resumen en una línea en vez de repetir el mismo aviso.
+    const faltan = salud.filter((i) => i.estado === 'sin_datos').map((i) => i.titulo.toLowerCase());
+    const etiquetaEstado = { ok: 'Bien', alerta: 'Atención', mal: 'Actúa', sin_datos: 'Sin datos' };
     montar(
       'vistaPanel',
+      ritmo.base
+        ? h(
+            'div',
+            { class: 'card ritmo' },
+            h('small', {}, 'Puedes gastar hoy'),
+            h('b', { class: `monto ${ritmo.porDia > 0 ? '' : 'negativo'}` }, formatear(ritmo.porDia)),
+            h(
+              'p',
+              { class: 'nota' },
+              ritmo.disponible > 0
+                ? `Te quedan ${formatear(ritmo.disponible)} ${ritmo.base === 'presupuesto' ? 'de tus presupuestos' : 'para cerrar el mes ahorrando el 20 %'} y ${ritmo.dias} día(s).`
+                : ritmo.base === 'presupuesto'
+                  ? `Ya usaste todos tus presupuestos (${formatear(-ritmo.disponible)} de más). Lo que gastes ahora sale del ahorro.`
+                  : `Ya gastaste ${formatear(-ritmo.disponible)} más de lo que permite ahorrar el 20 % este mes.`,
+            ),
+          )
+        : null,
+      encabezado('Salud financiera', 'qué hacer'),
+      h(
+        'div',
+        { class: 'card' },
+        faltan.length
+          ? h(
+              'p',
+              { class: 'nota' },
+              `Con al menos un mes completo de ingresos y gastos verás también: ${faltan.join(' y ')}.`,
+            )
+          : null,
+        salud
+          .filter((i) => i.estado !== 'sin_datos')
+          .map((i) =>
+            h(
+              'div',
+              { class: `salud-item salud-${i.estado}` },
+              h(
+                'div',
+                { class: 'fila-simple' },
+                h('b', {}, i.titulo),
+                h('span', { class: 'salud-valor' }, i.valor),
+                h('span', { class: `salud-estado salud-${i.estado}` }, etiquetaEstado[i.estado]),
+              ),
+              h('div', { class: 'nota' }, `Meta: ${i.meta}`),
+              h('p', { class: 'salud-consejo' }, i.consejo),
+            ),
+          ),
+      ),
       encabezado('Patrimonio', 'hoy'),
       h(
         'div',

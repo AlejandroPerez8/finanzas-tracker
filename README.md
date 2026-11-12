@@ -8,6 +8,7 @@ PWA de finanzas personales para Colombia. Los datos viven en tu dispositivo: sin
 - **Ingesta automática de Bancolombia** (Gmail y SMS): reconoce los mensajes del banco, los categoriza y los concilia, sin copiar nada a mano.
 - **Tarjetas y deudas**: cupos, ciclos de corte y pago, amortización de cuota fija real (sistema francés), y simulador avalancha/bola de nieve para decidir cómo pagar más rápido.
 - **Comparador con CDT**: qué conviene más, pagar la tarjeta o invertir, con la retención de impuestos ya incluida en la cuenta.
+- **Salud financiera y gasto diario**: fondo de emergencia, tasa de ahorro, uso de tarjetas y carga de deuda con meta y qué hacer, más cuánto puedes gastar hoy sin pasarte del mes.
 - Reportes mensuales con análisis local (sin IA, sin conexión) y exportación lista para Power BI.
 - Seguridad pensada desde el diseño: CSP estricta, PIN, modo discreto y copias de respaldo cifradas. Ver [Seguridad](docs/SEGURIDAD.md).
 

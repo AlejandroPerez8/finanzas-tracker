@@ -1,5 +1,15 @@
 # Cambios
 
+## 5.3.0
+### Nuevo
+- **Salud financiera** en Inicio (`js/domain/salud.js`): fondo de emergencia (meses de gastos
+  cubiertos por cuentas, efectivo y bolsillos), tasa de ahorro promedio, uso de tarjetas y carga
+  de deuda (pagos mínimos frente al ingreso). Cada indicador trae su meta, un estado
+  (Bien / Atención / Actúa) y qué hacer con cifras concretas. Usa promedios de los últimos 3
+  meses cerrados para que un mes a medias no distorsione.
+- **"Puedes gastar hoy"**: lo que queda de tus presupuestos (o, sin presupuestos, del 80 % de tu
+  ingreso promedio) dividido entre los días que faltan del mes.
+
 ## 5.2.0
 ### Nuevo
 - Retiros en cajero con el formato real de Bancolombia ("Retiraste $X en CAJERO de tu T.Deb **1234 el …"),

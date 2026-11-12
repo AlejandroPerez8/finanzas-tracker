@@ -1,11 +1,11 @@
 // Offline primero: la app completa queda en caché. Cambia VERSION en cada entrega.
-const VERSION = '5.2.0';
+const VERSION = '5.3.0';
 const CACHE_NAME = `finanzas-tracker-${VERSION}`;
 const APP_SHELL = [
   './', './index.html', './manifest.json', './css/styles.css', './css/componentes.css',
   './icons/icon-192.png', './icons/icon-512.png', './data/comercios.json',
   './js/app.js', './js/db.js',
-  './js/domain/categorias.js', './js/domain/deudas.js', './js/domain/fechas.js', './js/domain/money.js', './js/domain/movimientos.js', './js/domain/presupuesto.js', './js/domain/tarjetas.js',
+  './js/domain/categorias.js', './js/domain/deudas.js', './js/domain/fechas.js', './js/domain/money.js', './js/domain/movimientos.js', './js/domain/presupuesto.js', './js/domain/salud.js', './js/domain/tarjetas.js',
   './js/parsers/registry.js', './js/parsers/bancolombia/comun.js', './js/parsers/bancolombia/email.js', './js/parsers/bancolombia/sms.js', './js/parsers/bancolombia/patrones.json',
   './js/services/backup.js', './js/services/categorizacion.js', './js/services/conciliacion.js', './js/services/deduplicacion.js', './js/services/exportacion.js', './js/services/ingesta.js', './js/services/migraciones.js', './js/services/registro.js', './js/services/reportes.js', './js/services/sync.js',
   './js/ui/dom.js', './js/ui/ingesta.js', './js/ui/panel.js', './js/ui/principal.js', './js/ui/tarjetas.js', './js/ui/combobox.js',

@@ -53,7 +53,7 @@ export function detectarRecurrentes(transacciones, mesActual) {
 }
 
 /** Saldo de un recurso (bolsillo, meta, CDT) a partir de sus abonos y retiros. */
-function saldoRecurso(transacciones, tipo, id) {
+export function saldoRecurso(transacciones, tipo, id) {
   return transacciones.reduce((s, t) => {
     if (t.targetType !== tipo || t.targetId !== id) return s;
     if (t.type === 'transfer_in') return s + aEntero(t.amount);
