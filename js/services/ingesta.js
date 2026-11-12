@@ -123,6 +123,8 @@ export function aMovimiento(parseado, item, datos, contexto) {
     esCuota: parseado.cuotas != null && parseado.cuotas > 1,
     cuotaInfo: parseado.cuotas ? { nCuotas: parseado.cuotas } : null,
     confianza: parseado.confianza,
+    // Tipo de mensaje del banco (compra_credito, retiro_cajero…): el `type` contable no lo distingue.
+    tipoMensaje: parseado.tipo,
   };
 }
 
@@ -256,6 +258,10 @@ export function confirmar(datos, id, cambios = {}, contexto = {}) {
 function aprenderDigitos(datos, mov) {
   const d = mov.ultimos4;
   if (!/^\d{4}$/.test(d ?? '') || !mov.accountId || mov.tarjetaId) return;
+  // Los dígitos de un mensaje de tarjeta de crédito (o ambiguo, como la cuota de manejo) no son
+  // de la cuenta aunque el usuario la elija como origen: aprenderlos mezclaría productos.
+  const regla = MAPA_TIPOS[mov.tipoMensaje];
+  if (!regla || regla.tarjeta || regla.tarjetaOpcional) return;
   const yaConocidos = [
     ...datos.accounts.flatMap(digitosDeCuenta),
     ...(datos.tarjetas || []).map((t) => t.ultimos4),

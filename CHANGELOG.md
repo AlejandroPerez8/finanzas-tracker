@@ -1,5 +1,11 @@
 # Cambios
 
+## 5.3.2
+### Corregido
+- Al confirmar a mano una compra con una tarjeta de crédito no registrada eligiendo una cuenta de
+  ahorros, la cuenta "aprendía" los dígitos de la tarjeta de crédito como si fueran de la débito.
+  Ahora solo se aprenden dígitos de mensajes de cuenta o débito (`tipoMensaje` en el movimiento).
+
 ## 5.3.1
 ### Corregido
 - El aviso de "efectivo sin rastrear" no partía líneas y desbordaba la pantalla de Inicio 688 px
