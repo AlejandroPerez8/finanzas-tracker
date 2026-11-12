@@ -412,6 +412,57 @@ prueba(
   },
 );
 
+prueba('modo discreto oculta toda cifra de dinero y el bloqueo con PIN es opaco', async () => {
+  const d = datosReales();
+  d.settings.discreto = true;
+  const { pagina: p, contexto } = await nuevaPagina();
+  await p.goto(BASE);
+  await p.evaluate(
+    (valor) =>
+      new Promise((res) => {
+        const r = indexedDB.open('finanzas-tracker-db', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('kv');
+        r.onsuccess = () => {
+          const tx = r.result.transaction('kv', 'readwrite');
+          tx.objectStore('kv').put(valor, 'finance-data');
+          tx.oncomplete = res;
+        };
+      }),
+    JSON.stringify(d),
+  );
+  await p.reload();
+  await p.waitForSelector('#vistaPanel .patrimonio-neto');
+  for (const t of ['Inicio', 'Movs', 'Tarjetas', 'Ahorro', 'Más']) {
+    await tab(p, t);
+    const fugas = await p.evaluate(() => {
+      const oculto = (e) => {
+        for (let n = e; n; n = n.parentElement) if (window.getComputedStyle(n).filter.includes('blur')) return true;
+        return false;
+      };
+      return [...document.querySelectorAll('header *, main *')]
+        .filter(
+          (e) =>
+            e.offsetParent &&
+            [...e.childNodes].some((n) => n.nodeType === 3 && /\$\s?\d/.test(n.textContent)),
+        )
+        .filter((e) => !oculto(e))
+        .map((e) => e.textContent.trim().slice(0, 40));
+    });
+    assert.deepEqual(fugas, [], `cifras visibles en modo discreto (${t})`);
+  }
+  await tab(p, 'Más');
+  await p.getByPlaceholder('4 a 8 dígitos').fill('2580');
+  await p.getByRole('button', { name: 'Activar PIN' }).click();
+  await p.waitForTimeout(500);
+  await p.reload();
+  await p.waitForSelector('input[aria-label="PIN"]');
+  const fondo = await p.evaluate(
+    () => window.getComputedStyle(document.getElementById('overlayPin')).backgroundColor,
+  );
+  assert.ok(!/rgba\(.*,\s*0?\.\d+\)/.test(fondo), `bloqueo translúcido: ${fondo}`);
+  await contexto.close();
+});
+
 let fallos = 0;
 for (const [nombre, fn] of pruebas) {
   try {
