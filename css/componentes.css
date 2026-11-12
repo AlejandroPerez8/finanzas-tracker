@@ -436,9 +436,8 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.72);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  /* Opaco: con el celular bloqueado no se debe adivinar ninguna cifra detrás. */
+  background: var(--bg);
 }
 
 .pin-caja {
@@ -741,3 +740,16 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .onboarding .btn-ghost { white-space: normal; height: auto; line-height: 1.35; padding-top: 10px; padding-bottom: 10px; }
 /* Presupuesto: "$416.500 de $450.000" nunca se parte; el porcentaje puede pasar a otra línea. */
 .presupuesto-cifras .monto { white-space: nowrap; color: var(--text); }
+
+/* Modo discreto (5.3.6): además de .monto, todo texto que pueda llevar cifras de dinero. */
+body.discreto :is(
+    #headerTotalBalance, #monthSub, #accountsTotal, #pocketsTotal, .acc-row .bal, .pocket-row .bal,
+    .ritmo b, .ritmo .nota, .salud-consejo, .chip, .tarjeta-visual .nota, .fp-monto, .goal-nums,
+    .goal-plan, .inv-grid b, .summary-cards .val, .tabla td, .kpi-valor, .presupuesto-cifras,
+    .patrimonio-neto b, .list-row .amt, .bar-row .amt, .tarjeta-visual .btn-row .btn-ghost,
+    #vistaTarjetas .nota, #vistaPresupuesto .nota, #reportsList .report-card *, #reportsList > *
+  ) {
+  filter: blur(6px);
+  -webkit-user-select: none;
+  user-select: none;
+}

@@ -1,5 +1,28 @@
 # Cambios
 
+## 5.3.6
+Verificación definitiva: 40 rondas (R1–R40) en dos pasadas completas limpias.
+
+### Corregido
+- **Modo discreto dejaba cifras a la vista**: saldo total del encabezado, ingresos y gastos del mes,
+  "Puedes gastar hoy", consejos de salud financiera, avisos de tarjetas, botón "Mínimo $…", deudas,
+  comparador, recurrentes y reportes. Ahora ninguna cifra de dinero queda legible en ninguna pestaña.
+- **El bloqueo con PIN era translúcido** (72 % con desenfoque leve): con el celular bloqueado se
+  podían adivinar cifras detrás. Ahora es opaco.
+
+### Pruebas
+- Humo: modo discreto sin cifras visibles en las 5 pestañas y bloqueo con PIN opaco (falla sin el arreglo).
+
+### Verificado sin hallazgos (rondas nuevas R15–R40)
+- Asociación con varias cuentas y dígitos de débito, nómina por tipo de cuenta, dígitos desconocidos
+  a revisión; transferencias propias; deduplicación SMS/correo; presupuestos y recurrentes; flujo de
+  caja; confirmación automática y umbral; rechazos; avances; cuota de manejo, intereses y 4x1000;
+  compras a cuotas; idempotencia por mensaje.
+- Edición de gastos con tarjeta; restauración del respaldo v4; errores de sincronización (token,
+  servidor caído, sin conexión); lote de 250 mensajes con confirmaciones de máximo 100; insignia de
+  pendientes; tableta y escritorio; "Para empezar" oculto; recordatorio diario; avisos de CDT a 5/15/30
+  días; plan de metas; flujo de caja; copia sin secretos; pendientes fuera del gasto.
+
 ## 5.3.5
 Tercera verificación iterativa (enseñar, conciliar, ahorro, seguridad y exportes).
 
