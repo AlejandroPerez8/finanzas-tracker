@@ -23,7 +23,8 @@ PWA de finanzas personales para Colombia. Los datos viven en tu dispositivo: sin
 npm install
 npm start        # App y mock del script en http://localhost:8787/
 npm run check    # Lint, pruebas y cobertura (≥ 85 % en domain y services)
-npm run test:smoke   # Navegador real (ajusta CHROMIUM si hace falta)
+npm run test:smoke   # Navegador real (ajusta CHROMIUM si hace falta), incluye 320/360/390 px
+npm run test:vivo    # Verificación de punta a punta contra el sitio publicado
 ```
 Para producción sirve la carpeta en HTTPS (GitHub Pages sirve tal cual).
 

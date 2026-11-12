@@ -8,6 +8,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
 import { crearMock, TOKEN_MOCK } from '../../integraciones/apps_script/mock/server.js';
+import { datosReales } from '../fixtures/datos-reales.mjs';
 
 const SALIDA = process.env.SMOKE_SALIDA;
 if (SALIDA) mkdirSync(SALIDA, { recursive: true });
@@ -248,6 +249,43 @@ prueba('sin scroll horizontal en ninguna pestaña y objetivos táctiles de 48 px
     );
     assert.deepEqual(pequenos, [], `botones pequeños en ${t}`);
     await foto(p, `05-${t}`);
+  }
+});
+
+prueba('montos de millones en 320, 360 y 390 px: sin desbordes ni cifras recortadas', async () => {
+  const json = JSON.stringify(datosReales());
+  for (const ancho of [320, 360, 390]) {
+    const { pagina: p, contexto } = await nuevaPagina({ viewport: { width: ancho, height: 800 } });
+    await p.goto(BASE);
+    await p.evaluate(
+      (valor) =>
+        new Promise((res) => {
+          const r = indexedDB.open('finanzas-tracker-db', 1);
+          r.onupgradeneeded = () => r.result.createObjectStore('kv');
+          r.onsuccess = () => {
+            const tx = r.result.transaction('kv', 'readwrite');
+            tx.objectStore('kv').put(valor, 'finance-data');
+            tx.oncomplete = res;
+          };
+        }),
+      json,
+    );
+    await p.reload();
+    await p.waitForSelector('#vistaPanel .patrimonio-neto');
+    for (const t of ['Inicio', 'Movs', 'Tarjetas', 'Ahorro', 'Más']) {
+      await tab(p, t);
+      await p.evaluate(() => document.querySelectorAll('details').forEach((d) => (d.open = true)));
+      const r = await p.evaluate(() => ({
+        desborde: document.documentElement.scrollWidth - window.innerWidth,
+        // Una cifra de dinero nunca debe quedar cortada con "…".
+        cifrasCortadas: [...document.querySelectorAll('.monto, .kpi-valor, .sum-card .val')]
+          .filter((e) => e.offsetParent && e.scrollWidth > e.clientWidth + 1)
+          .map((e) => e.textContent.trim()),
+      }));
+      assert.ok(r.desborde <= 0, `${ancho}px ${t}: desborde de ${r.desborde}px`);
+      assert.deepEqual(r.cifrasCortadas, [], `${ancho}px ${t}: cifras recortadas`);
+    }
+    await contexto.close();
   }
 });
 

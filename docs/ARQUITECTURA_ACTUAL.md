@@ -11,7 +11,7 @@ index.html            Marcado, sin scripts en línea (CSP)
 css/                  styles.css (original), componentes.css (nuevo)
 js/app.js             Pantallas originales, extraídas casi sin cambios
 js/db.js              Persistencia y arranque de migraciones
-js/domain/            Reglas puras: money, fechas, movimientos, tarjetas, deudas, presupuesto
+js/domain/            Reglas puras: money, fechas, movimientos, tarjetas, deudas, presupuesto, salud
 js/services/          ingesta, sync, deduplicacion, categorizacion, conciliacion, migraciones, backup, reportes, exportacion, registro
 js/parsers/           registry.js y bancolombia/ (patrones.json editable)
 js/ui/                Pantallas nuevas; dom.js nunca usa innerHTML

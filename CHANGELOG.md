@@ -1,5 +1,35 @@
 # Cambios
 
+## 5.3.3
+Resultado de una verificación iterativa completa (pantallas, flujos, mensajes, cifras y rendimiento).
+
+### Corregido
+- **Cifras de dinero recortadas con "…"** en Patrimonio (p. ej. "$19.225.1…") en celulares de 320
+  y 360 px: el tamaño se ajusta al ancho y, bajo 360 px, los indicadores pasan a una columna.
+- **Resumen del mes desbordaba Inicio** (24 px a 390, 54 a 360 y 94 a 320) con montos de 7 dígitos.
+- El paso "Agrega tu cuenta y sus últimos 4 dígitos" de *Para empezar* desbordaba a 320 px.
+- En revisión, el comercio se ve en hasta dos líneas en vez de cortarse en una.
+- Botones de editar, duplicar y borrar pasan de 32 a 40 px de alto (más fáciles de tocar), con
+  relleno lateral mínimo para no quitarle espacio al comercio ni al nombre de la cuenta.
+- En revisión, el campo Categoría se oculta para transferencias propias y pagos de tarjeta, que no
+  son gasto (antes mostraba "Alimentación" de ejemplo en un retiro).
+- Dos cifras distintas se llamaban "Tasa de ahorro": ahora son **"Ahorro del mes"** (rueda y
+  panel) y **"Ahorro promedio (3 meses)"** (salud financiera).
+
+### Pruebas
+- Prueba de humo nueva con 6 meses de datos realistas en 320, 360 y 390 px: falla si algo
+  desborda o si una cifra de dinero queda recortada (`tests/fixtures/datos-reales.mjs`).
+
+### Verificado sin hallazgos
+- Sincronización desde el navegador con el script nuevo (token nunca en la URL) y con el anterior;
+  SMS + correo del mismo retiro = un solo movimiento.
+- Revisión, aprendizaje de dígitos, edición de cuenta, modo discreto, exportes, respaldo cifrado
+  de ida y vuelta, clave equivocada y PIN.
+- 29 variantes de mensajes (formatos, rechazos, publicidad, claves dinámicas, mensajes personales)
+  y el enmascarado de `Code.gs` antes del parser.
+- Cada cifra en pantalla coincide con el cálculo del dominio; con 15.059 movimientos la app carga
+  en 1,8 s y cambia de pestaña en menos de 0,3 s.
+
 ## 5.3.2
 ### Corregido
 - Al confirmar a mano una compra con una tarjeta de crédito no registrada eligiendo una cuenta de
