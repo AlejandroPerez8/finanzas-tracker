@@ -23,7 +23,7 @@ import { tamanoDatos } from '../db.js';
 import { VERSION_ACTUAL } from '../services/migraciones.js';
 import { CATEGORIAS_GASTO } from '../domain/categorias.js';
 
-export const VERSION_APP = '5.3.3';
+export const VERSION_APP = '5.3.4';
 const ITERACIONES_PIN = 200000;
 
 async function hashPin(pin, salBase64) {
@@ -223,7 +223,6 @@ export function crearPanelUI(ctx, ingesta) {
                   'div',
                   { class: 'fila-simple' },
                   h('b', {}, a.categoria),
-                  h('span', { class: 'monto' }, `${formatear(a.gastado)} de ${formatear(a.limite)}`),
                   h(
                     'button',
                     {
@@ -253,7 +252,13 @@ export function crearPanelUI(ctx, ingesta) {
                     style: { width: `${Math.min(100, a.porcentaje)}%` },
                   }),
                 ),
-                h('p', { class: 'nota' }, `${texto[a.nivel]}${a.porcentaje} %`),
+                // Monto debajo de la barra: en 320 px nombre, montos y botón no caben en una sola fila.
+                h(
+                  'p',
+                  { class: 'nota presupuesto-cifras' },
+                  h('span', { class: 'monto' }, `${formatear(a.gastado)} de ${formatear(a.limite)}`),
+                  ` · ${texto[a.nivel]}${a.porcentaje} %`,
+                ),
               ),
             )
           : vacio('Sin presupuestos', 'Define un límite por categoría y la app te avisa al 80 % y al 100 %.'),

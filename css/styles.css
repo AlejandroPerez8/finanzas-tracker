@@ -1,7 +1,7 @@
   :root{
   --bg:#0E1217; --surface:#161C23; --surface-2:#1E2733;
-  --accent:#9085E9; --accent-dim:#282447; --bonus:#0CA30C;
-  --warn:#E05A5A; --warn-dim:#241414; --amber:#FAB219;
+  --accent:#9085E9; --accent-dim:#282447; --bonus:#14AD14;
+  --warn:#EB6E6E; --warn-dim:#241414; --amber:#FAB219;
   --text-main:#F2F4F1; --text-muted:#94A3B8;
   --text:var(--text-main); --muted:var(--text-muted);
   --border:#2A343F; --radius:14px;
@@ -205,7 +205,9 @@ button:disabled{opacity:0.5; cursor:default;}
 .report-card{background:var(--surface-2); border-radius:12px; padding:14px; margin-bottom:12px;}
 .report-card:last-child{margin-bottom:0;}
 .report-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
-.report-top .name{font-size:16px; font-weight:600; text-transform:capitalize;}
+.report-top .name{font-size:16px; font-weight:600;}
+/* Solo la primera letra en mayúscula: "Octubre de 2026", no "Octubre De 2026". */
+.report-top .name::first-letter{text-transform:uppercase;}
 .report-top .rate{font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--accent);}
 .report-stats{display:flex; gap:10px; margin-bottom:10px;}
 .report-stats .stat{flex:1; text-align:center;}

@@ -184,12 +184,13 @@ export function cicloVigente(ciclos, tarjetaId, hoy = diaBogota()) {
 }
 
 /**
- * Marca como pagado el ciclo más reciente si los pagos desde su corte cubren el mínimo.
+ * Recalcula si cada ciclo quedó pagado: los pagos confirmados desde su corte cubren el mínimo.
+ * Es reversible: si se borra o descarta el pago, el ciclo vuelve a "no pagado" y su alerta regresa.
  * Devuelve copias: no modifica los ciclos recibidos.
  */
 export function actualizarCiclos(ciclos, transacciones, tarjetaId) {
   return ciclos.map((c) => {
-    if (c.tarjetaId !== tarjetaId || c.pagado) return c;
+    if (c.tarjetaId !== tarjetaId) return c;
     const pagos = transacciones.reduce(
       (s, t) =>
         t.type === 'pago_tarjeta' &&
@@ -201,6 +202,18 @@ export function actualizarCiclos(ciclos, transacciones, tarjetaId) {
           : s,
       0,
     );
-    return pagos >= aEntero(c.pagoMinimo) ? { ...c, pagado: true } : c;
+    if (pagos >= aEntero(c.pagoMinimo)) return c.pagado ? c : { ...c, pagado: true };
+    return c.pagado ? { ...c, pagado: false } : c;
   });
+}
+
+/**
+ * Recalcula los ciclos de todas las tarjetas. Se llama en cada guardado, así un pago que llega por
+ * mensaje del banco, un extracto registrado después del pago o un pago borrado quedan reflejados.
+ */
+export function sincronizarCiclos(datos) {
+  let ciclos = datos.ciclos || [];
+  for (const t of datos.tarjetas || []) ciclos = actualizarCiclos(ciclos, datos.transactions, t.id);
+  datos.ciclos = ciclos;
+  return datos;
 }

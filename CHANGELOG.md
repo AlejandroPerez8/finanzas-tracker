@@ -1,5 +1,38 @@
 # Cambios
 
+## 5.3.4
+Segunda verificación iterativa completa (actualización del celular, tarjetas, fechas y accesibilidad).
+
+### Corregido
+- **Pagar la tarjeta de crédito se contaba como gasto.** Un mensaje "Pagaste $X a tu T.Cred / VISA /
+  MASTERCARD … desde tu producto" coincidía con *pago de servicio* (confianza 0,95) y se confirmaba
+  solo como gasto, contando dos veces lo ya gastado con la tarjeta. Ahora es *pago de tarjeta* y pasa
+  por revisión; los servicios con nombres parecidos ("VISAJES…") siguen siendo servicios.
+- **Ciclo de tarjeta no quedaba pagado** si el pago llegaba por mensaje del banco o si el extracto se
+  registraba después del pago: pasada la fecha límite habría aparecido la alerta urgente "venció el
+  pago sin cubrir el mínimo". El estado se recalcula en cada guardado y es reversible si se borra el pago.
+- **Celular en otra zona horaria** (p. ej. de viaje en Punta Cana, o Android en UTC): cerca de la
+  medianoche el inicio, el historial y el registro usaban otro día o mes que el panel. Toda la app usa
+  ahora el día de Bogotá, como los mensajes del banco.
+- **Contraste**: verde de ingresos (#14AD14) y rojo de gastos (#EB6E6E) pasan WCAG AA (≥ 4,5:1) sobre
+  todos los fondos; antes quedaban en 4,49 y 4,15.
+- **Cifras partidas en dos líneas** ("$3.200.0" / "00") en el resumen del mes, y "Usado/Disponible/
+  Cupo" de la tarjeta a 320 px: una cifra de dinero nunca se parte; bajo 390 px las cifras de la
+  tarjeta pasan a filas tipo extracto y el resumen reacomoda sus casillas.
+- Presupuestos: el monto "$416.500 de $450.000" va debajo de la barra, siempre en una línea.
+- Reportes: "Octubre de 2026" en vez de "Octubre De 2026".
+- Campos sin nombre accesible: fecha del movimiento, mes del historial, cuenta y monto de abonos y la
+  hora del recordatorio.
+
+### Pruebas
+- Humo: celular en Punta Cana y en UTC usa el día de Bogotá en todas las pantallas.
+- Humo: ninguna cifra de dinero se recorta ni se parte en dos líneas (320/360/390 px).
+- Unidad: ciclos recalculados en ambos sentidos; pagos de tarjeta nunca como servicio.
+
+### Verificado sin hallazgos
+- Actualización real del celular: 5.3.2 instalada con datos de antes de 5.2 → aviso "Hay una versión
+  nueva" → actualizar → sin pérdida de datos, caché nueva y funcionando sin conexión.
+
 ## 5.3.3
 Resultado de una verificación iterativa completa (pantallas, flujos, mensajes, cifras y rendimiento).
 

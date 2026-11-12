@@ -187,3 +187,24 @@ if (existsSync(carpetaReales)) {
     });
   }
 }
+
+test('pagar la tarjeta de crédito nunca se confirma solo como gasto de un servicio', () => {
+  const casos = [
+    'Bancolombia: Pagaste $80.000,00 a tu T.Cred *7711 desde tu cuenta *1234 el 12/11/2026 a las 09:00.',
+    'Bancolombia: Pagaste $80.000,00 a TARJETA DE CREDITO VISA desde tu producto *1234 el 12/11/2026 a las 09:00.',
+    'Bancolombia: Pagaste $80.000,00 a VISA BANCOLOMBIA 7711 desde tu producto *1234 el 12/11/2026 09:00:00.',
+    'Bancolombia: Pagaste $80.000,00 a MASTERCARD *7711 desde tu producto *1234 el 12/11/2026 09:00:00.',
+  ];
+  for (const texto of casos) {
+    const r = registro.analizar(texto, { fuente: 'sms', recibidoEn: RECIBIDO });
+    assert.equal(r.tipo, 'pago_tarjeta', texto);
+    assert.ok(r.confianza < 0.9, `${texto}: debe pasar por revisión`);
+    assert.equal(r.monto, 80000);
+  }
+  // Los servicios con nombres parecidos siguen siendo servicios.
+  const visajes = registro.analizar(
+    'Bancolombia: Pagaste $45.000,00 a VISAJES Y ESTETICA LA 70 desde tu producto *1234 el 05/11/2026 07:02:40.',
+    { fuente: 'sms', recibidoEn: RECIBIDO },
+  );
+  assert.equal(visajes.tipo, 'pago_servicio');
+});

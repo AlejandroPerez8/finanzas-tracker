@@ -621,7 +621,12 @@ body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 .tv-cifras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
 .tv-cifras > div { display: flex; flex-direction: column; min-width: 0; }
 .tv-cifras small { color: var(--muted); font-size: 11px; }
-.tv-cifras .monto { font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+.tv-cifras .monto { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+/* Bajo 390 px las tres cifras no caben en columnas: pasan a filas tipo extracto (etiqueta · monto). */
+@media (max-width: 389px) {
+  .tv-cifras { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .tv-cifras > div { flex-direction: row; justify-content: space-between; align-items: baseline; gap: 12px; }
+}
 .fila-pendiente { display: block; margin-top: 12px; }
 .fp-monto { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: var(--font-mono); font-size: 18px; }
 .fp-detalle { margin: 6px 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
@@ -705,14 +710,16 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
   font-size: clamp(0.95rem, 4.4vw, 1.25rem);
   overflow: visible;
   text-overflow: clip;
-  overflow-wrap: anywhere;
+  /* Una cifra nunca se parte en dos líneas ("$3.200.0" / "00"): se reacomoda la cuadrícula. */
+  white-space: nowrap;
 }
 @media (max-width: 359px) {
   .panel-kpis { grid-template-columns: minmax(0, 1fr); }
 }
-.summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); }
-.sum-card { min-width: 0; }
-.sum-card .val { font-size: clamp(15px, 4.6vw, 19px); overflow-wrap: anywhere; }
+/* Tres casillas si caben; si no, la tercera (Balance) pasa sola a la fila de abajo a todo el ancho. */
+.summary-cards { display: flex; flex-wrap: wrap; }
+.sum-card { flex: 1 1 112px; min-width: 0; }
+.sum-card .val { font-size: clamp(15px, 4.6vw, 19px); white-space: nowrap; }
 /* En revisión se necesita leer el comercio completo: hasta dos líneas. */
 .fp-detalle {
   white-space: normal;
@@ -732,3 +739,5 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .row-actions { gap: 2px; }
 /* Los pasos de "Para empezar" son frases: parten línea en pantallas de 320 px. */
 .onboarding .btn-ghost { white-space: normal; height: auto; line-height: 1.35; padding-top: 10px; padding-bottom: 10px; }
+/* Presupuesto: "$416.500 de $450.000" nunca se parte; el porcentaje puede pasar a otra línea. */
+.presupuesto-cifras .monto { white-space: nowrap; color: var(--text); }

@@ -64,15 +64,15 @@
    "tipo": "pago_tarjeta",
    "confianza": 0.8,
    "verificado": false,
-   "regex": "(?:pagaste|pago(?: de)?(?: tu)?(?: a)?)\\s+(?:(?:de\\s+)?(?:tu\\s+)?(?:t\\.?\\s?cred|tarjeta(?: de credito)?)\\s*\\*{0,2}(?<ultimos4a>\\d{4})?[^$\\d]*)?(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)(?:[^.]*?(?:t\\.?\\s?cred|tarjeta(?: de credito)?)\\s*\\*{0,2}(?<ultimos4>\\d{4}))?[^.]*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?",
-   "exigeTexto": "(?:t\\.?\\s?cred|tarjeta de credito|tu tarjeta)"
+   "regex": "(?:pagaste|pago(?: de)?(?: tu)?(?: a)?)\\s+(?:(?:de\\s+)?(?:tu\\s+)?(?:t\\.?\\s?cred|tarjeta(?: de credito)?|visa|master\\s?card|american express|amex|diners)\\s*\\*{0,2}(?<ultimos4a>\\d{4})?[^$\\d]*)?(?:por\\s+)?(?:\\$|COP)\\s*(?<monto>[\\d.,]*\\d)(?:[^.]*?(?:t\\.?\\s?cred|tarjeta(?: de credito)?|visa|master\\s?card|american express|amex|diners)\\s*\\*{0,2}(?<ultimos4>\\d{4}))?[^.]*?(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s*(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)?",
+   "exigeTexto": "(?:t\\.?\\s?cred|tarjeta de credito|tu tarjeta|\\bvisa\\b|master\\s?card|american express|\\bamex\\b|\\bdiners\\b)"
   },
   {
    "id": "pago_servicio",
    "tipo": "pago_servicio",
    "confianza": 0.95,
    "verificado": true,
-   "regex": "pagaste\\s+(?:\\$|COP)?\\s*(?<monto>[\\d.,]*\\d)\\s+a\\s+(?<comercio>.+?)\\s+desde tu (?:cuenta|producto)\\s+\\*{0,2}(?<ultimos4>\\d{4})\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s+(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)"
+   "regex": "pagaste\\s+(?:\\$|COP)?\\s*(?<monto>[\\d.,]*\\d)\\s+a\\s+(?!(?:tu\\s+)?(?:t\\.?\\s?cred|tarjeta(?: de)? credito|visa|master\\s?card|american express|amex|diners)\\b)(?<comercio>.+?)\\s+desde tu (?:cuenta|producto)\\s+\\*{0,2}(?<ultimos4>\\d{4})\\s+el\\s+(?<fecha>\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)(?:\\s+a las)?\\s+(?<hora>\\d{1,2}:\\d{2}(?::\\d{2})?)"
   },
   {
    "id": "transferencia_enviada",
