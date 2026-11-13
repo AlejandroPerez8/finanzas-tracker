@@ -115,7 +115,7 @@ export function aMovimiento(parseado, item, datos, contexto) {
     comercio: parseado.comercio ?? '',
     note: '',
     method: tarjetaId ? 'Crédito' : '',
-    origen: item.fuente === 'sms' || item.fuente === 'gmail' ? item.fuente : 'importacion',
+    origen: item.fuente === 'gmail' ? 'gmail' : 'importacion',
     estado: 'pendiente_revision',
     ultimos4: parseado.ultimos4,
     referenciaBanco: parseado.referencia,

@@ -17,7 +17,8 @@ export function h(etiqueta, props = {}, ...hijos) {
     else if (k === 'value') el.value = v;
     else if (k === 'checked' || k === 'disabled' || k === 'selected' || k === 'hidden') el[k] = !!v;
     // Propiedades vía CSSOM, no el atributo `style`: así no depende de 'unsafe-inline' en la CSP.
-    else if (k === 'style' && typeof v === 'object') for (const [p, val] of Object.entries(v)) el.style.setProperty(p, val);
+    else if (k === 'style' && typeof v === 'object')
+      for (const [p, val] of Object.entries(v)) el.style.setProperty(p, val);
     else el.setAttribute(k, v === true ? '' : v);
   }
   agregar(el, hijos);
@@ -29,6 +30,16 @@ function agregar(el, hijos) {
     if (hijo == null || hijo === false) continue;
     el.append(hijo instanceof Node ? hijo : document.createTextNode(String(hijo)));
   }
+}
+
+const NS_SVG = 'http://www.w3.org/2000/svg';
+
+/** Crea un elemento SVG con atributos e hijos. */
+export function s(etiqueta, attrs = {}, ...hijos) {
+  const el = document.createElementNS(NS_SVG, etiqueta);
+  for (const [k, v] of Object.entries(attrs)) if (v != null && v !== false) el.setAttribute(k, v);
+  el.append(...hijos.flat().filter((x) => x != null && x !== false));
+  return el;
 }
 
 /** Reemplaza el contenido de un contenedor. */
@@ -123,13 +134,7 @@ export function snackbar(mensaje, etiquetaAccion, accion) {
 
 /** Gráfico de líneas accesible con leyenda; el resumen numérico queda en una tabla aparte. */
 export function graficoLineas(series, etiquetaEje) {
-  const NS = 'http://www.w3.org/2000/svg';
-  const svgEl = (t, a = {}, ...hijos) => {
-    const e = document.createElementNS(NS, t);
-    for (const [k, v] of Object.entries(a)) e.setAttribute(k, v);
-    e.append(...hijos);
-    return e;
-  };
+  const svgEl = s;
   const ancho = 320;
   const alto = 150;
   const margen = { izq: 4, der: 4, arr: 8, aba: 20 };

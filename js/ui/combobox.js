@@ -68,8 +68,16 @@ function activarUno(input) {
   input.addEventListener('input', render);
   input.addEventListener('focus', render);
   input.addEventListener('blur', () => setTimeout(cerrar, 100));
-  window.addEventListener('scroll', () => { if (!caja.hidden) posicionar(); }, true);
-  window.addEventListener('resize', () => { if (!caja.hidden) posicionar(); });
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (!caja.hidden) posicionar();
+    },
+    true,
+  );
+  window.addEventListener('resize', () => {
+    if (!caja.hidden) posicionar();
+  });
 }
 
 /** Activa (o reactiva sobre nodos nuevos) el combobox en todos los input[list] del documento. */

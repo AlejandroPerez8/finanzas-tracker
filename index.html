@@ -2,21 +2,20 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Finanzas & Ahorro — Seguimiento</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Finanzas — tu dinero, claro</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
-
-
-<meta name="theme-color" content="#0E1217">
+<meta name="theme-color" content="#0B3D2E">
+<meta name="color-scheme" content="light dark">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Finanzas">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="preload" href="./fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+<script src="./js/tema.js"></script>
 <link rel="stylesheet" href="./css/styles.css">
 <link rel="stylesheet" href="./css/componentes.css">
 <script type="module" src="./js/app.js"></script>
@@ -24,26 +23,38 @@
 <body>
 
 <header class="top" data-tab="inicio">
-  <div class="eyebrow">Saldo disponible</div>
-  <h1 class="total-balance"><span class="lbl">En todas tus cuentas</span><span id="headerTotalBalance">$0</span></h1>
-  <div class="wheel-row">
-    <div class="wheel-wrap">
-      <svg id="wheelSvg" viewBox="0 0 120 120" width="120" height="120"></svg>
-      <div class="wheel-center">
-        <div class="num" id="wheelPct">0%</div>
-        <div class="lbl">ahorro del mes</div>
+  <div class="hero">
+    <div class="hero-fila">
+      <div class="hero-saldo">
+        <div class="eyebrow">Disponible hoy</div>
+        <h1 class="total-balance"><span id="headerTotalBalance">$0</span></h1>
+        <div class="hero-sub">En tus cuentas y efectivo · <span id="heroFecha"></span></div>
       </div>
+      <button class="hero-ojo" id="discretoBtn" type="button" aria-label="Ocultar cifras" aria-pressed="false"></button>
     </div>
-    <div class="week-summary">
-      <p class="headline" id="monthHeadline">Empezando el mes</p>
-      <p class="sub" id="monthSub"></p>
-      <div class="streak-line">
-        <div class="streak-pill">🔥 <b id="currentStreak">0</b> días</div>
-        <div class="streak-pill">🎯 <b id="activeGoals">0</b> metas</div>
+    <div class="wheel-row">
+      <div class="wheel-wrap">
+        <svg id="wheelSvg" viewBox="0 0 120 120" width="88" height="88" aria-hidden="true"></svg>
+        <div class="wheel-center">
+          <div class="num" id="wheelPct">0%</div>
+          <div class="lbl">ahorro</div>
+        </div>
+      </div>
+      <div class="week-summary">
+        <p class="headline" id="monthHeadline">Empezando el mes</p>
+        <p class="sub" id="monthSub"></p>
+        <div class="streak-line">
+          <div class="streak-pill">Racha <b id="currentStreak">0</b> días</div>
+          <div class="streak-pill"><b id="activeGoals">0</b> metas</div>
+        </div>
       </div>
     </div>
   </div>
 </header>
+<header class="titulo-pagina" data-tab="movimientos"><h1>Movimientos</h1><p>Lo que entra, lo que sale y lo que falta por revisar.</p></header>
+<header class="titulo-pagina" data-tab="tarjetas"><h1>Tarjetas y deudas</h1><p>Cuánto debes, cuándo pagar y cómo salir más rápido.</p></header>
+<header class="titulo-pagina" data-tab="ahorro"><h1>Ahorro</h1><p>Cuentas, bolsillos, metas e inversiones.</p></header>
+<header class="titulo-pagina" data-tab="mas"><h1>Más</h1><p>Presupuesto, reportes y ajustes.</p></header>
 
 <main id="principal">
 
@@ -75,26 +86,26 @@
   <section data-tab="ahorro">
     <div class="section-head">
       <h2>Cuentas</h2>
-      <span class="tag">saldos</span>
+      <span class="tag">dinero disponible</span>
     </div>
     <div class="card">
       <div id="accountsList"></div>
-      <div class="acc-total-row"><span class="lbl">Total</span><span class="val" id="accountsTotal">$0</span></div>
-      <div class="extra-toggle-row margen-arriba-chico"><span id="accFormToggle">+ agregar cuenta</span></div>
+      <div class="acc-total-row"><span class="lbl">Total en cuentas</span><span class="val" id="accountsTotal">$0</span></div>
+      <div class="extra-toggle-row"><button type="button" class="enlace" id="accFormToggle">+ agregar cuenta</button></div>
       <div class="extra-fields" id="accFormFields">
-        <input type="text" id="accName" placeholder="Nombre (ej. Bancolombia Ahorros)">
+        <input type="text" id="accName" placeholder="Nombre (ej. Bancolombia Ahorros)" aria-label="Nombre de la cuenta">
         <div class="weight-input-row">
-          <select id="accType">
+          <select id="accType" aria-label="Tipo de cuenta">
             <option value="Ahorros">Ahorros</option>
             <option value="Corriente">Corriente</option>
             <option value="Efectivo">Efectivo</option>
             <option value="Digital">Billetera digital</option>
           </select>
-          <input type="number" id="accBalance" placeholder="Saldo actual (COP)" min="0" step="1000">
+          <input type="number" id="accBalance" placeholder="Saldo actual (COP)" aria-label="Saldo actual" min="0" step="1000">
         </div>
         <input type="text" id="accUltimos4" inputmode="numeric" maxlength="4" aria-label="Últimos 4 dígitos de la cuenta" placeholder="Últimos 4 de la cuenta (ej. *1234)" autocomplete="off">
         <input type="text" id="accUltimos4Debito" inputmode="numeric" maxlength="4" aria-label="Últimos 4 dígitos de la tarjeta débito" placeholder="Últimos 4 de la tarjeta débito (T.Deb **)" autocomplete="off">
-        <div class="mini-hint">Los mensajes de compras y retiros traen los dígitos de la tarjeta débito; los de transferencias y pagos, los de la cuenta. Con ambos, la app los asocia sola.</div>
+        <div class="mini-hint">Los correos de compras y retiros traen los dígitos de la tarjeta débito; los de transferencias y pagos, los de la cuenta. Con ambos, la app los asocia sola.</div>
         <button class="btn-accent" id="addAccBtn">Guardar cuenta</button>
       </div>
     </div>
@@ -107,13 +118,13 @@
     </div>
     <div class="card">
       <div id="pocketsList"></div>
-      <div class="acc-total-row"><span class="lbl">Total bolsillos</span><span class="val" id="pocketsTotal">$0</span></div>
-      <div class="extra-toggle-row margen-arriba-chico"><span id="pocketFormToggle">+ agregar bolsillo</span></div>
+      <div class="acc-total-row"><span class="lbl">Total en bolsillos</span><span class="val" id="pocketsTotal">$0</span></div>
+      <div class="extra-toggle-row"><button type="button" class="enlace" id="pocketFormToggle">+ agregar bolsillo</button></div>
       <div class="extra-fields" id="pocketFormFields">
-        <input type="text" id="pocketName" placeholder="Nombre (ej. Viaje, Arriendo, Emergencias)">
+        <input type="text" id="pocketName" placeholder="Nombre (ej. Viaje, Arriendo, Emergencias)" aria-label="Nombre del bolsillo">
         <div class="weight-input-row">
-          <select id="pocketAccount"></select>
-          <input type="number" id="pocketBalance" placeholder="Saldo inicial (COP, opcional)" min="0" step="1000">
+          <select id="pocketAccount" aria-label="Cuenta asociada"></select>
+          <input type="number" id="pocketBalance" placeholder="Saldo inicial (COP, opcional)" aria-label="Saldo inicial" min="0" step="1000">
         </div>
         <button class="btn-accent" id="addPocketBtn">Guardar bolsillo</button>
       </div>
@@ -121,34 +132,42 @@
   </section>
 
   <div id="vistaOnboarding" data-tab="inicio"></div>
-  <section data-tab="inicio" id="vistaPanel" aria-label="Panel"></section>
+  <section data-tab="inicio" id="vistaHoy" aria-label="Hoy"></section>
   <section data-tab="inicio">
     <div class="section-head">
-      <h2>Resumen</h2>
+      <h2>Este mes</h2>
       <span class="tag" id="summaryMonthLabel"></span>
     </div>
     <div class="card">
       <div class="summary-cards">
-        <div class="sum-card"><div class="val income" id="sumIncome">$0</div><div class="lbl">Ingresos</div></div>
-        <div class="sum-card"><div class="val expense" id="sumExpense">$0</div><div class="lbl">Gastos</div></div>
-        <div class="sum-card"><div class="val balance" id="sumBalance">$0</div><div class="lbl">Balance</div></div>
+        <div class="sum-card"><div class="lbl">Ingresos</div><div class="val income" id="sumIncome">$0</div></div>
+        <div class="sum-card"><div class="lbl">Gastos</div><div class="val expense" id="sumExpense">$0</div></div>
+        <div class="sum-card"><div class="lbl">Balance</div><div class="val balance" id="sumBalance">$0</div></div>
       </div>
+      <div id="proyeccionMes"></div>
+      <h3 class="subtitulo">En qué se va</h3>
       <div id="categoryBars"></div>
-      <svg class="trend" id="trendSvg" viewBox="0 0 300 80" preserveAspectRatio="none"></svg>
-      <div class="leyenda-tendencia">Balance neto — últimos 6 meses</div>
+      <h3 class="subtitulo">Últimos 6 meses</h3>
+      <svg class="trend" id="trendSvg" viewBox="0 0 320 132" role="img" aria-label="Ingresos y gastos de los últimos 6 meses"></svg>
+      <div class="leyenda leyenda-tendencia">
+        <span class="leyenda-item"><span class="leyenda-cuadro ingreso"></span>Ingresos</span>
+        <span class="leyenda-item"><span class="leyenda-cuadro gasto"></span>Gastos</span>
+      </div>
     </div>
   </section>
+  <section data-tab="inicio" id="vistaPanel" aria-label="Panel"></section>
 
   <section data-tab="movimientos" id="vistaIngesta" aria-label="Ingesta"></section>
   <section data-tab="movimientos" id="seccionRegistrar">
     <div class="section-head">
       <h2>Registrar</h2>
-      <span class="tag">movimiento</span>
+      <span class="tag">a mano</span>
     </div>
     <div class="card">
-      <div class="type-toggle" id="typeToggle">
-        <div class="type-pill active income" data-type="income">Ingreso</div>
-        <div class="type-pill expense" data-type="expense">Gasto</div>
+      <div class="type-toggle" id="typeToggle" role="tablist" aria-label="Tipo de movimiento">
+        <button type="button" class="type-pill active income" data-type="income">Ingreso</button>
+        <button type="button" class="type-pill expense" data-type="expense">Gasto</button>
+        <button type="button" class="type-pill transfer" data-type="transfer">Traslado</button>
       </div>
       <div class="weight-input-row">
         <input type="number" id="txAmount" inputmode="numeric" aria-label="Monto en pesos" placeholder="Monto (COP)" min="0" step="1000">
@@ -158,21 +177,24 @@
         <select id="txAccount" aria-label="Medio de pago"></select>
         <input type="date" id="txDate" aria-label="Fecha del movimiento">
       </div>
-      <div class="weight-input-row">
+      <div class="weight-input-row" id="txDestinoFila" hidden>
+        <select id="txDestino" aria-label="Cuenta de destino"></select>
+      </div>
+      <div class="weight-input-row" id="txDetalleFila">
         <input type="text" id="txComercio" list="listaComercios" aria-label="Comercio" placeholder="Comercio" autocomplete="off">
         <input type="number" id="txCuotas" inputmode="numeric" aria-label="Número de cuotas" placeholder="Cuotas (tarjeta)" min="1" max="60" step="1">
       </div>
       <datalist id="listaComercios"></datalist>
-      <div class="extra-toggle-row"><span id="txExtraToggle" role="button" tabindex="0">+ agregar método o nota</span></div>
+      <div class="extra-toggle-row"><button type="button" class="enlace" id="txExtraToggle">+ agregar método o nota</button></div>
       <div class="extra-fields" id="txExtraFields">
-        <select id="txMethod">
+        <select id="txMethod" aria-label="Método de pago">
           <option value="">Método de pago</option>
           <option value="Efectivo">Efectivo</option>
           <option value="Débito">Débito</option>
           <option value="Crédito">Crédito</option>
           <option value="Transferencia">Transferencia</option>
         </select>
-        <textarea id="txNote" placeholder="Nota (opcional)"></textarea>
+        <textarea id="txNote" placeholder="Nota (opcional)" aria-label="Nota"></textarea>
       </div>
       <button class="btn-accent boton-ancho" id="addTxBtn">Guardar movimiento</button>
     </div>
@@ -184,7 +206,15 @@
       <input type="month" id="historyMonth" class="mes-compacto" aria-label="Mes del historial">
     </div>
     <div class="card">
-      <div class="weight-list lista-con-scroll" id="historyList"></div>
+      <input type="search" id="historySearch" placeholder="Buscar comercio, categoría o nota" aria-label="Buscar en el historial" autocomplete="off">
+      <div class="filtros" id="historyFilters" role="group" aria-label="Filtrar el historial">
+        <button type="button" class="filtro" data-filtro="todos" aria-pressed="true">Todo</button>
+        <button type="button" class="filtro" data-filtro="ingresos" aria-pressed="false">Ingresos</button>
+        <button type="button" class="filtro" data-filtro="gastos" aria-pressed="false">Gastos</button>
+        <button type="button" class="filtro" data-filtro="traslados" aria-pressed="false">Traslados</button>
+      </div>
+      <div class="historial-resumen" id="historySummary"></div>
+      <div class="weight-list" id="historyList"></div>
     </div>
   </section>
 
@@ -195,12 +225,12 @@
     </div>
     <div class="card">
       <div id="goalsList"></div>
-      <div class="extra-toggle-row"><span id="goalFormToggle">+ nueva meta</span></div>
+      <div class="extra-toggle-row"><button type="button" class="enlace" id="goalFormToggle">+ nueva meta</button></div>
       <div class="extra-fields" id="goalFormFields">
-        <input type="text" id="goalName" placeholder="Nombre de la meta">
+        <input type="text" id="goalName" placeholder="Nombre de la meta" aria-label="Nombre de la meta">
         <div class="weight-input-row">
-          <input type="number" id="goalTarget" placeholder="Monto objetivo (COP)" min="0" step="10000">
-          <input type="date" id="goalDate">
+          <input type="number" id="goalTarget" placeholder="Monto objetivo (COP)" aria-label="Monto objetivo" min="0" step="10000">
+          <input type="date" id="goalDate" aria-label="Fecha objetivo">
         </div>
         <div class="goal-source-box">
           <div class="goal-source-title">¿Qué dinero cuenta para esta meta?</div>
@@ -209,7 +239,7 @@
           <div id="goalPocketOptions" class="goal-source-options"></div>
           <div class="goal-source-subtitle">CDT</div>
           <div id="goalInvestmentOptions" class="goal-source-options"></div>
-          <div class="goal-source-help">Selecciona uno, varios o ninguna fuente. La meta sumará automáticamente los saldos seleccionados.</div>
+          <div class="goal-source-help">Selecciona una, varias o ninguna fuente. La meta sumará automáticamente los saldos seleccionados.</div>
         </div>
         <button class="btn-accent" id="addGoalBtn">Crear meta</button>
       </div>
@@ -223,16 +253,16 @@
     </div>
     <div class="card">
       <div id="investList"></div>
-      <div class="extra-toggle-row"><span id="invFormToggle">+ nuevo CDT</span></div>
+      <div class="extra-toggle-row"><button type="button" class="enlace" id="invFormToggle">+ nuevo CDT</button></div>
       <div class="extra-fields" id="invFormFields">
-        <input type="text" id="invEntity" placeholder="Entidad (ej. Banco AV Villas)">
+        <input type="text" id="invEntity" placeholder="Entidad (ej. Banco AV Villas)" aria-label="Entidad">
         <div class="weight-input-row">
-          <input type="number" id="invAmount" placeholder="Monto invertido (COP)" min="0" step="10000">
-          <input type="number" id="invRate" placeholder="Tasa EA (%)" min="0" step="0.01">
+          <input type="number" id="invAmount" placeholder="Monto invertido (COP)" aria-label="Monto invertido" min="0" step="10000">
+          <input type="number" id="invRate" placeholder="Tasa EA (%)" aria-label="Tasa efectiva anual" min="0" step="0.01">
         </div>
         <div class="weight-input-row">
-          <input type="number" id="invTerm" placeholder="Plazo (meses)" min="1" step="1">
-          <input type="date" id="invStart">
+          <input type="number" id="invTerm" placeholder="Plazo (meses)" aria-label="Plazo en meses" min="1" step="1">
+          <input type="date" id="invStart" aria-label="Fecha de apertura">
         </div>
         <button class="btn-accent" id="addInvBtn">Registrar CDT</button>
       </div>
@@ -243,7 +273,7 @@
   <section data-tab="mas">
     <div class="section-head">
       <h2>Reportes mensuales</h2>
-      <span class="tag">análisis IA</span>
+      <span class="tag">cierre de mes</span>
     </div>
     <div class="card">
       <p class="rest-note">Al cerrar cada mes se genera un análisis local automático (sin conexión) con tu historial y capacidad de ahorro. Si quieres algo más a fondo, puedes copiar un prompt listo y pedírselo a Claude. No reemplaza asesoría financiera profesional.</p>
@@ -254,7 +284,7 @@
 
   <section data-tab="mas">
     <div class="section-head">
-      <h2>Ajustes</h2>
+      <h2>Recordatorios y copias</h2>
     </div>
     <div class="card">
       <div class="settings-row">
@@ -262,7 +292,7 @@
           <div class="lbl">Recordatorio diario</div>
           <div class="desc">Avisa si no has registrado movimientos hoy</div>
         </div>
-        <div class="switch" id="reminderToggle"><div class="knob"></div></div>
+        <button type="button" class="switch" id="reminderToggle" role="switch" aria-checked="false" aria-label="Recordatorio diario"><span class="knob"></span></button>
       </div>
       <div class="settings-row">
         <div>
@@ -291,13 +321,13 @@
   <section data-tab="mas" id="vistaAjustes" aria-label="Ingesta, seguridad y diagnóstico"></section>
 </main>
 
-<button class="fab" id="fabRegistrar" aria-label="Registrar movimiento">+</button>
+<button class="fab" id="fabRegistrar" aria-label="Registrar movimiento"></button>
 <nav class="nav-inferior" id="navInferior" aria-label="Secciones"></nav>
 <div class="snackbar" id="snackbar" role="status" aria-live="polite"></div>
 <div class="overlay-pin" id="overlayPin" hidden></div>
 
 <div class="modal-overlay" id="editModalOverlay">
-  <div class="modal-box">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
     <div class="modal-header">
       <h3 id="editModalTitle">Editar</h3>
       <button class="modal-close" id="editModalCloseBtn" aria-label="Cerrar">✕</button>
@@ -314,8 +344,8 @@
 <datalist id="expenseCategoryList"></datalist>
 
 <div class="modal-overlay" id="confirmOverlay">
-  <div class="modal-box">
-    <div class="modal-header"><h3>Confirmar</h3></div>
+  <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitulo">
+    <div class="modal-header"><h3 id="confirmTitulo">Confirmar</h3></div>
     <p id="confirmText" class="texto-confirmacion"></p>
     <div class="modal-actions">
       <button class="btn-ghost" id="confirmCancelBtn">Cancelar</button>
@@ -325,7 +355,7 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<footer>Tus datos se guardan solo en esta app.</footer>
+<footer>Tus datos se guardan solo en este dispositivo.</footer>
 
 </body>
 </html>

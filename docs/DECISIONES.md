@@ -32,3 +32,22 @@ No hay llamada directa a la API de Anthropic. La app es solo cliente, así que u
 
 ## Gráfico del simulador
 Usa los colores de la marca (`#C6F135`, `#38BDF8`). El validador de paletas los marca fuera de su banda de luminosidad, aunque pasan contraste y separación por daltonismo. Se conservan por ser paleta obligatoria, con línea punteada, leyenda y tabla para que la identidad no dependa solo del color.
+
+## Versión 6.0: rediseño y análisis
+
+- **Verde = marca e ingresos; el gasto no va en rojo.** Pintar de rojo cada gasto hace que todo
+  parezca una alarma. El rojo se reserva para lo que pide actuar.
+- **Fuente servida por la app** (Manrope, licencia OFL) en vez de Google Fonts: funciona sin
+  conexión, la app no hace ninguna petición a terceros al abrir y la CSP no necesita excepciones.
+- **Filas con `<details>`**: las acciones de cuentas, bolsillos y movimientos viven dentro de la
+  fila. Es nativo, accesible con teclado y deja espacio para el nombre en pantallas de 320 px.
+- **Cierre estimado del mes**: lo fijo (recurrentes detectados que aún no llegan) se suma completo y
+  lo variable se proyecta con el ritmo diario. Antes del día 10 ese ritmo se mezcla con el promedio
+  histórico, porque un solo gasto grande el día 1 daría una proyección absurda.
+- **Abono a deudas en dos movimientos**: `pago_deuda` (capital; no es gasto) e `interes` (gasto).
+  El interés sugerido es el de un mes sobre el saldo; el usuario lo ajusta con su extracto.
+- **Puntaje de salud**: promedio simple de los indicadores con datos (bien 100, atención 55,
+  actúa 15). Sin datos no hay puntaje: no se inventa una nota.
+- **Patrimonio histórico**: se reconstruye con los movimientos hasta cada cierre. Tarjetas y deudas
+  usan su saldo inicial registrado aunque se hayan creado después; es una aproximación declarada.
+- **Sin SMS**: la única fuente automática es Gmail. El pegado manual se conserva como respaldo.

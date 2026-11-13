@@ -3,7 +3,7 @@
 ## Qué se logró
 Versión 5.0.0, en la rama local `feat/ingesta-apps-script-y-tarjetas`. **No se ha subido a GitHub: la app publicada no ha cambiado.**
 
-- **Script desplegado:** lee Gmail cada 10 minutos, recibe SMS y responde con token.
+- **Script desplegado:** lee Gmail cada 10 minutos y responde con token.
 - **Ingesta:** sincronización, parsers, deduplicación, revisión, conciliación, "enseñar a la app" y pegado sin conexión.
 - **Tarjetas y deudas:** pasivos, cuotas, alertas, simulador, flujo de caja y comparador con CDT.
 - **Producción:** enteros, migración con respaldo, CSP, PIN, copias cifradas, offline, Power BI.
@@ -24,7 +24,6 @@ npm run test:smoke   # navegador real
 
 ## Sin verificar
 - Un celular real. Las pruebas usan Chromium con tamaño de móvil, sin iPhone ni PWA instalada.
-- La guía de SMS (MacroDroid, Tasker, Atajos). El endpoint de SMS solo se probó contra el mock, no contra el script real.
 - La ejecución periódica del disparador. La primera captura sí funcionó.
 - Los presupuestos de rendimiento (< 2 s, < 100 ms): no se midieron. Tampoco hubo auditoría automática de accesibilidad.
 - Formatos de tarjeta de crédito y cobros: no había correos reales de esos tipos. Sus patrones son suposiciones y esos mensajes pasarán por revisión.

@@ -16,6 +16,7 @@ const TIPOS = {
   '.css': 'text/css',
   '.json': 'application/json',
   '.png': 'image/png',
+  '.woff2': 'font/woff2',
   '.webmanifest': 'application/json',
 };
 export const TOKEN_MOCK = 'token-de-prueba-local-0123456789abcdef';
@@ -25,7 +26,7 @@ export function crearMock({
   token = TOKEN_MOCK,
   servirApp = false,
   limitePorMinuto = Infinity,
-  // `legado`: imita un Code.gs anterior a 5.2, que solo aceptaba SMS por POST.
+  // `legado`: imita un Code.gs anterior a 5.2, que no atendía acciones por POST.
   legado = false,
 } = {}) {
   const filas = [];
@@ -110,18 +111,8 @@ export function crearMock({
           return json({ ok: false, error: 'bad_request' });
         }
         if (p.token !== token) return json({ ok: false, error: 'unauthorized' });
-        if (p.action && !legado) return json(atender(p));
-        if (p.source !== 'sms' || typeof p.text !== 'string' || !p.text.trim())
-          return json({ ok: false, error: 'bad_request' });
-        return json({
-          ok: true,
-          rowId: agregar(
-            'sms',
-            `sms_${p.text}|${p.receivedAt}`,
-            p.receivedAt ?? new Date().toISOString(),
-            p.text,
-          ),
-        });
+        if (!p.action || legado) return json({ ok: false, error: 'bad_request' });
+        return json(atender(p));
       }
       const q = url.searchParams;
       if (q.has('token')) estado.tokensEnUrl++;

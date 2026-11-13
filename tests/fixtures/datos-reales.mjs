@@ -127,10 +127,10 @@ export function datosReales({ cantidadExtra = 0 } = {}) {
     accountId: null,
     cuentaDestinoId: 'efe',
     comercio: 'METR BELLO6',
-    origen: 'sms',
+    origen: 'gmail',
     estado: 'pendiente_revision',
     ultimos4: '9999',
-    fuentes: [{ fuente: 'sms', rowId: 'r_000010', patronId: 'retiro_cajero_verificado' }],
+    fuentes: [{ fuente: 'gmail', rowId: 'r_000010', patronId: 'retiro_cajero_verificado' }],
     tipoMensaje: 'retiro_cajero',
     confianza: 0.95,
   });

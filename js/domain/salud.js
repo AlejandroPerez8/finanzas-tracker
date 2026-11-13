@@ -11,11 +11,18 @@
 
 import { aEntero, sumar, formatear } from './money.js';
 import { sumarMeses, ultimoDiaMes } from './fechas.js';
-import { estadisticasMes, saldoCuenta } from './movimientos.js';
+import { estadisticasMes, saldoCuenta, saldoDeuda } from './movimientos.js';
 import { saldoTarjeta, pagoMinimoEstimado } from './tarjetas.js';
 import { avancePresupuestos, saldoRecurso } from './presupuesto.js';
 
 const MESES_PROMEDIO = 3;
+const META_AHORRO_DEFECTO = 20;
+
+/** Meta de ahorro del usuario en porcentaje del ingreso (5 a 80); por defecto, 20 %. */
+export function metaAhorro(datos) {
+  const m = Number(datos?.settings?.metaAhorro);
+  return Number.isFinite(m) && m >= 5 && m <= 80 ? Math.round(m) : META_AHORRO_DEFECTO;
+}
 
 /** Promedios de ingreso y gasto de los últimos meses cerrados que tienen movimientos. */
 export function promediosMensuales(transacciones, mesActual, meses = MESES_PROMEDIO) {
@@ -63,6 +70,7 @@ const nivel = (valor, bueno, regular, mayorEsMejor = true) =>
  */
 export function indicadoresSalud(datos, mesActual) {
   const prom = promediosMensuales(datos.transactions, mesActual);
+  const meta = metaAhorro(datos);
   const salida = [];
 
   // 1. Fondo de emergencia
@@ -88,20 +96,20 @@ export function indicadoresSalud(datos, mesActual) {
   // 2. Tasa de ahorro (promedio de meses cerrados)
   if (prom.ingreso > 0) {
     const tasa = Math.round(((prom.ingreso - prom.gasto) / prom.ingreso) * 100);
-    const estado = nivel(tasa, 20, 10);
+    const estado = nivel(tasa, meta, meta / 2);
     salida.push({
       id: 'ahorro',
       titulo: 'Ahorro promedio (3 meses)',
       valor: `${tasa} %`,
-      meta: '20 % o más del ingreso',
+      meta: `${meta} % o más del ingreso`,
       estado,
       consejo:
         estado === 'ok'
           ? 'Vas bien. Automatiza el ahorro el día de pago para mantenerlo.'
-          : `Para llegar al 20 % necesitas gastar ${formatear(Math.round(prom.ingreso * 0.8))} al mes o menos (hoy ${formatear(prom.gasto)}). Revisa la categoría más alta y los recurrentes.`,
+          : `Para llegar al ${meta} % necesitas gastar ${formatear(Math.round(prom.ingreso * (1 - meta / 100)))} al mes o menos (hoy ${formatear(prom.gasto)}). Revisa la categoría más alta y los recurrentes.`,
     });
   } else {
-    salida.push(sinDatos('ahorro', 'Ahorro promedio (3 meses)', '20 % o más del ingreso'));
+    salida.push(sinDatos('ahorro', 'Ahorro promedio (3 meses)', `${meta} % o más del ingreso`));
   }
 
   // 3. Uso de tarjetas
@@ -130,7 +138,10 @@ export function indicadoresSalud(datos, mesActual) {
       tarjetas.map((t) =>
         pagoMinimoEstimado(Math.max(0, saldoTarjeta(t, datos.transactions)), t.tasaEA || 0),
       ),
-    ) + sumar((datos.deudas || []).filter((d) => aEntero(d.saldo) > 0).map((d) => d.pagoMinimo || 0));
+    ) +
+    sumar(
+      (datos.deudas || []).filter((d) => saldoDeuda(d, datos.transactions) > 0).map((d) => d.pagoMinimo || 0),
+    );
   if (minimos > 0 && prom.ingreso > 0) {
     const carga = Math.round((minimos / prom.ingreso) * 100);
     const estado = nivel(carga, 20, 36, false);
@@ -164,7 +175,7 @@ function sinDatos(id, titulo, meta) {
 /**
  * Cuánto puedes gastar por día lo que resta del mes.
  * Con presupuestos, es lo que queda de ellos; sin presupuestos, lo que queda del ingreso promedio
- * después de reservar el 20 % de ahorro.
+ * después de reservar la meta de ahorro (20 % si no se ha cambiado).
  * @param {string} hoy `AAAA-MM-DD`
  * @returns {{base:'presupuesto'|'ingreso'|null, disponible:number, dias:number, porDia:number}}
  */
@@ -182,8 +193,24 @@ export function ritmoDelMes(datos, hoy) {
     const prom = promediosMensuales(datos.transactions, mes);
     if (prom.ingreso > 0) {
       base = 'ingreso';
-      disponible = Math.round(prom.ingreso * 0.8) - estadisticasMes(datos.transactions, mes).expense;
+      disponible =
+        Math.round(prom.ingreso * (1 - metaAhorro(datos) / 100)) -
+        estadisticasMes(datos.transactions, mes).expense;
     }
   }
   return { base, disponible, dias, porDia: base && disponible > 0 ? Math.floor(disponible / dias) : 0 };
+}
+
+/**
+ * Puntaje de salud de 0 a 100: promedio de los indicadores con datos (bien = 100, atención = 55,
+ * actúa = 15). Sin ningún indicador con datos devuelve null: no se inventa una nota.
+ * @returns {{puntaje:number, etiqueta:'Sólida'|'Estable'|'Frágil', evaluados:number}|null}
+ */
+export function puntajeSalud(indicadores) {
+  const PUNTOS = { ok: 100, alerta: 55, mal: 15 };
+  const conDatos = indicadores.filter((i) => i.estado in PUNTOS);
+  if (!conDatos.length) return null;
+  const puntaje = Math.round(sumar(conDatos.map((i) => PUNTOS[i.estado])) / conDatos.length);
+  const etiqueta = puntaje >= 80 ? 'Sólida' : puntaje >= 50 ? 'Estable' : 'Frágil';
+  return { puntaje, etiqueta, evaluados: conDatos.length };
 }

@@ -1,8 +1,8 @@
 /** Registro de parsers: prueba los aplicables a la fuente y elige el de mayor confianza. */
 
 import { compilarPatrones, normalizarTexto } from './bancolombia/comun.js';
-import { crearParserSms } from './bancolombia/sms.js';
 import { crearParserEmail } from './bancolombia/email.js';
+import { crearParserTexto } from './bancolombia/texto.js';
 
 /**
  * @param {{patrones:Array}} definicion contenido de patrones.json
@@ -12,7 +12,7 @@ import { crearParserEmail } from './bancolombia/email.js';
 export function crearRegistro(definicion, reglasUsuario = [], alError) {
   // Las reglas del usuario van primero: en un empate de confianza prevalece lo que enseñó.
   const patrones = compilarPatrones([...reglasUsuario, ...definicion.patrones], alError);
-  const parsers = [crearParserSms(patrones), crearParserEmail(patrones)];
+  const parsers = [crearParserEmail(patrones), crearParserTexto(patrones)];
   const publicidad = (definicion.ignorar ?? []).map((r) => new RegExp(r, 'i'));
   return {
     /** ¿Es publicidad del banco? Se compara sin tildes. */

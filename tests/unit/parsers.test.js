@@ -134,10 +134,10 @@ test('nómina: el tipo de cuenta se captura cuando no hay últimos 4', () => {
   assert.equal(r.tipoCuenta, 'Ahorros');
 });
 
-test('retiro en cajero (formato real): llega igual por SMS y correo y conserva el cajero', () => {
+test('retiro en cajero (formato real): se lee igual pegado a mano y por correo y conserva el cajero', () => {
   const texto =
     'Bancolombia: Retiraste $150.000,00 en METR_BELLO6 de tu T.Deb **1234 el 28/10/2026 a las 18:14. ¿Dudas?, llamanos al 6045109095. Estamos cerca';
-  for (const fuente of ['sms', 'gmail']) {
+  for (const fuente of ['manual', 'gmail']) {
     const r = registro.analizar(texto, { fuente, recibidoEn: RECIBIDO });
     assert.equal(r.tipo, 'retiro_cajero', fuente);
     assert.equal(r.patronId, 'retiro_cajero_verificado', fuente);
@@ -159,7 +159,7 @@ test('la publicidad del banco se identifica', () => {
 });
 
 test('texto ajeno al banco no se reconoce', () => {
-  assert.equal(registro.analizar('Hola, ¿nos vemos mañana?', { fuente: 'sms' }), null);
+  assert.equal(registro.analizar('Hola, ¿nos vemos mañana?', { fuente: 'manual' }), null);
   assert.equal(registro.analizar('Tu seguridad es nuestra prioridad.', { fuente: 'gmail' }), null);
   assert.equal(registro.analizar('', { fuente: 'gmail' }), null);
 });
@@ -169,7 +169,7 @@ test('un patrón de usuario inválido se reporta y no rompe el registro', () => 
   const r = crearRegistro({ patrones: [{ id: 'malo', tipo: 'x', confianza: 1, regex: '(' }] }, [], (e) =>
     errores.push(e),
   );
-  assert.equal(r.analizar('$1 algo', { fuente: 'sms' }), null);
+  assert.equal(r.analizar('$1 algo', { fuente: 'manual' }), null);
   assert.equal(errores.length, 1);
 });
 
@@ -196,7 +196,7 @@ test('pagar la tarjeta de crédito nunca se confirma solo como gasto de un servi
     'Bancolombia: Pagaste $80.000,00 a MASTERCARD *7711 desde tu producto *1234 el 12/11/2026 09:00:00.',
   ];
   for (const texto of casos) {
-    const r = registro.analizar(texto, { fuente: 'sms', recibidoEn: RECIBIDO });
+    const r = registro.analizar(texto, { fuente: 'manual', recibidoEn: RECIBIDO });
     assert.equal(r.tipo, 'pago_tarjeta', texto);
     assert.ok(r.confianza < 0.9, `${texto}: debe pasar por revisión`);
     assert.equal(r.monto, 80000);
@@ -204,7 +204,7 @@ test('pagar la tarjeta de crédito nunca se confirma solo como gasto de un servi
   // Los servicios con nombres parecidos siguen siendo servicios.
   const visajes = registro.analizar(
     'Bancolombia: Pagaste $45.000,00 a VISAJES Y ESTETICA LA 70 desde tu producto *1234 el 05/11/2026 07:02:40.',
-    { fuente: 'sms', recibidoEn: RECIBIDO },
+    { fuente: 'manual', recibidoEn: RECIBIDO },
   );
   assert.equal(visajes.tipo, 'pago_servicio');
 });

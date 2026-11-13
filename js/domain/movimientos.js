@@ -5,6 +5,7 @@
  * (income, expense, transfer_*, withdraw_*) y agrega los nuevos (ver docs/DECISIONES.md).
  * Compra con tarjeta = `expense` con `tarjetaId` (gasto del mes + aumento de deuda).
  * Pago de tarjeta = `pago_tarjeta`: mueve dinero de cuenta a tarjeta y NO es gasto.
+ * Abono a otra deuda = `pago_deuda` (capital, NO es gasto) + `interes` (el costo, sí es gasto).
  */
 
 import { aEntero } from './money.js';
@@ -25,6 +26,7 @@ const TIPO_CANONICO = {
   avance: 'avance',
   interes: 'interes',
   cuota_manejo: 'cuota_manejo',
+  pago_deuda: 'pago_deuda',
 };
 export function tipoCanonico(type) {
   return TIPO_CANONICO[type] ?? type;
@@ -44,7 +46,10 @@ export function efectoEnCuenta(t, cuentaId) {
   // Un cobro cargado a una tarjeta sube la deuda; no toca la cuenta aunque traiga accountId.
   if (TIPOS_GASTO.has(t.type) && t.tarjetaId) return 0;
   if (t.type === 'income' || t.type === 'withdraw_in' || t.type === 'avance') return monto;
-  if (TIPOS_GASTO.has(t.type) || ['transfer_out', 'pago_tarjeta', 'transferencia'].includes(t.type))
+  if (
+    TIPOS_GASTO.has(t.type) ||
+    ['transfer_out', 'pago_tarjeta', 'pago_deuda', 'transferencia'].includes(t.type)
+  )
     return -monto;
   return 0;
 }
@@ -61,6 +66,18 @@ export function efectoEnTarjeta(t, tarjetaId) {
   if (TIPOS_GASTO.has(t.type) || t.type === 'avance') return monto;
   if (t.type === 'pago_tarjeta') return -monto;
   return 0;
+}
+
+/**
+ * Saldo de un préstamo: el registrado menos el capital abonado. Los intereses de cada abono se
+ * guardan aparte como gasto y no bajan la deuda.
+ */
+export function saldoDeuda(deuda, transacciones) {
+  const abonado = transacciones.reduce(
+    (s, t) => (t.type === 'pago_deuda' && t.deudaId === deuda.id && cuenta(t) ? s + aEntero(t.amount) : s),
+    0,
+  );
+  return Math.max(0, aEntero(deuda.saldo) - abonado);
 }
 
 /** Estadísticas del mes `AAAA-MM`: pagos de tarjeta, transferencias y avances no son ingreso ni gasto. */

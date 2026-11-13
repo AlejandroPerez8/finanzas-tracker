@@ -1,5 +1,52 @@
 # Cambios
 
+## 6.0.0
+Rediseño completo, análisis financiero nuevo y la ingesta queda solo por correo.
+
+### Diseño
+- **Identidad nueva**: verde como marca y como "dinero que entra"; el gasto normal va en el color del
+  texto con su signo y el rojo queda solo para lo que pide actuar (déficit, límites, pagos vencidos).
+- **Tema claro y oscuro**, automático según el celular o elegido en Más > Preferencias. Todos los
+  pares de texto y fondo cumplen contraste AA en ambos.
+- **Tipografía propia (Manrope) servida desde la app**: funciona sin conexión y la app ya no pide
+  nada a Google Fonts. La CSP queda más estricta (`style-src` y `font-src` solo `'self'`).
+- **Iconos de línea propios** en lugar de símbolos y emojis, que cambiaban de un celular a otro.
+- **Inicio reordenado por utilidad**: disponible hoy → cuánto puedes gastar hoy → próximos pagos →
+  el mes (con cierre estimado) → salud financiera con puntaje → patrimonio con su evolución.
+- **Filas que se abren**: cuentas, bolsillos y movimientos muestran lo esencial y, al tocarlas, sus
+  acciones. El historial se agrupa por día, con buscador y filtros (ingresos, gastos, traslados).
+- **Escritorio**: desde 1000 px la barra inferior pasa a un riel lateral.
+- Ojo en la portada para activar el modo discreto sin entrar a Ajustes.
+
+### Finanzas
+- **Cierre estimado del mes**: proyecta el gasto separando los cobros fijos que aún no llegan del
+  gasto variable (al ritmo actual, mezclado con tu promedio en los primeros días), y dice cuánto
+  ahorrarías frente a tu meta.
+- **Cada categoría frente a su promedio** de los últimos meses, con su parte del gasto del mes.
+- **Próximos pagos (30 días)**: mínimos de tarjetas, cobros recurrentes con su día habitual, cuotas
+  de otras deudas y CDT que vencen.
+- **Meta de ahorro configurable** (5 % a 80 %; 20 % por defecto): define "puedes gastar hoy", el
+  anillo de la portada y la calificación de la tasa de ahorro.
+- **Puntaje de salud financiera** de 0 a 100 a partir de los indicadores con datos.
+- **Evolución del patrimonio neto** de los últimos 6 meses y composición de los activos.
+- **Abonos a otras deudas**: cada pago se separa en capital (baja la deuda, no es gasto) e intereses
+  (gasto del mes). Antes el saldo de un préstamo no bajaba nunca.
+- **Traslados entre cuentas propias** desde Registrar (p. ej. banco → Nequi o efectivo): no cuentan
+  como ingreso ni gasto.
+- Ingresos y gastos de los últimos 6 meses lado a lado, en vez de una sola línea de balance.
+- Eliminar una meta o un CDT ahora pide confirmación; al editar un movimiento se puede corregir el
+  comercio.
+
+### Eliminado
+- **Toda la ingesta por SMS**: el parser, la entrada `POST` del script y del mock, la guía de
+  MacroDroid/Tasker/Atajos y sus pruebas. Los correos de Gmail y el pegado manual siguen igual.
+  La migración a esquema 3 convierte lo que hubiera entrado por SMS en importación manual.
+- Atajos del manifiesto que apuntaban a anclas inexistentes.
+
+### Para publicar
+- El script de Apps Script publicado sigue aceptando la entrada vieja hasta que se actualice
+  (`clasp push` + nueva versión de la implementación). La app funciona igual con ambos.
+
 ## 5.3.6
 Verificación definitiva: 40 rondas (R1–R40) en dos pasadas completas limpias.
 

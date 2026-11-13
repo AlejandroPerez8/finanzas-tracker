@@ -1,17 +1,36 @@
 /** Une las pantallas nuevas con la app: navegación, recursos, versión nueva y entrada rápida. */
 
 import { h, montar, snackbar } from './dom.js';
+import { icono } from './iconos.js';
 import { crearIngestaUI } from './ingesta.js';
 import { crearTarjetasUI } from './tarjetas.js';
 import { crearPanelUI } from './panel.js';
 
 const PESTANAS = [
-  ['inicio', 'Inicio', '⌂'],
-  ['movimientos', 'Movs', '⇅'],
-  ['tarjetas', 'Tarjetas', '▭'],
-  ['ahorro', 'Ahorro', '◎'],
-  ['mas', 'Más', '☰'],
+  ['inicio', 'Inicio', 'inicio'],
+  ['movimientos', 'Movs', 'movimientos'],
+  ['tarjetas', 'Tarjetas', 'tarjeta'],
+  ['ahorro', 'Ahorro', 'ahorro'],
+  ['mas', 'Más', 'mas'],
 ];
+
+/**
+ * Aplica el tema ('auto' sigue al sistema) y guarda una copia que js/tema.js lee antes de pintar.
+ * El color de la barra del sistema acompaña al fondo de la pantalla.
+ */
+export function aplicarTema(tema = 'auto') {
+  const raiz = document.documentElement;
+  if (tema === 'claro') raiz.setAttribute('data-theme', 'light');
+  else if (tema === 'oscuro') raiz.setAttribute('data-theme', 'dark');
+  else raiz.removeAttribute('data-theme');
+  try {
+    localStorage.setItem('finanzas-tema', tema);
+  } catch {
+    // Sin localStorage el tema se aplica igual al cargar los datos.
+  }
+  const fondo = window.getComputedStyle(raiz).getPropertyValue('--bg').trim();
+  if (fondo) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', fondo);
+}
 
 /** Carga patrones y diccionario; sin ellos, la app sigue funcionando sin reconocer mensajes. */
 async function cargarRecursos(ctx) {
@@ -21,13 +40,11 @@ async function cargarRecursos(ctx) {
       if (!r.ok) throw new Error(`${ruta}: ${r.status}`);
       return await r.json();
     } catch (err) {
-      ctx
-        .datos()
-        .log.push({
-          nivel: 'error',
-          mensaje: `No se pudo cargar ${ruta}: ${err.message}`,
-          fecha: new Date().toISOString(),
-        });
+      ctx.datos().log.push({
+        nivel: 'error',
+        mensaje: `No se pudo cargar ${ruta}: ${err.message}`,
+        fecha: new Date().toISOString(),
+      });
       return respaldo;
     }
   };
@@ -43,12 +60,12 @@ function crearNavegacion(alCambiar) {
   const botones = new Map();
   const nav = montar(
     'navInferior',
-    PESTANAS.map(([id, texto, icono]) => {
+    PESTANAS.map(([id, texto, nombreIcono]) => {
       const badge = h('span', { class: 'nav-badge', hidden: true });
       const boton = h(
         'button',
         { class: 'nav-btn', 'aria-label': texto, onclick: () => ir(id) },
-        h('span', { 'aria-hidden': 'true' }, icono),
+        icono(nombreIcono),
         h('span', {}, texto),
         badge,
       );
@@ -77,9 +94,10 @@ function crearNavegacion(alCambiar) {
     nav,
     marcarInsignia: (id, n) => {
       const { badge, boton } = botones.get(id);
+      const texto = PESTANAS.find(([p]) => p === id)[1];
       badge.hidden = !n;
       badge.textContent = n > 99 ? '99+' : String(n);
-      boton.setAttribute('aria-label', n ? `${id}: ${n} por revisar` : id);
+      boton.setAttribute('aria-label', n ? `${texto}: ${n} por revisar` : texto);
     },
   };
 }
@@ -137,6 +155,12 @@ export async function iniciarInterfaz(interfaz, ctx) {
   interfaz.render = () => {
     const datos = ctx.datos();
     document.body.classList.toggle('discreto', !!datos.settings.discreto);
+    aplicarTema(datos.settings.tema);
+    const ojo = document.getElementById('discretoBtn');
+    ojo.replaceChildren(icono(datos.settings.discreto ? 'ojoCerrado' : 'ojo'));
+    ojo.setAttribute('aria-pressed', String(!!datos.settings.discreto));
+    ojo.setAttribute('aria-label', datos.settings.discreto ? 'Mostrar cifras' : 'Ocultar cifras');
+    panel.renderHoy();
     panel.renderPanel();
     panel.renderOnboarding();
     ingesta.render();
@@ -159,6 +183,18 @@ export async function iniciarInterfaz(interfaz, ctx) {
   };
 
   document.addEventListener('ir-a', (e) => nav.ir(e.detail));
+  document.getElementById('fabRegistrar').append(icono('sumar'));
+  // El ojo de la portada alterna el modo discreto sin entrar a Ajustes.
+  document.getElementById('discretoBtn').addEventListener('click', async () => {
+    const datos = ctx.datos();
+    datos.settings.discreto = !datos.settings.discreto;
+    try {
+      await ctx.guardar();
+    } catch (err) {
+      ctx.toast(err.message);
+    }
+    ctx.renderAll();
+  });
   document.getElementById('fabRegistrar').addEventListener('click', () => {
     nav.ir('movimientos');
     document.getElementById('seccionRegistrar').scrollIntoView();

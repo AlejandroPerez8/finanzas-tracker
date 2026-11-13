@@ -30,11 +30,14 @@ import {
 } from '../domain/tarjetas.js';
 import { compararEstrategias, flujoCaja, pagarVsCdt } from '../domain/deudas.js';
 import { detectarRecurrentes } from '../domain/presupuesto.js';
-import { estadisticasMes, saldoCuenta } from '../domain/movimientos.js';
+import { estadisticasMes, saldoCuenta, saldoDeuda } from '../domain/movimientos.js';
 import { sumarMeses } from '../domain/fechas.js';
 
 // Par categórico validado (azul/aqua), distinto de los colores de ingreso/gasto/marca.
-const COLORES = { avalancha: '#3987E5', bola_de_nieve: '#199E70' };
+const COLORES = { avalancha: '#3987E5', bola_de_nieve: '#C98500' };
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+/** `2026-11-15` → `15 de nov`. */
+const fechaLegible = (dia) => `${Number(dia.slice(8, 10))} de ${MESES[Number(dia.slice(5, 7)) - 1]}`;
 
 export function crearTarjetasUI(ctx) {
   const accion = (fn) => seguro(fn, ctx.toast);
@@ -99,17 +102,15 @@ export function crearTarjetasUI(ctx) {
         throw new Error('Los días deben estar entre 1 y 31');
       if (!(d.cupoTotal > 0)) throw new Error('Escribe el cupo total');
       if (!(tasa.value !== '' && d.tasaEA >= 0)) throw new Error('Escribe la tasa efectiva anual');
-      ctx
-        .datos()
-        .tarjetas.push({
-          ...d,
-          id: ctx.uid('c'),
-          banco: 'Bancolombia',
-          franquicia: franquicia.value,
-          saldoInicial: aEntero(saldo.value),
-          cuotaManejo: aEntero(manejo.value),
-          estado: 'activa',
-        });
+      ctx.datos().tarjetas.push({
+        ...d,
+        id: ctx.uid('c'),
+        banco: 'Bancolombia',
+        franquicia: franquicia.value,
+        saldoInicial: aEntero(saldo.value),
+        cuotaManejo: aEntero(manejo.value),
+        estado: 'activa',
+      });
       formularioAbierto = false;
       await ctx.guardar();
       ctx.toast('Tarjeta guardada');
@@ -289,14 +290,18 @@ export function crearTarjetasUI(ctx) {
     return h(
       'article',
       { class: 'tarjeta-visual' },
-      h('div', { class: 'tv-alias' }, t.alias),
-      h('div', { class: 'tv-numero' }, `•••• ${t.ultimos4}`),
+      h(
+        'div',
+        { class: 'tv-cara' },
+        h('div', { class: 'tv-alias' }, t.alias),
+        h('div', { class: 'tv-deuda' }, h('small', {}, 'Debes hoy'), monto(saldo)),
+        h('div', { class: 'tv-numero' }, `•••• ${t.ultimos4}`),
+      ),
       h(
         'div',
         { class: 'tv-cifras' },
-        h('div', {}, h('small', {}, 'Usado'), monto(saldo)),
         h('div', {}, h('small', {}, 'Disponible'), monto(cupoDisponible(t, saldo))),
-        h('div', {}, h('small', {}, 'Cupo'), monto(t.cupoTotal)),
+        h('div', {}, h('small', {}, 'Cupo total'), monto(t.cupoTotal)),
       ),
       h(
         'div',
@@ -316,7 +321,7 @@ export function crearTarjetasUI(ctx) {
       h(
         'p',
         { class: 'nota' },
-        `${uso.porcentaje} % de uso (${etiquetaUso}). Corte ${fechas.corte}. Pagar antes del ${fechas.limitePago}.`,
+        `${uso.porcentaje} % de uso (${etiquetaUso}). Corte el ${fechaLegible(fechas.corte)}. Paga antes del ${fechaLegible(fechas.limitePago)}.`,
       ),
       alertas.map((a) =>
         h('div', { class: `chip ${a.nivel === 'urgente' ? 'chip-urgente' : 'chip-aviso'}` }, a.mensaje),
@@ -385,6 +390,84 @@ export function crearTarjetasUI(ctx) {
   }
 
   /* ---------- Otras deudas ---------- */
+  /**
+   * Abono a un préstamo. De cada pago, una parte es interés (gasto del mes) y el resto baja la
+   * deuda; por eso se guardan como dos movimientos. Se sugiere el interés de un mes.
+   */
+  function formAbonoDeuda(d, saldoHoy) {
+    const datos = ctx.datos();
+    if (!datos.accounts.length)
+      return h('p', { class: 'nota' }, 'Crea una cuenta en Ahorro para registrar abonos.');
+    const cuenta = selector(
+      datos.accounts.map((a) => [a.id, a.name]),
+      datos.accounts[0].id,
+    );
+    const valor = entradaMonto({ placeholder: formatear(d.pagoMinimo || 0) });
+    const interes = entradaMonto({ value: String(Math.round(saldoHoy * tasaMensual(d.tasaEA || 0))) });
+    const registrar = accion(async () => {
+      const total = aEntero(valor.value);
+      if (total <= 0) throw new Error('Escribe cuánto pagaste');
+      const parteInteres = Math.min(Math.max(0, aEntero(interes.value)), total);
+      const capital = total - parteInteres;
+      if (capital > saldoHoy)
+        throw new Error(
+          `El abono a capital (${formatear(capital)}) supera lo que debes (${formatear(saldoHoy)})`,
+        );
+      const c = datos.accounts.find((a) => a.id === cuenta.value);
+      const disponible = saldoCuenta(c, datos.transactions);
+      if (
+        total > disponible &&
+        !(await ctx.preguntar(`La cuenta tiene ${formatear(disponible)}, menos que el pago. ¿Continuar?`))
+      )
+        return;
+      const base = {
+        date: diaBogota(),
+        accountId: c.id,
+        deudaId: d.id,
+        tarjetaId: null,
+        comercio: '',
+        note: '',
+        origen: 'manual',
+        estado: 'confirmado',
+        fuentes: [],
+      };
+      if (parteInteres > 0)
+        datos.transactions.push({
+          ...base,
+          id: ctx.uid('t'),
+          type: 'interes',
+          amount: parteInteres,
+          category: 'Deudas',
+        });
+      if (capital > 0)
+        datos.transactions.push({
+          ...base,
+          id: ctx.uid('t'),
+          type: 'pago_deuda',
+          amount: capital,
+          category: '',
+        });
+      await ctx.guardar();
+      ctx.toast(
+        `Abono registrado: ${formatear(capital)} a capital y ${formatear(parteInteres)} de intereses`,
+      );
+      ctx.renderAll();
+    });
+    return h(
+      'div',
+      { class: 'formulario' },
+      campo('Desde', cuenta),
+      campo('Valor total que pagaste', valor),
+      campo('De ese valor, intereses', interes),
+      h(
+        'p',
+        { class: 'nota' },
+        'Solo los intereses cuentan como gasto; el resto baja la deuda. El valor sugerido es el interés de un mes: ajústalo con tu extracto si es distinto.',
+      ),
+      h('button', { class: 'btn-accent', onclick: registrar }, 'Registrar abono'),
+    );
+  }
+
   function vistaDeudas() {
     const datos = ctx.datos();
     const nombre = h('input', { type: 'text', placeholder: 'Préstamo de libranza' });
@@ -428,37 +511,60 @@ export function crearTarjetasUI(ctx) {
         'div',
         { class: 'card' },
         datos.deudas.length
-          ? datos.deudas.map((d) =>
-              h(
+          ? datos.deudas.map((d) => {
+              const saldoHoy = saldoDeuda(d, datos.transactions);
+              const pagado = aEntero(d.saldo) - saldoHoy;
+              return h(
                 'div',
-                { class: 'fila-simple' },
+                { class: 'presupuesto' },
                 h(
                   'div',
-                  {},
-                  h('b', {}, d.nombre),
+                  { class: 'fila-simple' },
                   h(
                     'div',
-                    { class: 'nota' },
-                    `${d.tipo}, ${d.tasaEA} % EA, mínimo ${formatear(d.pagoMinimo)}`,
+                    {},
+                    h('b', {}, d.nombre),
+                    h(
+                      'div',
+                      { class: 'nota' },
+                      `${d.tipo}, ${d.tasaEA} % EA, cuota ${formatear(d.pagoMinimo)}`,
+                    ),
+                  ),
+                  monto(saldoHoy),
+                  h(
+                    'button',
+                    {
+                      class: 'quitar',
+                      'aria-label': `Eliminar ${d.nombre}`,
+                      onclick: accion(async () => {
+                        if (!(await ctx.preguntar(`¿Eliminar la deuda ${d.nombre}?`))) return;
+                        datos.deudas = datos.deudas.filter((x) => x.id !== d.id);
+                        await ctx.guardar();
+                        ctx.renderAll();
+                      }),
+                    },
+                    '✕',
                   ),
                 ),
-                monto(d.saldo),
-                h(
-                  'button',
-                  {
-                    class: 'btn-ghost',
-                    'aria-label': `Eliminar ${d.nombre}`,
-                    onclick: accion(async () => {
-                      if (!(await ctx.preguntar(`¿Eliminar la deuda ${d.nombre}?`))) return;
-                      datos.deudas = datos.deudas.filter((x) => x.id !== d.id);
-                      await ctx.guardar();
-                      ctx.renderAll();
-                    }),
-                  },
-                  '✕',
-                ),
-              ),
-            )
+                pagado > 0
+                  ? h(
+                      'p',
+                      { class: 'nota' },
+                      saldoHoy > 0
+                        ? `Has abonado ${formatear(pagado)} a capital de ${formatear(d.saldo)}.`
+                        : 'Deuda saldada. Puedes eliminarla cuando quieras.',
+                    )
+                  : null,
+                saldoHoy > 0
+                  ? h(
+                      'details',
+                      { class: 'detalle' },
+                      h('summary', {}, `Registrar abono a ${d.nombre}`),
+                      formAbonoDeuda(d, saldoHoy),
+                    )
+                  : null,
+              );
+            })
           : vacio('Sin otras deudas', 'Agrega préstamos o libranzas para verlos en tu pasivo.'),
         h(
           'details',
@@ -499,7 +605,7 @@ export function crearTarjetasUI(ctx) {
       ...datos.deudas.map((d) => ({
         id: d.id,
         nombre: d.nombre,
-        saldo: d.saldo,
+        saldo: saldoDeuda(d, datos.transactions),
         tasaEA: d.tasaEA,
         pagoMinimo: d.pagoMinimo || 0,
       })),
@@ -601,7 +707,12 @@ export function crearTarjetasUI(ctx) {
     const recurrentes = detectarRecurrentes(datos.transactions, hoy);
     if (!ingresoMensual && !recurrentes.length && !datos.comprasDiferidas.length) return null;
     // Los mínimos de otras deudas son salidas fijas; los de tarjeta no se suman porque ya están en sus cuotas.
-    const fijos = [...recurrentes, ...datos.deudas.map((d) => ({ monto: d.pagoMinimo || 0 }))];
+    const fijos = [
+      ...recurrentes,
+      ...datos.deudas
+        .filter((d) => saldoDeuda(d, datos.transactions) > 0)
+        .map((d) => ({ monto: d.pagoMinimo || 0 })),
+    ];
     const filas = flujoCaja({
       mesInicio: hoy,
       meses: 6,

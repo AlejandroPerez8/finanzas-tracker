@@ -33,11 +33,9 @@ async function nuevaPagina(opciones = {}) {
     ...opciones,
   });
   const pagina = await contexto.newPage();
-  // Las fuentes externas no están disponibles en la prueba; no son errores de la app.
-  await contexto.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   pagina.on('pageerror', (e) => errores.push(`pageerror: ${e.message}`));
   pagina.on('console', (m) => {
-    if (m.type() === 'error' && !/fonts|ERR_FAILED|net::/.test(m.text() + m.location().url))
+    if (m.type() === 'error' && !/ERR_FAILED|net::/.test(m.text() + m.location().url))
       errores.push(`console: ${m.text()}`);
   });
   return { contexto, pagina };
@@ -74,7 +72,7 @@ prueba('abre datos v4 sin pérdida y conserva un respaldo', async () => {
   await p.goto(BASE);
   await p.waitForSelector('#vistaPanel .patrimonio-neto');
   const d = await datos(p);
-  assert.equal(d.schemaVersion, 2);
+  assert.equal(d.schemaVersion, 3);
   assert.equal(d.transactions.length, 6);
   assert.equal(await p.textContent('#headerTotalBalance'), '$2.919.999', 'saldo de ahorros y efectivo');
   assert.ok(
@@ -346,21 +344,23 @@ prueba('duplicar un movimiento del banco crea una copia manual que sí se concil
   await tab(p, 'Movs');
   const hoy = await p.inputValue('#txDate');
   const [a, m, d] = hoy.split('-');
-  const sms = (comercio) =>
+  const alerta = (comercio) =>
     `Bancolombia: Compraste $18.000,00 en ${comercio} con tu T.Deb **2436, el ${d}/${m}/${a} a las 12:30.`;
   await p.locator('.subtab', { hasText: 'Importar' }).click();
-  await p.getByLabel('Mensajes del banco').fill(sms('ALMUERZO EJEMPLO'));
+  await p.getByLabel('Mensajes del banco').fill(alerta('ALMUERZO EJEMPLO'));
   await p.getByRole('button', { name: 'Importar mensajes' }).click();
   await p.waitForTimeout(300);
   const original = (await datos(p)).transactions.find((t) => t.amount === 18000);
-  await p.locator(`button[data-act="dup"][data-id="${original.id}"]`).click();
+  const duplicar = p.locator(`button[data-act="dup"][data-id="${original.id}"]`);
+  await p.locator('#historyList details.fila', { has: duplicar }).locator('summary').click();
+  await duplicar.click();
   await p.waitForTimeout(300);
   const copia = (await datos(p)).transactions.find((t) => t.amount === 18000 && t.id !== original.id);
   assert.equal(copia.origen, 'manual');
   assert.deepEqual(copia.fuentes, []);
   // Más tarde llega el mensaje real de ese segundo almuerzo: se propone conciliar, no se duplica.
   await p.locator('.subtab', { hasText: 'Importar' }).click();
-  await p.getByLabel('Mensajes del banco').fill(sms('OTRO ALMUERZO'));
+  await p.getByLabel('Mensajes del banco').fill(alerta('OTRO ALMUERZO'));
   await p.getByRole('button', { name: 'Importar mensajes' }).click();
   await p.waitForTimeout(300);
   const nuevo = (await datos(p)).transactions.find(
@@ -436,7 +436,8 @@ prueba('modo discreto oculta toda cifra de dinero y el bloqueo con PIN es opaco'
     await tab(p, t);
     const fugas = await p.evaluate(() => {
       const oculto = (e) => {
-        for (let n = e; n; n = n.parentElement) if (window.getComputedStyle(n).filter.includes('blur')) return true;
+        for (let n = e; n; n = n.parentElement)
+          if (window.getComputedStyle(n).filter.includes('blur')) return true;
         return false;
       };
       return [...document.querySelectorAll('header *, main *')]
@@ -460,6 +461,80 @@ prueba('modo discreto oculta toda cifra de dinero y el bloqueo con PIN es opaco'
     () => window.getComputedStyle(document.getElementById('overlayPin')).backgroundColor,
   );
   assert.ok(!/rgba\(.*,\s*0?\.\d+\)/.test(fondo), `bloqueo translúcido: ${fondo}`);
+  await contexto.close();
+});
+
+prueba('traslado entre cuentas, abono a una deuda y buscador del historial', async () => {
+  const { pagina: p, contexto } = await nuevaPagina();
+  await p.goto(BASE);
+  await p.waitForSelector('#vistaPanel .patrimonio-neto');
+  await tab(p, 'Ahorro');
+  for (const [nombre, tipo, saldo] of [
+    ['Ahorros', 'Ahorros', '1000000'],
+    ['Billetera', 'Efectivo', '0'],
+  ]) {
+    await p.click('#accFormToggle');
+    await p.fill('#accName', nombre);
+    await p.selectOption('#accType', tipo);
+    await p.fill('#accBalance', saldo);
+    await p.click('#addAccBtn');
+    await p.waitForFunction(
+      (n) => document.querySelectorAll('.acc-row').length === n,
+      nombre === 'Ahorros' ? 1 : 2,
+    );
+  }
+
+  // Traslado: mueve dinero entre cuentas propias y no es ingreso ni gasto.
+  await tab(p, 'Movs');
+  await p.locator('.type-pill.transfer').click();
+  assert.equal(await p.locator('#txCategory').isVisible(), false, 'un traslado no lleva categoría');
+  await p.fill('#txAmount', '200000');
+  await p.selectOption('#txAccount', { label: 'Ahorros' });
+  await p.selectOption('#txDestino', { label: 'Billetera' });
+  await p.click('#addTxBtn');
+  await p.waitForFunction(() => document.querySelectorAll('#historyList details.fila').length === 1);
+  let d = await datos(p);
+  const traslado = d.transactions.find((t) => t.type === 'transferencia');
+  assert.equal(traslado.amount, 200000);
+  assert.ok(
+    traslado.accountId && traslado.cuentaDestinoId && traslado.accountId !== traslado.cuentaDestinoId,
+  );
+  assert.equal(await p.textContent('#headerTotalBalance'), '$1.000.000', 'el total no cambia');
+  assert.equal(await p.textContent('#sumExpense'), '$0', 'no cuenta como gasto');
+
+  // Abono a un préstamo: el capital baja la deuda y solo el interés es gasto.
+  await tab(p, 'Tarjetas');
+  const v = p.locator('#vistaTarjetas');
+  await p.locator('summary', { hasText: 'Agregar deuda' }).click();
+  await v.getByLabel('Nombre').fill('Libranza');
+  await v.getByLabel('Saldo', { exact: true }).fill('4000000');
+  await v.getByLabel('Tasa efectiva anual (%)').last().fill('18');
+  await v.getByLabel('Pago mínimo', { exact: true }).fill('300000');
+  await p.getByRole('button', { name: 'Guardar deuda' }).click();
+  await p.locator('summary', { hasText: 'Registrar abono a Libranza' }).click();
+  await v.getByLabel('Valor total que pagaste').fill('300000');
+  await v.getByLabel('De ese valor, intereses').fill('20000');
+  await p.getByRole('button', { name: 'Registrar abono' }).click();
+  await p.waitForFunction(() => document.getElementById('vistaTarjetas').textContent.includes('$3.720.000'));
+  d = await datos(p);
+  assert.equal(d.transactions.find((t) => t.type === 'pago_deuda').amount, 280000);
+  assert.equal(d.transactions.find((t) => t.type === 'interes').amount, 20000);
+  await tab(p, 'Inicio');
+  assert.equal(await p.textContent('#sumExpense'), '$20.000', 'solo el interés es gasto');
+  assert.equal(await p.textContent('#headerTotalBalance'), '$700.000');
+  assert.ok(
+    (await p.textContent('#vistaHoy')).includes('Próximos pagos') === false,
+    'la cuota del mes ya se abonó',
+  );
+
+  // Buscador y filtros del historial.
+  await tab(p, 'Movs');
+  await p.fill('#historySearch', 'libranza');
+  await p.waitForFunction(() => document.querySelectorAll('#historyList details.fila').length === 2);
+  await p.fill('#historySearch', '');
+  await p.locator('#historyFilters .filtro', { hasText: 'Gastos' }).click();
+  await p.waitForFunction(() => document.querySelectorAll('#historyList details.fila').length === 1);
+  assert.ok((await p.textContent('#historySummary')).includes('salieron $20.000'));
   await contexto.close();
 });
 
