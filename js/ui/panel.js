@@ -1,8 +1,8 @@
-/** Panel de inicio, presupuesto, exportes, seguridad, diagnóstico y guía inicial. */
+/** Inicio (hoy, salud, patrimonio), presupuesto, exportes, seguridad, diagnóstico y guía inicial. */
 
-import { h, montar, monto, campo, entradaMonto, selector, vacio, encabezado, seguro } from './dom.js';
+import { h, s, montar, monto, campo, entradaMonto, selector, vacio, encabezado, seguro } from './dom.js';
 import { aEntero, formatear } from '../domain/money.js';
-import { diaBogota } from '../domain/fechas.js';
+import { diaBogota, ultimoDiaMes } from '../domain/fechas.js';
 import {
   patrimonio,
   avancePresupuestos,
@@ -10,21 +10,19 @@ import {
   efectivoDelMes,
 } from '../domain/presupuesto.js';
 import { estadisticasMes, textoTasaAhorro } from '../domain/movimientos.js';
-import { indicadoresSalud, ritmoDelMes } from '../domain/salud.js';
-import {
-  saldoTarjeta,
-  utilizacion,
-  proximasFechas,
-  alertasTarjeta,
-  cicloVigente,
-} from '../domain/tarjetas.js';
+import { indicadoresSalud, ritmoDelMes, puntajeSalud, metaAhorro } from '../domain/salud.js';
+import { proximosCompromisos, patrimonioHistorico } from '../domain/analisis.js';
+import { saldoTarjeta, utilizacion, alertasTarjeta, cicloVigente } from '../domain/tarjetas.js';
 import { tablasPowerBi, archivosCsv } from '../services/exportacion.js';
 import { tamanoDatos } from '../db.js';
 import { VERSION_ACTUAL } from '../services/migraciones.js';
 import { CATEGORIAS_GASTO } from '../domain/categorias.js';
 
-export const VERSION_APP = '5.3.6';
+export const VERSION_APP = '6.0.0';
 const ITERACIONES_PIN = 200000;
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+// Colores de la composición del patrimonio (distintos entre sí también para daltonismo).
+const COLOR_ACTIVO = { cuentas: '#199E70', bolsillos: '#3987E5', metas: '#C98500', inversiones: '#8A63D2' };
 
 async function hashPin(pin, salBase64) {
   const sal = salBase64
@@ -42,66 +40,245 @@ async function hashPin(pin, salBase64) {
   return { hash: b64(bits), sal: b64(sal) };
 }
 
+/** "en 3 días", "mañana", "hoy", "hace 2 días". */
+function textoDias(dias) {
+  if (dias == null) return 'este mes';
+  if (dias === 0) return 'hoy';
+  if (dias === 1) return 'mañana';
+  if (dias === -1) return 'ayer';
+  return dias > 0 ? `en ${dias} días` : `hace ${-dias} días`;
+}
+
+/** Anillo de avance (0 a 100) dibujado en SVG; el número va encima como texto normal. */
+function anillo(porcentaje, tamano = 76, grosor = 8) {
+  const radio = (tamano - grosor) / 2;
+  const largo = 2 * Math.PI * radio;
+  const centro = tamano / 2;
+  const comun = { cx: centro, cy: centro, r: radio, fill: 'none', 'stroke-width': grosor };
+  return s(
+    'svg',
+    { viewBox: `0 0 ${tamano} ${tamano}`, width: tamano, height: tamano, 'aria-hidden': 'true' },
+    s('circle', { ...comun, class: 'pista' }),
+    s('circle', {
+      ...comun,
+      class: 'avance',
+      'stroke-linecap': 'round',
+      'stroke-dasharray': largo.toFixed(1),
+      'stroke-dashoffset': (largo * (1 - Math.max(0, Math.min(100, porcentaje)) / 100)).toFixed(1),
+      transform: `rotate(-90 ${centro} ${centro})`,
+    }),
+  );
+}
+
+/** Línea de tendencia mínima: sin ejes, solo la forma. Las cifras exactas van en el texto. */
+function chispa(valores) {
+  const ancho = 300;
+  const alto = 56;
+  const min = Math.min(...valores);
+  const rango = Math.max(...valores) - min || 1;
+  const x = (i) => 4 + (i / (valores.length - 1)) * (ancho - 8);
+  const y = (v) => 6 + (1 - (v - min) / rango) * (alto - 14);
+  const puntos = valores.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+  const ultimo = valores.length - 1;
+  return s(
+    'svg',
+    { class: 'chispa', viewBox: `0 0 ${ancho} ${alto}`, preserveAspectRatio: 'none', 'aria-hidden': 'true' },
+    s('polygon', { class: 'area', points: `4,${alto} ${puntos.join(' ')} ${ancho - 4},${alto}` }),
+    s('polyline', { class: 'linea', points: puntos.join(' '), 'vector-effect': 'non-scaling-stroke' }),
+    s('circle', { class: 'punto', cx: x(ultimo).toFixed(1), cy: y(valores[ultimo]).toFixed(1), r: 3.5 }),
+  );
+}
+
 export function crearPanelUI(ctx, ingesta) {
   const accion = (fn) => seguro(fn, ctx.toast);
   const hoy = () => diaBogota();
+
+  /** Lo que importa hoy: cuánto puedes gastar, avisos y qué pagos vienen. */
+  function renderHoy() {
+    const datos = ctx.datos();
+    const dia = hoy();
+    const mes = dia.slice(0, 7);
+    const ritmo = ritmoDelMes(datos, dia);
+    const meta = metaAhorro(datos);
+    const efectivo = efectivoDelMes(datos, mes);
+    const tarjetas = datos.tarjetas.filter((t) => t.estado !== 'cerrada');
+    const urgentes = tarjetas
+      .flatMap((t) =>
+        alertasTarjeta(t, saldoTarjeta(t, datos.transactions), {
+          hoy: dia,
+          cicloActual: cicloVigente(datos.ciclos, t.id, dia),
+        }),
+      )
+      .filter((a) => a.nivel !== 'info');
+    const porRevisar = ingesta.contarPendientes();
+    const compromisos = proximosCompromisos(datos, dia, 30).slice(0, 6);
+    const avanceMes = Math.round((Number(dia.slice(8, 10)) / ultimoDiaMes(mes)) * 100);
+
+    const tarjetaHoy =
+      ritmo.base || efectivo.sinRastrear > 0 || urgentes.length || porRevisar
+        ? h(
+            'div',
+            { class: 'card' },
+            ritmo.base
+              ? h(
+                  'div',
+                  { class: 'ritmo' },
+                  h('small', {}, 'Puedes gastar hoy'),
+                  h('b', { class: `monto ${ritmo.porDia > 0 ? '' : 'negativo'}` }, formatear(ritmo.porDia)),
+                  h(
+                    'p',
+                    { class: 'nota' },
+                    ritmo.disponible > 0
+                      ? `Te quedan ${formatear(ritmo.disponible)} ${ritmo.base === 'presupuesto' ? 'de tus presupuestos' : `para cerrar el mes ahorrando el ${meta} %`} y ${ritmo.dias} día(s).`
+                      : ritmo.base === 'presupuesto'
+                        ? `Ya usaste todos tus presupuestos (${formatear(-ritmo.disponible)} de más). Lo que gastes ahora sale del ahorro.`
+                        : `Ya gastaste ${formatear(-ritmo.disponible)} más de lo que permite ahorrar el ${meta} % este mes.`,
+                  ),
+                  h(
+                    'div',
+                    {
+                      class: 'mes-avance',
+                      role: 'progressbar',
+                      'aria-valuemin': '0',
+                      'aria-valuemax': '100',
+                      'aria-valuenow': String(avanceMes),
+                      'aria-label': `Ha pasado el ${avanceMes} % del mes`,
+                    },
+                    h('span', { style: { width: `${avanceMes}%` } }),
+                  ),
+                )
+              : null,
+            efectivo.sinRastrear > 0
+              ? h(
+                  'div',
+                  { class: 'chip chip-aviso' },
+                  `Retiraste ${formatear(efectivo.retirado)} en efectivo este mes y registraste ${formatear(efectivo.gastado)} en gastos con él. ` +
+                    `${formatear(efectivo.sinRastrear)} sin rastrear: mientras no los anotes, tu tasa de ahorro se ve mejor de lo que es.`,
+                )
+              : null,
+            urgentes.map((a) =>
+              h('div', { class: `chip ${a.nivel === 'urgente' ? 'chip-urgente' : 'chip-aviso'}` }, a.mensaje),
+            ),
+            porRevisar
+              ? h(
+                  'button',
+                  {
+                    class: 'btn-ghost boton-ancho margen-arriba-chico',
+                    onclick: () => document.dispatchEvent(new CustomEvent('ir-a', { detail: 'movimientos' })),
+                  },
+                  `${porRevisar} movimiento(s) por revisar`,
+                )
+              : null,
+          )
+        : null;
+
+    const contenedor = montar(
+      'vistaHoy',
+      tarjetaHoy,
+      compromisos.length ? encabezado('Próximos pagos', '30 días') : null,
+      compromisos.length
+        ? h(
+            'div',
+            { class: 'card' },
+            compromisos.map((c) =>
+              h(
+                'div',
+                { class: `compromiso${c.dias != null && c.dias < 0 ? ' vencido' : ''}` },
+                h(
+                  'div',
+                  { class: 'compromiso-fecha', 'aria-hidden': 'true' },
+                  h('b', {}, c.fecha ? String(Number(c.fecha.slice(8, 10))) : '·'),
+                  c.fecha ? MESES_CORTOS[Number(c.fecha.slice(5, 7)) - 1] : 'mes',
+                ),
+                h(
+                  'div',
+                  {},
+                  h('div', { class: 'compromiso-titulo' }, c.titulo),
+                  h('div', { class: 'compromiso-detalle' }, `${c.detalle} · ${textoDias(c.dias)}`),
+                ),
+                h(
+                  'span',
+                  { class: `monto${c.entra ? ' entra' : ''}` },
+                  `${c.entra ? '+' : ''}${formatear(c.monto)}`,
+                ),
+              ),
+            ),
+          )
+        : null,
+    );
+    contenedor.hidden = !tarjetaHoy && !compromisos.length;
+  }
 
   function renderPanel() {
     const datos = ctx.datos();
     const p = patrimonio(datos);
     const mes = hoy().slice(0, 7);
-    const s = estadisticasMes(datos.transactions, mes);
-    const efectivo = efectivoDelMes(datos, mes);
+    const st = estadisticasMes(datos.transactions, mes);
     const tarjetas = datos.tarjetas.filter((t) => t.estado !== 'cerrada');
     const cupo = tarjetas.reduce((a, t) => a + aEntero(t.cupoTotal), 0);
     const usado = tarjetas.reduce((a, t) => a + Math.max(0, saldoTarjeta(t, datos.transactions)), 0);
     const uso = utilizacion({ cupoTotal: cupo }, usado);
-    const vencimientos = tarjetas
-      .map((t) => ({ alias: t.alias, fecha: proximasFechas(t, hoy()).limitePago }))
-      .sort((a, b) => a.fecha.localeCompare(b.fecha));
-    const alertas = tarjetas.flatMap((t) =>
-      alertasTarjeta(t, saldoTarjeta(t, datos.transactions), {
-        hoy: hoy(),
-        cicloActual: cicloVigente(datos.ciclos, t.id, hoy()),
-      }),
-    );
-    const urgentes = alertas.filter((a) => a.nivel !== 'info');
-    const kpi = (valor, etiqueta) =>
+    const kpi = (valor, etiqueta, esMonto = true) =>
       h(
         'div',
         { class: 'kpi' },
-        h('div', { class: 'kpi-valor monto' }, valor),
+        h('div', { class: `kpi-valor${esMonto ? ' monto' : ''}` }, valor),
         h('div', { class: 'kpi-etiqueta' }, etiqueta),
       );
-    const porRevisar = ingesta.contarPendientes();
-    const ritmo = ritmoDelMes(datos, hoy());
     const salud = indicadoresSalud(datos, mes);
+    const nota = puntajeSalud(salud);
     // Los indicadores sin historia se resumen en una línea en vez de repetir el mismo aviso.
     const faltan = salud.filter((i) => i.estado === 'sin_datos').map((i) => i.titulo.toLowerCase());
     const etiquetaEstado = { ok: 'Bien', alerta: 'Atención', mal: 'Actúa', sin_datos: 'Sin datos' };
-    montar(
-      'vistaPanel',
-      ritmo.base
+    const claseNota = { Sólida: 'solida', Estable: 'estable', Frágil: 'fragil' };
+
+    const historia = patrimonioHistorico(datos, mes, 6);
+    const previo = historia.length >= 2 ? historia[historia.length - 2] : null;
+    const cambio = previo ? p.neto - previo.neto : null;
+    const partes = [
+      ['cuentas', 'Cuentas y efectivo'],
+      ['bolsillos', 'Bolsillos'],
+      ['metas', 'Metas'],
+      ['inversiones', 'CDT'],
+    ].filter(([k]) => p.desglose[k] > 0);
+    const pasivo = (nombre, valor) =>
+      valor > 0
         ? h(
             'div',
-            { class: 'card ritmo' },
-            h('small', {}, 'Puedes gastar hoy'),
-            h('b', { class: `monto ${ritmo.porDia > 0 ? '' : 'negativo'}` }, formatear(ritmo.porDia)),
-            h(
-              'p',
-              { class: 'nota' },
-              ritmo.disponible > 0
-                ? `Te quedan ${formatear(ritmo.disponible)} ${ritmo.base === 'presupuesto' ? 'de tus presupuestos' : 'para cerrar el mes ahorrando el 20 %'} y ${ritmo.dias} día(s).`
-                : ritmo.base === 'presupuesto'
-                  ? `Ya usaste todos tus presupuestos (${formatear(-ritmo.disponible)} de más). Lo que gastes ahora sale del ahorro.`
-                  : `Ya gastaste ${formatear(-ritmo.disponible)} más de lo que permite ahorrar el 20 % este mes.`,
-            ),
+            { class: 'desglose-fila pasivo' },
+            h('span', {}, nombre),
+            h('span', { class: 'monto' }, `−${formatear(valor)}`),
           )
-        : null,
+        : null;
+
+    montar(
+      'vistaPanel',
       encabezado('Salud financiera', 'qué hacer'),
       h(
         'div',
         { class: 'card' },
+        nota
+          ? h(
+              'div',
+              { class: 'salud-cabecera' },
+              h(
+                'div',
+                { class: `salud-anillo ${claseNota[nota.etiqueta]}` },
+                anillo(nota.puntaje),
+                h('b', {}, String(nota.puntaje)),
+              ),
+              h(
+                'div',
+                { class: 'salud-resumen' },
+                h('b', {}, nota.etiqueta),
+                h(
+                  'span',
+                  { class: 'nota' },
+                  `Puntaje de 0 a 100 con ${nota.evaluados} indicador(es). Abajo, qué mueve cada uno.`,
+                ),
+              ),
+            )
+          : null,
         faltan.length
           ? h(
               'p',
@@ -127,7 +304,7 @@ export function crearPanelUI(ctx, ingesta) {
             ),
           ),
       ),
-      encabezado('Patrimonio', 'hoy'),
+      encabezado('Patrimonio', 'tienes − debes'),
       h(
         'div',
         { class: 'card' },
@@ -137,50 +314,48 @@ export function crearPanelUI(ctx, ingesta) {
           h('small', {}, 'Patrimonio neto'),
           h('b', { class: 'monto' }, formatear(p.neto)),
         ),
+        cambio != null
+          ? h(
+              'div',
+              { class: `patrimonio-cambio ${cambio > 0 ? 'sube' : cambio < 0 ? 'baja' : ''}` },
+              `${cambio >= 0 ? '+' : '−'}${formatear(Math.abs(cambio))} frente al cierre de ${MESES_CORTOS[Number(previo.mes.slice(5, 7)) - 1]}`,
+            )
+          : null,
+        historia.length >= 2 ? chispa(historia.map((x) => x.neto)) : null,
+        partes.length
+          ? h(
+              'div',
+              { class: 'composicion', role: 'img', 'aria-label': 'Composición de tus activos' },
+              partes.map(([k]) =>
+                h('span', {
+                  style: {
+                    background: COLOR_ACTIVO[k],
+                    'flex-grow': String(p.desglose[k]),
+                    'flex-basis': '0',
+                  },
+                }),
+              ),
+            )
+          : null,
+        partes.map(([k, nombre]) =>
+          h(
+            'div',
+            { class: 'desglose-fila' },
+            h('span', {}, h('span', { class: 'cat-dot', style: { background: COLOR_ACTIVO[k] } }), nombre),
+            monto(p.desglose[k]),
+          ),
+        ),
+        pasivo('Tarjetas de crédito', p.desglose.tarjetas),
+        pasivo('Otras deudas', p.desglose.otrasDeudas),
         h(
           'div',
           { class: 'panel-kpis' },
           kpi(formatear(p.activos), 'Activos'),
           kpi(formatear(p.pasivos), 'Pasivos'),
-          kpi(formatear(s.balance), 'Flujo del mes'),
-          h(
-            'div',
-            { class: 'kpi' },
-            h('div', { class: 'kpi-valor' }, textoTasaAhorro(s)),
-            h('div', { class: 'kpi-etiqueta' }, 'Ahorro del mes'),
-          ),
-          kpi(formatear(p.desglose.tarjetas + p.desglose.otrasDeudas), 'Deuda total'),
-          h(
-            'div',
-            { class: 'kpi' },
-            h('div', { class: 'kpi-valor' }, cupo ? `${uso.porcentaje} %` : 'n/a'),
-            h('div', { class: 'kpi-etiqueta' }, 'Uso de tarjetas'),
-          ),
+          kpi(formatear(st.balance), 'Flujo del mes'),
+          kpi(textoTasaAhorro(st), 'Ahorro del mes', false),
+          cupo ? kpi(`${uso.porcentaje} %`, 'Uso de tarjetas', false) : null,
         ),
-        vencimientos.length
-          ? h('p', { class: 'nota' }, `Próximo pago: ${vencimientos[0].alias}, ${vencimientos[0].fecha}.`)
-          : null,
-        efectivo.sinRastrear > 0
-          ? h(
-              'div',
-              { class: 'chip chip-aviso' },
-              `Retiraste ${formatear(efectivo.retirado)} en efectivo este mes y registraste ${formatear(efectivo.gastado)} en gastos con él. ` +
-                `${formatear(efectivo.sinRastrear)} sin rastrear: mientras no los anotes, tu tasa de ahorro se ve mejor de lo que es.`,
-            )
-          : null,
-        urgentes.map((a) =>
-          h('div', { class: `chip ${a.nivel === 'urgente' ? 'chip-urgente' : 'chip-aviso'}` }, a.mensaje),
-        ),
-        porRevisar
-          ? h(
-              'button',
-              {
-                class: 'btn-ghost ancho',
-                onclick: () => document.dispatchEvent(new CustomEvent('ir-a', { detail: 'movimientos' })),
-              },
-              `${porRevisar} movimiento(s) por revisar`,
-            )
-          : null,
       ),
     );
   }
@@ -226,7 +401,7 @@ export function crearPanelUI(ctx, ingesta) {
                   h(
                     'button',
                     {
-                      class: 'btn-ghost',
+                      class: 'quitar',
                       'aria-label': `Quitar presupuesto de ${a.categoria}`,
                       onclick: accion(async () => {
                         datos.presupuestos = datos.presupuestos.filter((x) => x.categoria !== a.categoria);
@@ -288,12 +463,19 @@ export function crearPanelUI(ctx, ingesta) {
                   'div',
                   {},
                   h('b', {}, r.comercio),
-                  h('div', { class: 'nota' }, `${formatear(r.costoAnual)} al año`),
+                  h('div', { class: 'nota' }, `Hacia el día ${r.dia} · ${formatear(r.costoAnual)} al año`),
                 ),
                 monto(r.monto),
               ),
             )
           : vacio('Aún sin detectar', 'Aparecen cuando un comercio cobra algo parecido 3 meses seguidos.'),
+        recurrentes.length
+          ? h(
+              'p',
+              { class: 'nota con-cifras' },
+              `En total, ${formatear(recurrentes.reduce((t, r) => t + r.monto, 0))} al mes en cobros fijos (${formatear(recurrentes.reduce((t, r) => t + r.costoAnual, 0))} al año).`,
+            )
+          : null,
       ),
     );
   }
@@ -361,9 +543,55 @@ export function crearPanelUI(ctx, ingesta) {
         }),
       },
     );
+    const tema = selector(
+      [
+        ['auto', 'Automático (como el celular)'],
+        ['claro', 'Claro'],
+        ['oscuro', 'Oscuro'],
+      ],
+      datos.settings.tema ?? 'auto',
+      {
+        onchange: accion(async (e) => {
+          datos.settings.tema = e.target.value;
+          await ctx.guardar();
+          ctx.renderAll();
+        }),
+      },
+    );
+    const metaEl = h('input', {
+      type: 'number',
+      inputmode: 'numeric',
+      min: '5',
+      max: '80',
+      step: '1',
+      value: String(metaAhorro(datos)),
+      onchange: accion(async (e) => {
+        const valor = Math.round(Number(e.target.value));
+        if (!(valor >= 5 && valor <= 80)) {
+          e.target.value = String(metaAhorro(datos));
+          throw new Error('La meta de ahorro debe estar entre 5 % y 80 %');
+        }
+        datos.settings.metaAhorro = valor;
+        await ctx.guardar();
+        ctx.toast(`Meta de ahorro: ${valor} % del ingreso`);
+        ctx.renderAll();
+      }),
+    });
     montar(
       'vistaAjustes',
-      encabezado('Ingesta automática', 'Bancolombia'),
+      encabezado('Preferencias', 'a tu medida'),
+      h(
+        'div',
+        { class: 'card formulario' },
+        campo('Apariencia', tema),
+        campo('Meta de ahorro (% del ingreso)', metaEl),
+        h(
+          'p',
+          { class: 'nota' },
+          'La meta de ahorro define cuánto puedes gastar hoy y cómo se califica tu tasa de ahorro. 20 % es la referencia más usada; súbela si quieres llegar antes a tus metas.',
+        ),
+      ),
+      encabezado('Ingesta automática', 'correos de Bancolombia'),
       h('div', { class: 'card', id: 'vistaAjustesIngesta' }),
       encabezado('Seguridad', 'privacidad'),
       h(
@@ -430,7 +658,7 @@ export function crearPanelUI(ctx, ingesta) {
     const pasos = [
       [datos.accounts.length > 0, 'Agrega tu cuenta y sus últimos 4 dígitos', 'ahorro'],
       [datos.tarjetas.length > 0, 'Agrega tus tarjetas de crédito', 'tarjetas'],
-      [datos.settings.ingesta.activa, 'Conecta la ingesta de Bancolombia', 'mas'],
+      [datos.settings.ingesta.activa, 'Conecta los correos de Bancolombia', 'mas'],
     ];
     if (datos.settings.onboardingOculto || pasos.every(([hecho]) => hecho)) {
       montar('vistaOnboarding');
@@ -446,7 +674,7 @@ export function crearPanelUI(ctx, ingesta) {
           h(
             'button',
             {
-              class: 'btn-ghost ancho',
+              class: `btn-ghost ancho${hecho ? ' hecho' : ''}`,
               onclick: () => document.dispatchEvent(new CustomEvent('ir-a', { detail: tab })),
             },
             `${hecho ? '✓' : '○'} ${texto}`,
@@ -508,5 +736,5 @@ export function crearPanelUI(ctx, ingesta) {
     });
   }
 
-  return { renderPanel, renderPresupuesto, renderAjustes, renderOnboarding, exigirPin };
+  return { renderHoy, renderPanel, renderPresupuesto, renderAjustes, renderOnboarding, exigirPin };
 }

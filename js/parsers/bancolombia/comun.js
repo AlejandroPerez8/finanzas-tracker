@@ -72,3 +72,13 @@ export function aplicarPatron(patron, normalizado, recibidoEn) {
     confianza: Math.max(0, Math.round(confianza * 100) / 100),
   };
 }
+
+/** El primer patrón con la confianza más alta gana; el orden del JSON resuelve empates. */
+export function mejor(patrones, normalizado, recibidoEn) {
+  let ganador = null;
+  for (const p of patrones) {
+    const r = aplicarPatron(p, normalizado, recibidoEn);
+    if (r && (!ganador || r.confianza > ganador.confianza)) ganador = r;
+  }
+  return ganador;
+}

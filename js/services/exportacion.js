@@ -3,7 +3,7 @@
 import { tipoCanonico, cuenta } from '../domain/movimientos.js';
 import { aEntero } from '../domain/money.js';
 import { saldoTarjeta } from '../domain/tarjetas.js';
-import { saldoCuenta } from '../domain/movimientos.js';
+import { saldoCuenta, saldoDeuda } from '../domain/movimientos.js';
 
 /** Escapa una celda; neutraliza fórmulas para que abrirla en Excel no ejecute nada. */
 export function celdaCsv(valor) {
@@ -83,7 +83,7 @@ export function tablasPowerBi(datos, hoy) {
       id: d.id,
       nombre: d.nombre ?? '',
       tipo: d.tipo,
-      saldo: aEntero(d.saldo),
+      saldo: saldoDeuda(d, tx),
       tasa_ea: d.tasaEA,
     })),
     calendario,

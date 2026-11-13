@@ -1,11 +1,12 @@
 /**
  * Migraciones versionadas del esquema. Son puras, ordenadas e idempotentes.
  * Sin `schemaVersion`, el dato viene de la v4 de la app (versión 1 del esquema).
+ * La versión 3 del esquema corresponde a la app 6.0.
  */
 
 import { aEntero } from '../domain/money.js';
 
-export const VERSION_ACTUAL = 2;
+export const VERSION_ACTUAL = 3;
 
 /** Mapea el tipo libre de cuenta al vocabulario nuevo sin borrar el original. */
 const TIPO_CUENTA = {
@@ -72,6 +73,23 @@ const migraciones = {
       diasTexto: 30,
     };
     d.settings.sync ??= { cursor: null, ackPendientes: [], ultima: null };
+    return d;
+  },
+  /**
+   * v2 → v3: la ingesta queda solo por correo (Gmail) y pegado a mano. Lo que había entrado por
+   * mensaje de texto ("sms") se conserva como importación manual. Se agregan tema y meta de ahorro.
+   */
+  2(d) {
+    const fuente = (f) => (f === 'sms' ? 'manual' : f);
+    d.transactions = (d.transactions ?? []).map((t) => ({
+      ...t,
+      origen: t.origen === 'sms' ? 'importacion' : t.origen,
+      fuentes: (t.fuentes ?? []).map((f) => ({ ...f, fuente: fuente(f.fuente) })),
+    }));
+    d.ingesta = (d.ingesta ?? []).map((i) => ({ ...i, fuente: fuente(i.fuente) }));
+    d.settings ??= {};
+    d.settings.tema ??= 'auto';
+    d.settings.metaAhorro ??= 20;
     return d;
   },
 };

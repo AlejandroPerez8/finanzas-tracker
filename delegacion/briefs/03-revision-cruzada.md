@@ -1,7 +1,7 @@
 # Brief 03: revisión cruzada de lógica crítica
 Objetivo: encontrar BUGS REALES en estos módulos de una app de finanzas personal (COP en enteros, zona Bogotá). No reescribas código. No crees ni edites archivos ni ejecutes comandos.
 Salida: lista de hallazgos, máximo 12, ordenada por severidad. Cada uno: archivo y función, entrada concreta que falla, resultado obtenido vs esperado. Si no estás seguro, márcalo [DUDOSO]. No incluyas estilo ni sugerencias generales.
-Contexto clave: mismo movimiento por SMS y correo se fusiona; dos mensajes de la misma fuente son compras distintas. El ack al servidor solo se envía tras guardar. Compra con tarjeta = gasto + deuda; pago de tarjeta no es gasto.
+Contexto clave: mismo movimiento pegado a mano y llegado por correo se fusiona; dos mensajes de la misma fuente son compras distintas. El ack al servidor solo se envía tras guardar. Compra con tarjeta = gasto + deuda; pago de tarjeta no es gasto.
 
 ## js/domain/money.js
 ```js
@@ -359,7 +359,7 @@ export function pagarVsCdt({ monto, tasaTarjetaEA, tasaCdtEA, meses, retencion =
 /**
  * Deduplicación de movimientos ingeridos.
  *
- * La misma compra puede llegar por SMS y por correo, pero dos compras iguales de una misma
+ * La misma compra puede llegar por correo y pegarse a mano, pero dos compras iguales de una misma
  * fuente son compras distintas. Por eso solo se fusionan mensajes de fuentes diferentes.
  */
 
@@ -374,7 +374,7 @@ export function huella(m) {
   return [m.type, m.amount, m.ultimos4 ?? '', normalizarComercio(m.comercio), m.date].join('|');
 }
 
-/** Distancia de edición, para tolerar comercios escritos distinto en SMS y correo. */
+/** Distancia de edición, para tolerar comercios escritos distinto entre un mensaje y otro. */
 function distancia(a, b) {
   let previa = Array.from({ length: b.length + 1 }, (_, j) => j);
   for (let i = 1; i <= a.length; i++) {
@@ -411,7 +411,7 @@ export function esMismoMovimiento(a, b) {
  * Busca el movimiento existente con el que fusionar el nuevo.
  * Se descartan los que ya tienen un mensaje de esa fuente.
  * @param {object} nuevo candidato
- * @param {string} fuente 'sms' | 'gmail'
+ * @param {string} fuente 'gmail' | 'manual'
  * @param {object[]} existentes
  * @returns {object|null}
  */
@@ -509,7 +509,7 @@ export function aMovimiento(parseado, item, datos, contexto) {
     comercio: parseado.comercio ?? '',
     note: '',
     method: tarjetaId ? 'Crédito' : '',
-    origen: item.fuente === 'sms' || item.fuente === 'gmail' ? item.fuente : 'importacion',
+    origen: item.fuente === 'gmail' ? 'gmail' : 'importacion',
     estado: 'pendiente_revision',
     ultimos4: parseado.ultimos4,
     referenciaBanco: parseado.referencia,
@@ -687,7 +687,7 @@ export function purgarTextos(datos, dias, ahora = Date.now()) {
 
 import { procesarMensaje } from './ingesta.js';
 
-const FUENTES = new Set(['gmail', 'sms']);
+const FUENTES = new Set(['gmail']);
 const RE_ROWID = /^[\w-]{1,64}$/;
 const MAX_TEXTO = 2000;
 

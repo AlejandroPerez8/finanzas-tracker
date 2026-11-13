@@ -1,15 +1,15 @@
 {
   "name": "Finanzas Tracker",
   "short_name": "Finanzas",
-  "description": "Control personal de cuentas, gastos, bolsillos, metas de ahorro y CDT.",
+  "description": "Tu dinero, claro: cuentas, gastos, deudas, metas de ahorro y CDT, con los correos de Bancolombia leídos solos.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait-primary",
-  "background_color": "#0E1217",
-  "theme_color": "#0E1217",
+  "background_color": "#0B3D2E",
+  "theme_color": "#0B3D2E",
   "lang": "es-CO",
   "categories": ["finance", "productivity"],
   "icons": [
@@ -24,20 +24,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Metas de ahorro",
-      "short_name": "Metas",
-      "url": "./#goals",
-      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Bolsillos",
-      "short_name": "Bolsillos",
-      "url": "./#pockets",
-      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

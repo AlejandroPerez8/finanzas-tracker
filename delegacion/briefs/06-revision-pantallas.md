@@ -167,7 +167,7 @@ export function crearIngestaUI(ctx, recursos) {
       }, 'Dividir'));
     };
     return h('article', { class: 'fila-pendiente' },
-      h('div', { class: 'fp-monto' }, monto(t.amount), h('span', { class: 'chip' }, t.origen === 'gmail' ? 'correo' : t.origen === 'sms' ? 'SMS' : 'pegado')),
+      h('div', { class: 'fp-monto' }, monto(t.amount), h('span', { class: 'chip' }, t.origen === 'gmail' ? 'correo' : 'pegado')),
       h('div', { class: 'fp-detalle' }, `${t.comercio || 'Sin comercio'} · ${t.date}${t.hora ? ` ${t.hora}` : ''}`),
       t.conciliarCon ? h('div', { class: 'chip chip-aviso' }, 'Puede estar ya registrado a mano: revisa Conciliar.') : null,
       h('div', { class: 'formulario' },
@@ -226,7 +226,7 @@ export function crearIngestaUI(ctx, recursos) {
   }
 
   function vistaImportar() {
-    const caja = h('textarea', { rows: 5, 'aria-label': 'Mensajes del banco', placeholder: 'Pega uno o varios SMS o correos de Bancolombia' });
+    const caja = h('textarea', { rows: 5, 'aria-label': 'Mensajes del banco', placeholder: 'Pega una o varias alertas de Bancolombia' });
     const importar = accion(async () => {
       const mensajes = separarMensajes(caja.value);
       if (!mensajes.length) throw new Error('Pega al menos un mensaje');

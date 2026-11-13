@@ -335,7 +335,7 @@ export function crearIngestaUI(ctx, recursos) {
         'div',
         { class: 'fp-monto' },
         monto(t.amount),
-        h('span', { class: 'chip' }, t.origen === 'gmail' ? 'correo' : t.origen === 'sms' ? 'SMS' : 'pegado'),
+        h('span', { class: 'chip' }, t.origen === 'gmail' ? 'correo' : 'pegado'),
       ),
       h(
         'div',
@@ -488,7 +488,7 @@ export function crearIngestaUI(ctx, recursos) {
     const caja = h('textarea', {
       rows: 5,
       'aria-label': 'Mensajes del banco',
-      placeholder: 'Pega uno o varios SMS o correos de Bancolombia',
+      placeholder: 'Pega una o varias alertas de Bancolombia',
     });
     const importar = accion(async () => {
       const mensajes = separarMensajes(caja.value);

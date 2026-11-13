@@ -32,12 +32,9 @@ Solo devuelve filas sin confirmar. El cursor es opaco (en Code.gs, el número de
 ## Confirmar importados
 `{ "action": "ack", "ids": "r_000123,r_000124" }` (también acepta una lista) → `{ "ok": true, "acked": 2 }`. Es idempotente. La app solo lo llama **después de guardar**.
 
-## Recibir SMS
-`POST` con `Content-Type: text/plain` y cuerpo JSON como texto, para evitar el preflight de CORS:
-```json
-{ "token": "T", "source": "sms", "receivedAt": "2026-11-07T07:58:12-05:00", "text": "…" }
-```
-→ `{ "ok": true, "rowId": "r_000124" }`. Un reintento con el mismo texto y fecha devuelve la misma fila.
+## Sin entrada de mensajes
+El endpoint no recibe mensajes: la única fuente es Gmail, que el propio script lee con su disparador.
+Un `POST` sin `action` responde `bad_request`.
 
 ## Archivo de filas viejas
 La purga diaria (`purgarTexto`, 3 a. m.) borra el texto de lo importado con más de `DIAS_PURGA`

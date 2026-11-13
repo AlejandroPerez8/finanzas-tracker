@@ -15,8 +15,11 @@ import { exportable, validarCopia, cifrar, descifrar, estaCifrado } from './serv
 import { agregados, promptReporte } from './services/reportes.js';
 import { aprender } from './services/categorizacion.js';
 import { registrarDiferida } from './services/ingesta.js';
+import { proyeccionCierre, comparativoCategorias } from './domain/analisis.js';
+import { metaAhorro } from './domain/salud.js';
 import { iniciarInterfaz } from './ui/principal.js';
 import { activarCombobox } from './ui/combobox.js';
+import { iconoHtml } from './ui/iconos.js';
 
 
   const EXPENSE_CATEGORIES = CATEGORIAS_GASTO;
@@ -57,14 +60,18 @@ import { activarCombobox } from './ui/combobox.js';
     return new Date(y, m-1, 1).toLocaleDateString('es-CO', {month:'long', year:'numeric'});
   }
   function uid(prefix){ return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-  // Paleta fija validada para CVD en modo oscuro; excluye verde/violeta/rojo (reservados para ingreso/marca/gasto).
-  const CATEGORIA_COLORES = ['#3987E5', '#199E70', '#C98500', '#D95926'];
-  function catColor(name){
-    const s = String(name||'Otros');
-    let hash = 0;
-    for(let i=0;i<s.length;i++){ hash = s.charCodeAt(i) + ((hash<<5)-hash); hash |= 0; }
-    return CATEGORIA_COLORES[Math.abs(hash) % CATEGORIA_COLORES.length];
-  }
+  // Paleta categórica distinguible con daltonismo y legible en claro y oscuro. Sin verde ni rojo:
+  // el verde es la marca y los ingresos; el rojo, las alertas.
+  const CATEGORIA_COLORES = ['#3987E5', '#C98500', '#8A63D2', '#D95926', '#1396A8', '#B8578F'];
+  const ICONO_CUENTA = { ahorros:'banco', corriente:'banco', efectivo:'efectivo', billetera:'billetera' };
+  const HISTORY_FILTROS = {
+    todos: ()=>true,
+    ingresos: t=>t.type==='income' || t.type==='withdraw_out',
+    gastos: t=>['expense','interes','cuota_manejo'].includes(t.type),
+    traslados: t=>['transferencia','pago_tarjeta','pago_deuda','avance','transfer_in'].includes(t.type),
+  };
+  let historyFiltro = 'todos';
+  let historyBusqueda = '';
 
   // Si los datos no se pudieron leer, no se guarda nada encima (ver init).
   let bloqueoGuardado = null;
@@ -220,17 +227,36 @@ import { activarCombobox } from './ui/combobox.js';
     const sel = document.getElementById('txAccount');
     const valor = sel.value;
     const tarjetas = data.tarjetas.filter(t=>t.estado!=='cerrada').map(t=>`<option value="tarjeta:${escapeAttr(t.id)}">Tarjeta ${escapeAttr(t.alias)}</option>`).join('');
-    sel.innerHTML = '<option value="">Sin cuenta</option>' + data.accounts.map(a=>`<option value="${escapeAttr(a.id)}">${escapeAttr(a.name)}</option>`).join('') + tarjetas;
+    const cuentas = data.accounts.map(a=>`<option value="${escapeAttr(a.id)}">${escapeAttr(a.name)}</option>`).join('');
+    // Un traslado sale de una cuenta propia; un gasto también puede ir a una tarjeta.
+    sel.innerHTML = currentTxType==='transfer'
+      ? '<option value="">Cuenta de origen</option>' + cuentas
+      : '<option value="">Sin cuenta</option>' + cuentas + tarjetas;
     if([...sel.options].some(o=>o.value===valor)) sel.value = valor;
+    const destino = document.getElementById('txDestino');
+    const valorDestino = destino.value;
+    destino.innerHTML = '<option value="">Cuenta de destino</option>' + cuentas;
+    if([...destino.options].some(o=>o.value===valorDestino)) destino.value = valorDestino;
   }
 
+  function ajustarFormularioRegistro(){
+    const esTraslado = currentTxType==='transfer';
+    document.querySelectorAll('#typeToggle .type-pill').forEach(p=>{
+      p.classList.toggle('active', p.dataset.type===currentTxType);
+      p.setAttribute('aria-pressed', String(p.dataset.type===currentTxType));
+    });
+    // Mover dinero entre cuentas propias no es ingreso ni gasto: no lleva categoría, comercio ni cuotas.
+    document.getElementById('txCategory').hidden = esTraslado;
+    document.getElementById('txDetalleFila').hidden = esTraslado;
+    document.getElementById('txDestinoFila').hidden = !esTraslado;
+    document.getElementById('txMethod').hidden = esTraslado;
+    populateCategoryDatalist();
+    populateAccountSelect();
+  }
   document.getElementById('typeToggle').addEventListener('click', (e)=>{
     const pill = e.target.closest('.type-pill'); if(!pill) return;
     currentTxType = pill.dataset.type;
-    document.querySelectorAll('#typeToggle .type-pill').forEach(p=>{
-      p.classList.toggle('active', p.dataset.type===currentTxType);
-    });
-    populateCategoryDatalist();
+    ajustarFormularioRegistro();
   });
 
   document.getElementById('txExtraToggle').addEventListener('click', ()=>{
@@ -340,6 +366,7 @@ import { activarCombobox } from './ui/combobox.js';
         fieldsEl.innerHTML = `
           <div class="modal-field"><label>Monto (COP)</label><input type="number" id="editTxAmount" value="${t.amount}" min="0" step="1000"></div>
           <div class="modal-field"><label>Categoría</label><input type="text" id="editTxCategory" list="${listId}" value="${escapeAttr(t.category||'')}"></div>
+          <div class="modal-field"><label>Comercio</label><input type="text" id="editTxComercio" value="${escapeAttr(t.comercio||'')}" autocomplete="off"></div>
           <div class="modal-field"><label>Cuenta</label><select id="editTxAccount">${accOptions}</select></div>
           <div class="modal-field"><label>Fecha</label><input type="date" id="editTxDate" value="${t.date}"></div>
           <div class="modal-field"><label>Nota</label><textarea id="editTxNote">${escapeAttr(t.note||'')}</textarea></div>`;
@@ -414,6 +441,7 @@ import { activarCombobox } from './ui/combobox.js';
       if(!amount || amount<=0 || !date) return;
       t.amount = amount; t.date = date; t.note = note;
       if(t.type==='income' || t.type==='expense'){
+        t.comercio = document.getElementById('editTxComercio').value.trim();
         const categoriaNueva = document.getElementById('editTxCategory').value.trim() || t.category;
         // Corregir la categoría de un comercio enseña la regla para los siguientes.
         if(categoriaNueva!==t.category && t.comercio) data.reglas = aprender(data.reglas, t.comercio, categoriaNueva);
@@ -443,14 +471,21 @@ import { activarCombobox } from './ui/combobox.js';
     } else {
       listEl.innerHTML = data.accounts.map(a=>{
         const bal = accountBalance(a);
-        return `<div class="acc-row" data-acc="${escapeAttr(a.id)}">
-          <div class="info"><div class="name">${escapeAttr(a.name)}</div><div class="meta">${escapeAttr(a.type)}</div></div>
-          <div class="bal">${formatCOP(bal)}</div>
-          <div class="row-actions">
-            <button class="edit-btn acc-edit-btn">editar</button>
-            <button class="acc-del-btn">borrar</button>
+        const digitos = [a.ultimos4 && `cuenta *${a.ultimos4}`, a.ultimos4Debito && `débito *${a.ultimos4Debito}`].filter(Boolean).join(' · ');
+        return `<details class="fila acc-row" data-acc="${escapeAttr(a.id)}">
+          <summary>
+            <span class="avatar">${iconoHtml(ICONO_CUENTA[a.tipo] ?? 'banco')}</span>
+            <span class="info"><span class="name">${escapeAttr(a.name)}</span><span class="meta">${escapeAttr(a.type==='Digital' ? 'Billetera digital' : a.type)}</span></span>
+            <span class="bal monto">${formatCOP(bal)}</span>
+          </summary>
+          <div class="fila-cuerpo">
+            <div class="fila-detalle">${digitos ? escapeAttr(digitos) : 'Sin dígitos registrados: agrégalos para que los correos del banco se asocien solos.'}</div>
+            <div class="fila-acciones">
+              <button class="btn-mini acc-edit-btn">${iconoHtml('editar')}Editar</button>
+              <button class="btn-mini peligro acc-del-btn">${iconoHtml('eliminar')}Eliminar</button>
+            </div>
           </div>
-        </div>`;
+        </details>`;
       }).join('');
       listEl.querySelectorAll('.acc-edit-btn').forEach(btn=>{
         btn.addEventListener('click', ()=>{
@@ -504,6 +539,24 @@ import { activarCombobox } from './ui/combobox.js';
     const category = document.getElementById('txCategory').value.trim() || 'Otros';
     const date = document.getElementById('txDate').value || hoyKey();
     const medio = document.getElementById('txAccount').value;
+    if(currentTxType==='transfer'){
+      const destino = document.getElementById('txDestino').value;
+      if(!medio || !destino){ showToast('Elige la cuenta de origen y la de destino'); return; }
+      if(medio===destino){ showToast('El origen y el destino deben ser distintos'); return; }
+      const origen = data.accounts.find(a=>a.id===medio);
+      const disponible = origen ? accountBalance(origen) : 0;
+      if(amount>disponible && !await askConfirm(`"${origen?.name ?? 'La cuenta'}" tiene ${formatCOP(disponible)}, menos que el traslado de ${formatCOP(amount)}. ¿Continuar?`)) return;
+      data.transactions.push({
+        id: uid('t'), date, type:'transferencia', amount, category:'', accountId: medio, cuentaDestinoId: destino,
+        tarjetaId:null, method:'', note: document.getElementById('txNote').value.trim(), comercio:'',
+        origen:'manual', estado:'confirmado', fuentes:[], esCuota:false, cuotaInfo:null
+      });
+      await saveData();
+      amountInput.value = ''; document.getElementById('txNote').value = '';
+      showToast('Traslado guardado. No cuenta como gasto.');
+      renderAll();
+      return;
+    }
     const tarjetaId = medio.startsWith('tarjeta:') ? medio.slice(8) : null;
     if(tarjetaId && currentTxType!=='expense'){ showToast('Una tarjeta solo registra gastos'); return; }
     const accountId = tarjetaId ? null : (medio || null);
@@ -550,18 +603,24 @@ import { activarCombobox } from './ui/combobox.js';
     wheelPct.textContent = textoTasaAhorro({ income, expense, savingsRate });
     wheelPct.classList.toggle('texto', !/%$/.test(wheelPct.textContent));
     const monthName = monthLabel(thisMonthKey);
-    document.getElementById('monthHeadline').textContent = balance>=0
-      ? `Vas positivo este mes en ${monthName}`
-      : `Vas en rojo este mes en ${monthName}`;
-    document.getElementById('monthSub').textContent = `Ingresos ${formatCOP(income)} · Gastos ${formatCOP(expense)}`;
-
+    const meta = metaAhorro(data);
+    // El titular dice cómo va el mes frente a la meta de ahorro, no solo si es positivo.
+    document.getElementById('monthHeadline').textContent =
+      income<=0 && expense<=0 ? `Empieza ${monthName}: aún sin movimientos`
+      : balance<0 ? `Vas en rojo en ${monthName}`
+      : savingsRate>=meta ? `Vas cumpliendo tu meta de ahorro en ${monthName}`
+      : `Vas positivo en ${monthName}, bajo tu meta del ${meta} %`;
+    document.getElementById('monthSub').textContent = `Entraron ${formatCOP(income)} · Salieron ${formatCOP(expense)}`;
+    document.getElementById('heroFecha').textContent = fromKey(hoyKey()).toLocaleDateString('es-CO', {weekday:'short', day:'numeric', month:'short'});
+    document.getElementById('activeGoals').parentElement.lastChild.textContent = data.goals.length===1 ? ' meta' : ' metas';
+    // El anillo se llena al alcanzar la meta de ahorro del mes.
     const svg = document.getElementById('wheelSvg');
-    const r = 52, cx = 60, cy = 60, circ = 2*Math.PI*r;
-    const frac = Math.max(0,Math.min(100,savingsRate))/100;
+    const r = 50, cx = 60, cy = 60, circ = 2*Math.PI*r;
+    const frac = Math.max(0,Math.min(1, savingsRate/meta));
     svg.innerHTML = `
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="10"/>
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--accent)" stroke-width="10"
-        stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ*(1-frac)}"
+      <circle class="wheel-pista" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke-width="12"/>
+      <circle class="wheel-avance" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke-width="12"
+        stroke-linecap="round" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${(circ*(1-frac)).toFixed(1)}"
         transform="rotate(-90 ${cx} ${cy})"/>`;
 
     let streak = 0; let cursor = fromKey(hoyKey());
@@ -572,6 +631,7 @@ import { activarCombobox } from './ui/combobox.js';
       if(streak>365) break;
     }
     document.getElementById('currentStreak').textContent = streak;
+    document.getElementById('currentStreak').parentElement.lastChild.textContent = streak===1 ? ' día' : ' días';
     document.getElementById('activeGoals').textContent = data.goals.length;
 
     const banner = document.getElementById('reminderBanner');
@@ -628,21 +688,26 @@ import { activarCombobox } from './ui/combobox.js';
       const noAccounts = data.accounts.length===0;
       listEl.innerHTML = data.pockets.map(p=>{
         const acc = data.accounts.find(a=>a.id===p.accountId);
-        return `<div class="pocket-row" data-pocket="${escapeAttr(p.id)}">
-          <div class="info"><div class="name">▣ ${escapeAttr(p.name)}</div><div class="meta">${acc ? escapeAttr(acc.name) : 'Cuenta no asociada'}</div></div>
-          <div class="bal">${formatCOP(pocketBalance(p))}</div>
-          <div class="row-actions">
-            <button class="edit-btn pocket-edit-btn">editar</button>
-            <button class="pocket-del-btn">borrar</button>
+        return `<details class="fila pocket-row" data-pocket="${escapeAttr(p.id)}">
+          <summary>
+            <span class="avatar">${iconoHtml('bolsillo')}</span>
+            <span class="info"><span class="name">${escapeAttr(p.name)}</span><span class="meta">${acc ? escapeAttr(acc.name) : 'Cuenta no asociada'}</span></span>
+            <span class="bal monto">${formatCOP(pocketBalance(p))}</span>
+          </summary>
+          <div class="fila-cuerpo">
+            ${noAccounts ? '<div class="mini-hint">Crea una cuenta para poder abonar o retirar de este bolsillo.</div>' : `
+            <div class="mini-transfer-row" data-pocket-transfer="${escapeAttr(p.id)}">
+              <select class="mini-acc-select" aria-label="Cuenta de origen o destino">${accountTransferOptions()}</select>
+              <input type="number" class="mini-amt-input" placeholder="Monto" aria-label="Monto a abonar o retirar" min="0" step="1000">
+              <button class="btn-accent mini-abono-btn">Abonar</button>
+              <button class="btn-ghost mini-retiro-btn">Retirar</button>
+            </div>`}
+            <div class="fila-acciones">
+              <button class="btn-mini pocket-edit-btn">${iconoHtml('editar')}Editar</button>
+              <button class="btn-mini peligro pocket-del-btn">${iconoHtml('eliminar')}Eliminar</button>
+            </div>
           </div>
-        </div>
-        ${noAccounts ? '<div class="mini-hint">Crea una cuenta para poder abonar o retirar de este bolsillo.</div>' : `
-        <div class="mini-transfer-row" data-pocket-transfer="${escapeAttr(p.id)}">
-          <select class="mini-acc-select" aria-label="Cuenta de origen o destino">${accountTransferOptions()}</select>
-          <input type="number" class="mini-amt-input" placeholder="Monto" aria-label="Monto a abonar o retirar" min="0" step="1000">
-          <button class="btn-accent mini-abono-btn">Abonar</button>
-          <button class="btn-ghost mini-retiro-btn">Retirar</button>
-        </div>`}`;
+        </details>`;
       }).join('');
       listEl.querySelectorAll('.pocket-edit-btn').forEach(btn=>{
         btn.addEventListener('click', ()=>{
@@ -712,7 +777,7 @@ import { activarCombobox } from './ui/combobox.js';
   function renderSummary(){
     const thisMonthKey = hoyKey().slice(0,7);
     document.getElementById('summaryMonthLabel').textContent = monthLabel(thisMonthKey);
-    const { income, expense, balance, byCategory } = monthStats(thisMonthKey);
+    const { income, expense, balance } = monthStats(thisMonthKey);
     document.getElementById('sumIncome').textContent = formatCOP(income);
     document.getElementById('sumExpense').textContent = formatCOP(expense);
     const balEl = document.getElementById('sumBalance');
@@ -720,37 +785,79 @@ import { activarCombobox } from './ui/combobox.js';
     balEl.classList.toggle('up', balance>=0);
     balEl.classList.toggle('down', balance<0);
 
-    const entries = Object.entries(byCategory).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    renderProyeccion();
+
+    // Categorías del mes, cada una frente a su promedio de los últimos meses.
+    const categorias = comparativoCategorias(data.transactions, thisMonthKey).slice(0,6);
     const barsEl = document.getElementById('categoryBars');
-    if(entries.length===0){
+    if(categorias.length===0){
       barsEl.innerHTML = '<div class="empty">Sin gastos registrados este mes.</div>';
     } else {
-      const max = entries[0][1];
-      barsEl.innerHTML = entries.map(([cat,amt])=>`
+      const max = categorias[0].actual || 1;
+      barsEl.innerHTML = categorias.map((c,i)=>{
+        const color = CATEGORIA_COLORES[i % CATEGORIA_COLORES.length];
+        // Solo se comenta una diferencia que valga la pena: más de 10 % y de $10.000.
+        const notable = c.promedio!=null && Math.abs(c.delta) >= Math.max(10000, c.promedio*0.1);
+        const sub = c.promedio==null ? ''
+          : !notable ? `<div class="bar-sub">Como tu promedio (${formatCOP(c.promedio)})</div>`
+          : c.delta>0 ? `<div class="bar-sub sube">▲ ${formatCOP(c.delta)} más que tu promedio (${formatCOP(c.promedio)})</div>`
+          : `<div class="bar-sub baja">▼ ${formatCOP(-c.delta)} menos que tu promedio (${formatCOP(c.promedio)})</div>`;
+        return `
         <div class="bar-row">
-          <div class="bar-top"><span class="cat"><span class="cat-dot" data-color="${catColor(cat)}"></span>${escapeAttr(cat)}</span><span class="amt">${formatCOP(amt)}</span></div>
-          <div class="bar-track"><div class="bar-fill" data-pct="${Math.round((amt/max)*100)}" data-color="${catColor(cat)}"></div></div>
-        </div>`).join('');
+          <div class="bar-top"><span class="cat"><span class="cat-dot" data-color="${color}"></span>${escapeAttr(c.categoria)}<small>${c.parte} %</small></span><span class="amt monto">${formatCOP(c.actual)}</span></div>
+          <div class="bar-track"><div class="bar-fill" data-pct="${Math.max(2, Math.round((c.actual/max)*100))}" data-color="${color}"></div></div>
+          ${sub}
+        </div>`;
+      }).join('');
       // Color y ancho dinámicos vía CSSOM (no atributo style): compatible con CSP sin 'unsafe-inline'.
       barsEl.querySelectorAll('[data-color]').forEach(el=>{ el.style.setProperty('background', el.dataset.color); });
       barsEl.querySelectorAll('.bar-fill[data-pct]').forEach(el=>{ el.style.setProperty('width', el.dataset.pct+'%'); });
     }
 
-    // 6-month trend
+    // Últimos 6 meses: ingresos y gastos lado a lado, sobre una misma escala desde cero.
     const months = [];
     for(let i=5;i>=0;i--) months.push(addMonths(thisMonthKey, -i));
-    const values = months.map(m=>monthStats(m).balance);
+    const serie = months.map(m=>({ m, ...monthStats(m) }));
     const svg = document.getElementById('trendSvg');
-    const min = Math.min(...values, 0), max = Math.max(...values, 0);
-    const range = (max-min) || 1;
-    const stepX = 300/(values.length-1 || 1);
-    const pts = values.map((v,i)=>{ const x=i*stepX, y=70-((v-min)/range)*60; return {x:x.toFixed(1), y:y.toFixed(1)}; });
-    const zeroY = (70-((0-min)/range)*60).toFixed(1);
-    const line = pts.map(p=>`${p.x},${p.y}`).join(' ');
-    svg.innerHTML = `
-      <line x1="0" y1="${zeroY}" x2="300" y2="${zeroY}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>
-      <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/>`).join('')}`;
+    const tope = Math.max(1, ...serie.flatMap(s=>[s.income, s.expense]));
+    const W = 320, BASE = 108, ALTO = 96, paso = W/serie.length, anchoBarra = Math.min(16, paso/2 - 5);
+    const alto = v => v>0 ? Math.max(2, (v/tope)*ALTO) : 0;
+    svg.innerHTML = `<line class="eje" x1="0" y1="${BASE}" x2="${W}" y2="${BASE}"/>` + serie.map((s,i)=>{
+      const cx = paso*i + paso/2;
+      const hi = alto(s.income), hg = alto(s.expense);
+      const etiqueta = new Date(Number(s.m.slice(0,4)), Number(s.m.slice(5,7))-1, 1).toLocaleDateString('es-CO', {month:'short'}).replace('.','');
+      return `<rect class="barra-ingreso" x="${(cx-anchoBarra-1.5).toFixed(1)}" y="${(BASE-hi).toFixed(1)}" width="${anchoBarra.toFixed(1)}" height="${hi.toFixed(1)}" rx="3"/>
+        <rect class="barra-gasto" x="${(cx+1.5).toFixed(1)}" y="${(BASE-hg).toFixed(1)}" width="${anchoBarra.toFixed(1)}" height="${hg.toFixed(1)}" rx="3"/>
+        <text x="${cx.toFixed(1)}" y="${BASE+16}" text-anchor="middle">${escapeAttr(etiqueta)}</text>`;
+    }).join('');
+    const descripcion = serie.map(s=>`${monthLabel(s.m)}: ingresos ${formatCOP(s.income)}, gastos ${formatCOP(s.expense)}`).join('; ');
+    svg.setAttribute('aria-label', document.body.classList.contains('discreto') ? 'Ingresos y gastos de los últimos 6 meses' : `Ingresos y gastos de los últimos 6 meses. ${descripcion}`);
+  }
+
+  /** Cómo va a cerrar el mes si sigues gastando al ritmo actual, frente a tu promedio. */
+  function renderProyeccion(){
+    const el = document.getElementById('proyeccionMes');
+    const p = proyeccionCierre(data, hoyKey());
+    if(!p.hayBase){ el.innerHTML = ''; return; }
+    const referencia = Math.max(p.proyectado, p.promedio, 1);
+    const excede = p.promedio>0 && p.proyectado > p.promedio*1.05;
+    const meta = metaAhorro(data);
+    let lectura;
+    if(p.ingresoEsperado<=0) lectura = 'Sin ingresos registrados aún para estimar cuánto ahorrarás.';
+    else if(p.ahorroProyectado<0) lectura = `A este ritmo gastarías ${formatCOP(-p.ahorroProyectado)} más de lo que entra.`;
+    else lectura = `A este ritmo ahorrarías ${formatCOP(p.ahorroProyectado)} (${p.tasaProyectada} % del ingreso; tu meta es ${meta} %).`;
+    const fijos = p.fijosPendientes>0 ? ` Incluye ${formatCOP(p.fijosPendientes)} de cobros fijos que aún no llegan.` : '';
+    el.innerHTML = `<div class="proyeccion ${excede ? 'excede' : ''}">
+      <div class="proyeccion-titulo"><span>Cierre estimado del gasto</span><b class="monto">${formatCOP(p.proyectado)}</b></div>
+      <div class="proyeccion-pista" role="img" aria-label="Gastado hasta hoy frente al cierre estimado y a tu promedio">
+        <span class="proyeccion-resto" data-ancho="${Math.round((p.proyectado/referencia)*100)}"></span>
+        <span class="proyeccion-hecho" data-ancho="${Math.round((p.gastado/referencia)*100)}"></span>
+        ${p.promedio>0 ? `<span class="proyeccion-marca" data-izq="${Math.round((p.promedio/referencia)*100)}"></span>` : ''}
+      </div>
+      <p class="nota">${p.promedio>0 ? `La línea verde es tu promedio mensual (${formatCOP(p.promedio)}). ` : ''}${lectura}${fijos}</p>
+    </div>`;
+    el.querySelectorAll('[data-ancho]').forEach(x=>{ x.style.setProperty('width', x.dataset.ancho+'%'); });
+    el.querySelectorAll('[data-izq]').forEach(x=>{ x.style.setProperty('left', `calc(${x.dataset.izq}% - 1px)`); });
   }
 
   function historyRows(monthKey){
@@ -769,11 +876,13 @@ import { activarCombobox } from './ui/combobox.js';
     const tarjeta = t.tarjetaId ? data.tarjetas.find(x=>x.id===t.tarjetaId) : null;
     if(t.type==='pago_tarjeta') return `Pago de tarjeta ${tarjeta ? tarjeta.alias : ''}`.trim();
     if(t.type==='avance') return `Avance de tarjeta ${tarjeta ? tarjeta.alias : ''}`.trim();
-    if(t.type==='transferencia') return t.comercio || 'Transferencia entre cuentas';
+    if(t.type==='transferencia') return t.comercio || 'Traslado entre cuentas';
+    if(t.type==='pago_deuda') return `Abono a ${data.deudas.find(d=>d.id===t.deudaId)?.nombre ?? 'deuda'}`;
     if(t.type==='income' || t.type==='expense' || t.type==='interes' || t.type==='cuota_manejo'){
       const acc = data.accounts.find(a=>a.id===t.accountId);
       const parts = [t.category || 'Sin categoría'];
       if(t.comercio) parts.push(t.comercio);
+      if(t.deudaId) parts.push(`Intereses de ${data.deudas.find(d=>d.id===t.deudaId)?.nombre ?? 'deuda'}`);
       if(tarjeta) parts.push(`Tarjeta ${tarjeta.alias}`);
       if(acc) parts.push(acc.name);
       if(t.method) parts.push(t.method);
@@ -792,36 +901,82 @@ import { activarCombobox } from './ui/combobox.js';
     return '';
   }
 
+  const sinTildes = s=>String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+
+  /** Título, segunda línea e icono de un movimiento para la lista del historial. */
+  function txResumen(t){
+    const cuenta = id=>data.accounts.find(a=>a.id===id)?.name;
+    const tarjeta = t.tarjetaId ? data.tarjetas.find(x=>x.id===t.tarjetaId) : null;
+    const medio = tarjeta ? `Tarjeta ${tarjeta.alias}` : cuenta(t.accountId);
+    const unir = (...partes)=>partes.filter(Boolean).join(' · ');
+    if(t.type==='pago_tarjeta') return { titulo:`Pago de tarjeta ${tarjeta?.alias ?? ''}`.trim(), sub: unir(cuenta(t.accountId), 'no es gasto'), icono:'tarjeta' };
+    if(t.type==='avance') return { titulo:`Avance de tarjeta ${tarjeta?.alias ?? ''}`.trim(), sub: unir(cuenta(t.accountId)), icono:'tarjeta' };
+    if(t.type==='pago_deuda') return { titulo: txRowLabel(t), sub: unir(cuenta(t.accountId), 'a capital'), icono:'traslado' };
+    if(t.type==='transferencia') return { titulo: t.comercio || 'Traslado entre cuentas', sub: unir([cuenta(t.accountId), cuenta(t.cuentaDestinoId)].filter(Boolean).join(' → '), t.note), icono:'traslado' };
+    if(t.type==='transfer_in' || t.type==='withdraw_out'){
+      const par = data.transactions.find(x=>x.transferencia_id===t.transferencia_id && x.id!==t.id);
+      const esAbono = t.type==='transfer_in';
+      return { titulo:`${esAbono ? 'Abono a' : 'Retiro de'} ${targetLabel(t.targetType, t.targetId)}`, sub: unir(par && cuenta(par.accountId) ? `${esAbono ? 'desde' : 'hacia'} ${cuenta(par.accountId)}` : '', t.note), icono:'bolsillo' };
+    }
+    const deuda = t.deudaId ? data.deudas.find(d=>d.id===t.deudaId)?.nombre : null;
+    const titulo = t.comercio || (deuda ? `Intereses de ${deuda}` : null) || t.category || 'Sin categoría';
+    return { titulo, sub: unir(t.comercio || deuda ? t.category : null, medio, t.method && !tarjeta ? t.method : null, t.note), icono:null };
+  }
+
   function renderHistory(){
     const monthInput = document.getElementById('historyMonth');
     if(!monthInput.value) monthInput.value = historyMonthKey;
     const listEl = document.getElementById('historyList');
-    const todas = historyRows(historyMonthKey);
+    const resumenEl = document.getElementById('historySummary');
+    const delMes = historyRows(historyMonthKey);
+    const q = sinTildes(historyBusqueda);
+    const todas = delMes
+      .filter(HISTORY_FILTROS[historyFiltro] ?? HISTORY_FILTROS.todos)
+      .filter(t=>!q || sinTildes(`${txRowLabel(t)} ${t.amount} ${formatCOP(t.amount)}`).includes(q));
     const rows = todas.slice(0, historyLimit);
     if(rows.length===0){
-      listEl.innerHTML = '<div class="empty">Sin movimientos este mes.</div>';
+      resumenEl.textContent = '';
+      listEl.innerHTML = `<div class="empty">${delMes.length ? 'Nada coincide con lo que buscas.' : 'Sin movimientos este mes.'}</div>`;
       return;
     }
+    const esGasto = t=>t.type==='expense' || t.type==='interes' || t.type==='cuota_manejo';
+    const entro = todas.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const salio = todas.filter(esGasto).reduce((s,t)=>s+t.amount,0);
+    resumenEl.textContent = `${todas.length} movimiento${todas.length===1?'':'s'}` + (entro ? ` · entraron ${formatCOP(entro)}` : '') + (salio ? ` · salieron ${formatCOP(salio)}` : '');
+
+    const hoy = hoyKey();
+    const ayer = toKey(new Date(fromKey(hoy).getTime() - 86400000));
+    const nombreDia = key=>key===hoy ? 'Hoy' : key===ayer ? 'Ayer' : fromKey(key).toLocaleDateString('es-CO', {weekday:'long', day:'numeric', month:'short'});
+    let diaActual = null;
     listEl.innerHTML = rows.map(t=>{
-      const d = fromKey(t.date);
-      const fmt = d.toLocaleDateString('es-CO', {day:'numeric', month:'short'});
-      const meta = txRowLabel(t);
-      let sign = '', colorCls = t.type;
-      if(t.type==='income'){ sign = '+'; }
-      else if(t.type==='expense' || t.type==='interes' || t.type==='cuota_manejo'){ sign = '−'; colorCls='expense'; }
-      else if(t.type==='pago_tarjeta' || t.type==='transferencia' || t.type==='avance'){ sign = '→'; colorCls='neutral'; }
-      else if(t.type==='transfer_in'){ sign = '→'; colorCls = 'expense'; }
-      else if(t.type==='withdraw_out'){ sign = '←'; colorCls = 'income'; }
-      return `<div class="list-row">
-        <div class="info"><div class="cat-name">${fmt}</div><div class="meta">${escapeAttr(meta)}</div></div>
-        <div class="amt monto ${colorCls}">${sign}${formatCOP(t.amount)}</div>
-        <div class="row-actions">
-          <button class="edit-btn" data-act="edit" data-id="${escapeAttr(t.id)}" aria-label="Editar" title="Editar">✎</button>
-          <button data-act="dup" data-id="${escapeAttr(t.id)}" aria-label="Duplicar" title="Duplicar">⧉</button>
-          <button data-act="del" data-id="${escapeAttr(t.id)}" aria-label="Eliminar" title="Eliminar">✕</button>
+      let cabecera = '';
+      if(t.date!==diaActual){
+        diaActual = t.date;
+        const delDia = rows.filter(x=>x.date===t.date);
+        const neto = delDia.reduce((s,x)=>s + (x.type==='income' ? x.amount : esGasto(x) ? -x.amount : 0), 0);
+        cabecera = `<div class="dia-cabecera"><span>${escapeAttr(nombreDia(t.date))}</span>${neto ? `<span class="monto">${neto>0?'+':'−'}${formatCOP(Math.abs(neto))}</span>` : ''}</div>`;
+      }
+      const { titulo, sub, icono } = txResumen(t);
+      const sign = t.type==='income' ? '+' : esGasto(t) ? '−' : '';
+      const colorCls = t.type==='income' ? 'income' : esGasto(t) ? 'expense' : 'neutral';
+      const inicial = (titulo.match(/[A-Za-zÁÉÍÓÚÑáéíóúñ0-9]/) ?? ['·'])[0].toUpperCase();
+      const id = escapeAttr(t.id);
+      return `${cabecera}<details class="fila list-row">
+        <summary>
+          <span class="avatar ${t.type==='income' ? 'ingreso' : ''}">${icono ? iconoHtml(icono) : escapeAttr(inicial)}</span>
+          <span class="info"><span class="cat-name">${escapeAttr(titulo)}</span><span class="meta">${escapeAttr(sub)}</span></span>
+          <span class="amt monto ${colorCls}">${sign}${formatCOP(t.amount)}</span>
+        </summary>
+        <div class="fila-cuerpo">
+          <div class="fila-detalle">${escapeAttr(txRowLabel(t))}${t.hora ? ` · ${escapeAttr(t.hora)}` : ''}${t.origen==='gmail' ? ' · llegó por correo' : ''}</div>
+          <div class="fila-acciones">
+            <button class="btn-mini" data-act="edit" data-id="${id}">${iconoHtml('editar')}Editar</button>
+            <button class="btn-mini" data-act="dup" data-id="${id}">${iconoHtml('duplicar')}Duplicar</button>
+            <button class="btn-mini peligro" data-act="del" data-id="${id}">${iconoHtml('eliminar')}Eliminar</button>
+          </div>
         </div>
-      </div>`;
-    }).join('') + (todas.length>rows.length ? `<button class="btn-ghost boton-ancho" id="historyMore">Ver más (${todas.length-rows.length})</button>` : '');
+      </details>`;
+    }).join('') + (todas.length>rows.length ? `<button class="btn-ghost boton-ancho margen-arriba-chico" id="historyMore">Ver más (${todas.length-rows.length})</button>` : '');
     document.getElementById('historyMore')?.addEventListener('click', ()=>{ historyLimit += HISTORY_PAGE; renderHistory(); });
     listEl.querySelectorAll('button[data-act]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
@@ -846,6 +1001,18 @@ import { activarCombobox } from './ui/combobox.js';
   document.getElementById('historyMonth').addEventListener('change', (e)=>{
     historyMonthKey = e.target.value || historyMonthKey;
     historyLimit = HISTORY_PAGE;
+    renderHistory();
+  });
+  document.getElementById('historySearch').addEventListener('input', (e)=>{
+    historyBusqueda = e.target.value;
+    historyLimit = HISTORY_PAGE;
+    renderHistory();
+  });
+  document.getElementById('historyFilters').addEventListener('click', (e)=>{
+    const boton = e.target.closest('.filtro'); if(!boton) return;
+    historyFiltro = boton.dataset.filtro;
+    historyLimit = HISTORY_PAGE;
+    document.querySelectorAll('#historyFilters .filtro').forEach(b=>b.setAttribute('aria-pressed', String(b===boton)));
     renderHistory();
   });
 
@@ -911,13 +1078,14 @@ import { activarCombobox } from './ui/combobox.js';
         ${planHtml}
         <div class="goal-sources-summary">Fuentes: ${escapeAttr(selectedGoalSources(g))}</div>
         ${data.accounts.length===0 ? '<div class="mini-hint">Crea una cuenta para poder abonar a esta meta.</div>' : `
+        <details class="detalle"><summary>Abonar o retirar</summary>
         <div class="mini-transfer-row" data-goal-transfer="${escapeAttr(g.id)}">
           <select class="mini-acc-select" aria-label="Cuenta de origen o destino">${accountTransferOptions()}</select>
           <input type="number" class="mini-amt-input" placeholder="Monto" aria-label="Monto a abonar o retirar" min="0" step="10000">
           <button class="btn-accent mini-abono-btn">Abonar</button>
           <button class="btn-ghost mini-retiro-btn">Retirar</button>
-        </div>`}
-        <div class="goal-del"><button class="edit-btn goal-edit-btn">editar meta</button><button class="goal-del-btn">eliminar meta</button></div>
+        </div></details>`}
+        <div class="fila-acciones margen-arriba-chico"><button class="btn-mini goal-edit-btn">${iconoHtml('editar')}Editar</button><button class="btn-mini peligro goal-del-btn">${iconoHtml('eliminar')}Eliminar</button></div>
       </div>`;
     }).join('');
     listEl.querySelectorAll('.goal-progress-fill[data-pct]').forEach(el=>{ el.style.setProperty('width', el.dataset.pct+'%'); });
@@ -944,6 +1112,7 @@ import { activarCombobox } from './ui/combobox.js';
         });
       }
       card.querySelector('.goal-del-btn').addEventListener('click', async ()=>{
+        if(!await askConfirm('¿Eliminar esta meta? Los abonos que le hiciste quedan en el historial.')) return;
         data.goals = data.goals.filter(g=>g.id!==id);
         await saveData(); renderAll();
       });
@@ -1016,16 +1185,17 @@ import { activarCombobox } from './ui/combobox.js';
           ${extra ? `<div class="celda-ancha">Aportes adicionales<b>${formatCOP(extra)}</b></div>` : ''}
           <div>Rendimiento bruto<b>${formatCOP(rendimiento)}</b></div>
           <div>Retención (4 %)<b>−${formatCOP(retencion)}</b></div>
-          <div class="celda-ancha">Recibirás al vencimiento (neto)<b>${formatCOP(projected)}</b></div>
+          <div class="celda-ancha destacado">Recibirás al vencimiento (neto)<b>${formatCOP(projected)}</b></div>
         </div>
         ${data.accounts.length===0 ? '<div class="mini-hint">Crea una cuenta para poder aportar o retirar de este CDT.</div>' : `
+        <details class="detalle"><summary>Aportar o retirar</summary>
         <div class="mini-transfer-row" data-inv-transfer="${escapeAttr(inv.id)}">
           <select class="mini-acc-select" aria-label="Cuenta de origen o destino">${accountTransferOptions()}</select>
           <input type="number" class="mini-amt-input" placeholder="Monto" aria-label="Monto a abonar o retirar" min="0" step="10000">
           <button class="btn-accent mini-abono-btn">Aportar</button>
           <button class="btn-ghost mini-retiro-btn">Retirar</button>
-        </div>`}
-        <div class="inv-del"><button class="edit-btn inv-edit-btn">editar</button><button class="inv-del-btn">eliminar</button></div>
+        </div></details>`}
+        <div class="fila-acciones margen-arriba-chico"><button class="btn-mini inv-edit-btn">${iconoHtml('editar')}Editar</button><button class="btn-mini peligro inv-del-btn">${iconoHtml('eliminar')}Eliminar</button></div>
       </div>`;
     }).join('');
     listEl.querySelectorAll('.inv-card').forEach(card=>{
@@ -1051,7 +1221,9 @@ import { activarCombobox } from './ui/combobox.js';
         });
       }
       card.querySelector('.inv-del-btn').addEventListener('click', async ()=>{
+        if(!await askConfirm('¿Eliminar este CDT? Deja de sumar a tu patrimonio.')) return;
         data.investments = data.investments.filter(i=>i.id!==id);
+        data.goals.forEach(g=>{ if(g.investmentIds) g.investmentIds = g.investmentIds.filter(x=>x!==id); });
         await saveData(); renderAll();
       });
     });
@@ -1260,6 +1432,7 @@ import { activarCombobox } from './ui/combobox.js';
 
   function renderSettings(){
     document.getElementById('reminderToggle').classList.toggle('on', !!data.settings.reminderOn);
+    document.getElementById('reminderToggle').setAttribute('aria-checked', String(!!data.settings.reminderOn));
     document.getElementById('reminderHour').value = data.settings.reminderHour;
     const notifDesc = document.getElementById('notifDesc');
     const notifBtn = document.getElementById('notifBtn');
@@ -1358,8 +1531,9 @@ import { activarCombobox } from './ui/combobox.js';
       textEl.innerHTML='En Android: abre el menú ⋮ y busca <b>“Instalar app”</b> o <b>“Añadir a pantalla de inicio”</b>.';
       installBtn.style.display='none';
     }else{
-      textEl.innerHTML='Si abriste este archivo directamente desde tu PC, el navegador puede no mostrar <b>“Instalar app”</b>. Para instalación automática debes publicarlo en <b>HTTPS</b> o usar <b>localhost</b>.';
-      installBtn.style.display='none';
+      // En un computador sin opción de instalar no hay nada útil que decir.
+      banner.classList.remove('show');
+      return;
     }
     banner.classList.add('show');
   }

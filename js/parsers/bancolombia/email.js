@@ -1,7 +1,6 @@
 /** Parser de correos de Bancolombia. Corta encabezados y pies para evaluar solo la alerta. */
 
-import { normalizarTexto } from './comun.js';
-import { mejor } from './sms.js';
+import { mejor, normalizarTexto } from './comun.js';
 
 /** Conserva el texto desde "Bancolombia:" hasta el pie de seguridad o publicitario. */
 export function recortarCorreo(texto) {

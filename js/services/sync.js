@@ -5,7 +5,7 @@
 
 import { procesarMensaje } from './ingesta.js';
 
-const FUENTES = new Set(['gmail', 'sms']);
+const FUENTES = new Set(['gmail']);
 const RE_ROWID = /^[\w-]{1,64}$/;
 const MAX_TEXTO = 2000;
 

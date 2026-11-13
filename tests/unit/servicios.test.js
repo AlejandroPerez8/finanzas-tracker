@@ -122,12 +122,12 @@ test('deduplicación: reglas de igualdad', () => {
   assert.match(huella(m), /expense\|10/);
   assert.equal(huella({ ...m, referenciaBanco: 'A' }), 'ref|A');
   assert.ok(
-    buscarDuplicado(m, 'gmail', [{ ...m, origen: 'manual', fuentes: [{ fuente: 'sms' }] }]),
+    buscarDuplicado(m, 'gmail', [{ ...m, origen: 'manual', fuentes: [{ fuente: 'manual' }] }]),
     'un manual ya vinculado recibe la segunda fuente',
   );
   assert.equal(buscarDuplicado(m, 'gmail', [{ ...m, origen: 'manual', fuentes: [] }]), null);
   assert.equal(
-    buscarDuplicado(m, 'gmail', [{ ...m, estado: 'descartado', fuentes: [{ fuente: 'sms' }] }]),
+    buscarDuplicado(m, 'gmail', [{ ...m, estado: 'descartado', fuentes: [{ fuente: 'manual' }] }]),
     null,
   );
 });
@@ -140,15 +140,15 @@ test('ingesta: mismo rowId no duplica', () => {
   assert.equal(d.ingesta.length, 1);
 });
 
-test('ingesta: SMS y correo del mismo movimiento se fusionan', () => {
+test('ingesta: un mensaje pegado y su correo se fusionan', () => {
   const d = base();
-  procesarMensaje(d, msg('r1', PAGO, 'sms'), ctx);
+  procesarMensaje(d, msg('r1', PAGO, 'manual'), ctx);
   const r = procesarMensaje(d, msg('r2', PAGO, 'gmail'), ctx);
   assert.equal(r.resultado, 'duplicado');
   assert.equal(d.transactions.length, 1);
   assert.deepEqual(
     d.transactions[0].fuentes.map((f) => f.fuente),
-    ['sms', 'gmail'],
+    ['manual', 'gmail'],
   );
 });
 
@@ -158,9 +158,9 @@ test('ingesta: dos compras legítimas iguales de una misma fuente son dos movimi
   const r = procesarMensaje(d, msg('r2', PAGO), ctx);
   assert.notEqual(r.resultado, 'duplicado');
   assert.equal(d.transactions.length, 2);
-  // Y si después llegan sus dos SMS, cada uno se empareja con uno distinto.
-  procesarMensaje(d, msg('r3', PAGO, 'sms'), ctx);
-  procesarMensaje(d, msg('r4', PAGO, 'sms'), ctx);
+  // Y si después se pegan a mano los dos mensajes, cada uno se empareja con uno distinto.
+  procesarMensaje(d, msg('r3', PAGO, 'manual'), ctx);
+  procesarMensaje(d, msg('r4', PAGO, 'manual'), ctx);
   assert.equal(d.transactions.length, 2);
   assert.ok(d.transactions.every((t) => t.fuentes.length === 2));
 });
@@ -306,7 +306,7 @@ test('retiro real con T.Deb: se asocia por los dígitos de la tarjeta débito y 
   const d = base();
   d.accounts[0].ultimos4Debito = '2436';
   d.accounts.push({ id: 'e', name: 'Efectivo', tipo: 'efectivo', startBalance: 0 });
-  const r = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'sms'), ctx);
+  const r = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'manual'), ctx);
   assert.equal(r.resultado, 'confirmado');
   const mov = d.transactions.find((t) => t.id === r.movimientoId);
   assert.equal(mov.type, 'transferencia');
@@ -327,7 +327,7 @@ test('retiro real con T.Deb: se asocia por los dígitos de la tarjeta débito y 
 test('retiro real sin dígitos de débito registrados queda en revisión, no en una cuenta equivocada', () => {
   const d = base();
   d.accounts.push({ id: 'e', name: 'Efectivo', tipo: 'efectivo', startBalance: 0 });
-  const r = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'sms'), ctx);
+  const r = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'manual'), ctx);
   assert.equal(r.resultado, 'pendiente');
   assert.equal(d.transactions.find((t) => t.id === r.movimientoId).accountId, null);
 });
@@ -335,21 +335,21 @@ test('retiro real sin dígitos de débito registrados queda en revisión, no en 
 test('retiro real sin cuenta de efectivo queda en revisión', () => {
   const d = base();
   d.accounts[0].ultimos4Debito = '2436';
-  const r = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'sms'), ctx);
+  const r = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'manual'), ctx);
   assert.equal(r.resultado, 'pendiente');
 });
 
 test('al confirmar a mano un retiro con T.Deb desconocida, la cuenta aprende esos dígitos', () => {
   const d = base();
   d.accounts.push({ id: 'e', name: 'Efectivo', tipo: 'efectivo', startBalance: 0 });
-  const r1 = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'sms'), ctx);
+  const r1 = procesarMensaje(d, msg('rr1', RETIRO_REAL, 'manual'), ctx);
   assert.equal(r1.resultado, 'pendiente');
   confirmar(d, r1.movimientoId, { accountId: 'a', cuentaDestinoId: 'e' });
   assert.equal(d.accounts[0].ultimos4, '1234', 'no pisa los dígitos de la cuenta');
   assert.equal(d.accounts[0].ultimos4Debito, '2436');
   assert.equal(d.accounts[1].ultimos4Debito, undefined, 'el efectivo no aprende dígitos');
   const otro = RETIRO_REAL.replace('28/10/2026', '30/10/2026');
-  assert.equal(procesarMensaje(d, msg('rr2', otro, 'sms'), ctx).resultado, 'confirmado');
+  assert.equal(procesarMensaje(d, msg('rr2', otro, 'manual'), ctx).resultado, 'confirmado');
 });
 
 test('confirmar una compra con tarjeta de crédito no registrada no enseña esos dígitos a la cuenta', () => {
@@ -372,7 +372,7 @@ test('una cuenta sin dígitos sigue siendo la única candidata', () => {
   const d = base();
   d.accounts[0].ultimos4 = null;
   d.accounts.push({ id: 'e', name: 'Efectivo', tipo: 'efectivo', startBalance: 0 });
-  assert.equal(procesarMensaje(d, msg('rr1', RETIRO_REAL, 'sms'), ctx).resultado, 'confirmado');
+  assert.equal(procesarMensaje(d, msg('rr1', RETIRO_REAL, 'manual'), ctx).resultado, 'confirmado');
 });
 
 test('revisión: confirmar, descartar y dividir', () => {
@@ -478,7 +478,7 @@ test('categorización y aprendizaje', () => {
 test('enseñar: la regla propuesta reconoce el mensaje', () => {
   const texto = 'Bancolombia: Abonaste $45.000 al fondo X desde **1234 el 03/11/2026 a las 10:15.';
   const regla = proponerRegla(texto, 'compra_debito');
-  const r = crearRegistro({ patrones: [] }, [regla]).analizar(texto, { fuente: 'sms' });
+  const r = crearRegistro({ patrones: [] }, [regla]).analizar(texto, { fuente: 'manual' });
   assert.equal(r.monto, 45000);
   assert.equal(r.fecha, '2026-11-03');
   assert.equal(r.hora, '10:15');
@@ -555,7 +555,7 @@ test('revisión cruzada: una compra aprobada no se funde con su rechazo', () => 
     msg(
       'r1',
       'Bancolombia: Tu compra por $50,000 en EXITO con tu T.Deb *1234 fue rechazada el 06/11/2026 a las 14:00.',
-      'sms',
+      'manual',
     ),
     ctx,
   );
@@ -576,7 +576,7 @@ test('revisión cruzada: una compra aprobada no se funde con su rechazo', () => 
     msg(
       'r1',
       'Bancolombia: Compraste $50,000 en EXITO con tu T.Deb *1234, el 06/11/2026 a las 14:01.',
-      'sms',
+      'manual',
     ),
     ctx,
   );
@@ -660,7 +660,7 @@ test('revisión cruzada: manual vinculado recibe la segunda fuente', () => {
     estado: 'confirmado',
     fuentes: [],
   });
-  vincular(d, procesarMensaje(d, msg('r1', PAGO, 'sms'), ctx).movimientoId);
+  vincular(d, procesarMensaje(d, msg('r1', PAGO, 'manual'), ctx).movimientoId);
   assert.equal(procesarMensaje(d, msg('r2', PAGO, 'gmail'), ctx).resultado, 'duplicado');
   assert.equal(d.transactions.length, 1);
 });
@@ -700,7 +700,7 @@ test('revisión cruzada: confirmar aprende y las cuotas siguen al movimiento', (
 test('revisión cruzada: dividir no duplica cuando llega la segunda fuente', () => {
   const d = base();
   d.settings.ingesta.autoConfirmar = false;
-  const { movimientoId: id } = procesarMensaje(d, msg('r1', PAGO, 'sms'), ctx);
+  const { movimientoId: id } = procesarMensaje(d, msg('r1', PAGO, 'manual'), ctx);
   const [a, b] = dividir(
     d,
     id,
@@ -721,12 +721,13 @@ test('enseñar: dato al inicio, comercio variable y sin monto', () => {
     'Bancolombia: El 06/11/2026 a las 14:30 abonaste en EXITO NORTE por $120.000 con tu tarjeta *1234. Publicidad larga';
   const regla = proponerRegla(texto, 'compra_debito');
   const r = crearRegistro({ patrones: [] }, [regla]);
-  const uno = r.analizar(texto, { fuente: 'sms' });
+  const uno = r.analizar(texto, { fuente: 'manual' });
   assert.equal(uno.monto, 120000);
   assert.equal(uno.ultimos4, '1234');
   assert.equal(uno.comercio, 'EXITO NORTE');
   assert.equal(
-    r.analizar(texto.replace('EXITO NORTE', 'CARULLA').replace('120.000', '5.000'), { fuente: 'sms' }).monto,
+    r.analizar(texto.replace('EXITO NORTE', 'CARULLA').replace('120.000', '5.000'), { fuente: 'manual' })
+      .monto,
     5000,
   );
   assert.throws(() => proponerRegla('Bancolombia: aviso sin cifras', 'iva'), /monto/);
@@ -782,10 +783,10 @@ test('enseñar: el comercio es el que sigue a "a/en/para", no una sigla como PSE
     'Bancolombia: Hiciste un pago PSE por $230.000,00 a ETB COLOMBIA desde tu cuenta *1234 el 10/11/2026 a las 11:20.';
   const regla = proponerRegla(primero, 'pago_servicio');
   const r = crearRegistro({ patrones: [] }, [regla]);
-  assert.equal(r.analizar(primero, { fuente: 'sms' }).comercio, 'ETB COLOMBIA');
+  assert.equal(r.analizar(primero, { fuente: 'manual' }).comercio, 'ETB COLOMBIA');
   const segundo = r.analizar(
     'Bancolombia: Hiciste un pago PSE por $54.900,00 a CLARO COLOMBIA desde tu cuenta *1234 el 11/11/2026 a las 08:05.',
-    { fuente: 'sms' },
+    { fuente: 'manual' },
   );
   assert.equal(segundo.monto, 54900);
   assert.equal(segundo.comercio, 'CLARO COLOMBIA');

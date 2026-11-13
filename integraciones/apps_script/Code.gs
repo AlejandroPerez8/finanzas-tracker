@@ -3,8 +3,8 @@
  *
  * Contrato: docs/API_INGESTA.md. Mantener alineado con mock/server.js.
  *
- * Flujo: Gmail (disparador cada 10 min) y SMS (doPost) escriben en una hoja
- * privada; la app consulta con action=pending y confirma con action=ack.
+ * Flujo: Gmail (disparador cada 10 min) escribe en una hoja privada;
+ * la app consulta con action=pending y confirma con action=ack.
  *
  * Primera vez: ejecutar instalar() una sola vez desde el editor y aceptar permisos.
  */
@@ -104,16 +104,7 @@ function doPost(e) {
     }
     exigirToken_(cuerpo.token);
     // Desde 5.2 la app consulta por POST: el token va en el cuerpo, no en la URL.
-    if (cuerpo.action) return despachar_(cuerpo);
-    if (cuerpo.source !== 'sms' || typeof cuerpo.text !== 'string' || !cuerpo.text.trim()) {
-      throw new ErrorApi_('bad_request');
-    }
-    const fecha = new Date(cuerpo.receivedAt);
-    const recibido = isNaN(fecha.getTime()) ? new Date() : fecha;
-    const texto = recortarTexto_(cuerpo.text);
-    // El id del SMS se deriva del contenido: un reintento del celular no crea otra fila.
-    const messageId = 'sms_' + hash_(texto + '|' + recibido.getTime());
-    return { ok: true, rowId: agregarFila_('sms', messageId, recibido, 'bancolombia', texto) };
+    return despachar_(cuerpo);
   });
 }
 
@@ -226,8 +217,8 @@ function purgarTexto() {
 
 /**
  * Borra de la hoja las filas importadas con más de DIAS_ARCHIVO días. Sin esto la hoja crece sin
- * límite y cada consulta la lee entera. Es seguro: Gmail solo se revisa 7 días atrás y los
- * reintentos de un SMS llegan en minutos, así que nada archivado vuelve a entrar.
+ * límite y cada consulta la lee entera. Es seguro: Gmail solo se revisa 7 días atrás, así que nada
+ * archivado vuelve a entrar.
  */
 function archivarFilas_() {
   const dias = parseInt(PropertiesService.getScriptProperties().getProperty('DIAS_ARCHIVO'), 10) || DIAS_ARCHIVO_DEFECTO;
@@ -356,13 +347,6 @@ function siguienteNumero_(filas, soloSincronizar) {
   if (soloSincronizar) return ultimo;
   props.setProperty('ULTIMO_ROW', String(ultimo + 1));
   return ultimo + 1;
-}
-
-function hash_(texto) {
-  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, texto)
-    .slice(0, 12)
-    .map(function (b) { return ('0' + (b & 255).toString(16)).slice(-2); })
-    .join('');
 }
 
 function aIso_(fecha) {

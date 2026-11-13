@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { crearMock, TOKEN_MOCK } from '../../integraciones/apps_script/mock/server.js';
 import { crearCliente, sincronizar, validarItem, urlValida, ErrorSync } from '../../js/services/sync.js';
 import { crearRegistro } from '../../js/parsers/registry.js';
+import { procesarMensaje } from '../../js/services/ingesta.js';
 import { migrar } from '../../js/services/migraciones.js';
 import { saldoCuenta } from '../../js/domain/movimientos.js';
 
@@ -98,19 +99,29 @@ test('un ack fallido se reintenta en la siguiente sincronización', async (t) =>
   assert.equal(e.datos.transactions.length, 1);
 });
 
-test('SMS por POST y correo del mismo movimiento quedan como uno', async (t) => {
+test('un mensaje pegado a mano y su correo quedan como un solo movimiento', async (t) => {
   const e = await escenario(t);
-  const res = await fetch(e.url, {
-    method: 'POST',
-    headers: { 'content-type': 'text/plain' },
-    body: JSON.stringify({ token: TOKEN_MOCK, source: 'sms', receivedAt: FECHA, text: PAGO }),
-  });
-  assert.equal((await res.json()).ok, true);
+  procesarMensaje(
+    e.datos,
+    { rowId: 'manual_1', fuente: 'manual', recibidoEn: FECHA, textoRelevante: PAGO },
+    e.contexto,
+  );
   e.estado.agregar('gmail', 'g1', FECHA, PAGO);
   const r = await sincronizar({ ...e, guardar: async () => {} });
   assert.equal(r.duplicados, 1);
   assert.equal(e.datos.transactions.length, 1);
   assert.equal(e.datos.transactions[0].fuentes.length, 2);
+});
+
+test('el script ya no recibe mensajes por POST: solo acciones', async (t) => {
+  const e = await escenario(t);
+  const res = await fetch(e.url, {
+    method: 'POST',
+    headers: { 'content-type': 'text/plain' },
+    body: JSON.stringify({ token: TOKEN_MOCK, source: 'x', receivedAt: FECHA, text: PAGO }),
+  });
+  assert.deepEqual(await res.json(), { ok: false, error: 'bad_request' });
+  assert.equal(e.estado.filas.length, 0);
 });
 
 test('paginación: procesa varios lotes', async (t) => {
@@ -231,7 +242,7 @@ test('mock: contrato de errores', async (t) => {
   assert.deepEqual(await get(`action=ack&token=${TOKEN_MOCK}`), { ok: false, error: 'bad_request' });
   const post = async (body) => (await fetch(e.url, { method: 'POST', body })).json();
   assert.equal((await post('no json')).error, 'bad_request');
-  assert.equal((await post(JSON.stringify({ token: 'x', source: 'sms', text: 'a' }))).error, 'unauthorized');
+  assert.equal((await post(JSON.stringify({ token: 'x', action: 'ping' }))).error, 'unauthorized');
   assert.equal(
     (await post(JSON.stringify({ token: TOKEN_MOCK, source: 'x', text: 'a' }))).error,
     'bad_request',

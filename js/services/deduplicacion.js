@@ -1,8 +1,9 @@
 /**
  * Deduplicación de movimientos ingeridos.
  *
- * La misma compra puede llegar por SMS y por correo, pero dos compras iguales de una misma
- * fuente son compras distintas. Por eso solo se fusionan mensajes de fuentes diferentes.
+ * La misma compra puede llegar por el correo del banco y también pegarse a mano, pero dos compras
+ * iguales de una misma fuente son compras distintas. Por eso solo se fusionan mensajes de fuentes
+ * diferentes.
  */
 
 import { instanteBogota } from '../domain/fechas.js';
@@ -16,7 +17,7 @@ export function huella(m) {
   return [m.type, m.amount, m.ultimos4 ?? '', normalizarComercio(m.comercio), m.date].join('|');
 }
 
-/** Distancia de edición, para tolerar comercios escritos distinto en SMS y correo. */
+/** Distancia de edición, para tolerar comercios escritos distinto entre un mensaje y otro. */
 function distancia(a, b) {
   let previa = Array.from({ length: b.length + 1 }, (_, j) => j);
   for (let i = 1; i <= a.length; i++) {
@@ -54,7 +55,7 @@ export function esMismoMovimiento(a, b) {
  * Busca el movimiento existente con el que fusionar el nuevo.
  * Se descartan los que ya tienen un mensaje de esa fuente.
  * @param {object} nuevo candidato
- * @param {string} fuente 'sms' | 'gmail'
+ * @param {string} fuente 'gmail' | 'manual'
  * @param {object[]} existentes
  * @returns {object|null}
  */

@@ -5,10 +5,12 @@ PWA de finanzas personales para Colombia. Los datos viven en tu dispositivo: sin
 ## Qué hace
 
 - Cuentas, bolsillos, metas de ahorro y CDT, con saldos que se recalculan solos a partir del historial de movimientos (nada se guarda como número suelto).
-- **Ingesta automática de Bancolombia** (Gmail y SMS): reconoce los mensajes del banco, los categoriza y los concilia, sin copiar nada a mano.
+- **Ingesta automática de Bancolombia** (correos de Gmail): reconoce los mensajes del banco, los categoriza y los concilia, sin copiar nada a mano.
 - **Tarjetas y deudas**: cupos, ciclos de corte y pago, amortización de cuota fija real (sistema francés), y simulador avalancha/bola de nieve para decidir cómo pagar más rápido.
 - **Comparador con CDT**: qué conviene más, pagar la tarjeta o invertir, con la retención de impuestos ya incluida en la cuenta.
-- **Salud financiera y gasto diario**: fondo de emergencia, tasa de ahorro, uso de tarjetas y carga de deuda con meta y qué hacer, más cuánto puedes gastar hoy sin pasarte del mes.
+- **Salud financiera y gasto diario**: puntaje de 0 a 100, fondo de emergencia, tasa de ahorro, uso de tarjetas y carga de deuda con meta y qué hacer, más cuánto puedes gastar hoy sin pasarte del mes.
+- **Análisis del mes**: cierre estimado del gasto, cada categoría frente a su promedio, próximos pagos de 30 días y evolución del patrimonio neto.
+- **Tema claro y oscuro**, tipografía e iconos propios: no pide nada a servidores externos.
 - Reportes mensuales con análisis local (sin IA, sin conexión) y exportación lista para Power BI.
 - Seguridad pensada desde el diseño: CSP estricta, PIN, modo discreto y copias de respaldo cifradas. Ver [Seguridad](docs/SEGURIDAD.md).
 
@@ -45,16 +47,17 @@ Los formatos de mensajes se editan en `js/parsers/bancolombia/patrones.json`, si
 ```
 finanzas-tracker/
 ├── index.html, manifest.json, service-worker.js
-├── css/                    estilos base y componentes
+├── css/                    tokens y base (styles.css) y componentes (componentes.css)
+├── fonts/                  tipografía Manrope servida por la app
 ├── js/
 │   ├── app.js              pantallas originales (cuentas, ahorro, historial, reportes)
 │   ├── db.js               IndexedDB con respaldo en localStorage
-│   ├── domain/             reglas de dinero puras: montos, fechas, tarjetas, deudas, presupuesto
+│   ├── domain/             reglas de dinero puras: montos, fechas, tarjetas, deudas, presupuesto, salud, análisis
 │   ├── parsers/            reconocimiento de mensajes; formatos en bancolombia/patrones.json
 │   ├── services/           ingesta, sincronización, deduplicación, respaldos, exportes
-│   └── ui/                 pantallas nuevas (panel, tarjetas, revisión de movimientos)
+│   └── ui/                 pantallas (inicio, tarjetas, revisión de movimientos) e iconos
 ├── data/comercios.json     diccionario comercio → categoría
-├── integraciones/apps_script/  script de Gmail/SMS y su mock local
+├── integraciones/apps_script/  script de Gmail y su mock local
 ├── tests/                  unitarias, integración y humo en navegador
 └── docs/                   arquitectura, contrato, seguridad, decisiones
 ```

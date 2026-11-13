@@ -78,13 +78,17 @@ function cargarScript() {
   vm.runInContext(CODIGO, ctx);
   const post = (cuerpo) =>
     ctx.doPost({ postData: { contents: JSON.stringify({ token: TOKEN, ...cuerpo }) } });
-  const sms = (text, receivedAt) => post({ source: 'sms', text, receivedAt });
-  return { ctx, hoja, props, post, sms };
+  // Agrega una fila como lo hace la captura de Gmail.
+  let n = 0;
+  const correo = (text, receivedAt) => ({
+    rowId: ctx.agregarFila_('gmail', `m_${++n}`, new Date(receivedAt), 'bancolombia', text),
+  });
+  return { ctx, hoja, props, post, correo };
 }
 
 test('Apps Script: ping, pending y ack por POST con el token en el cuerpo', () => {
   const s = cargarScript();
-  assert.equal(s.sms('Bancolombia: Compraste $1.000 en X', '2026-11-01T10:00:00-05:00').rowId, 'r_000001');
+  assert.equal(s.correo('Bancolombia: Compraste $1.000 en X', '2026-11-01T10:00:00-05:00').rowId, 'r_000001');
   assert.equal(s.post({ action: 'ping' }).pendientes, 1);
   const p = s.post({ action: 'pending', cursor: '', limit: 50 });
   assert.deepEqual(
@@ -95,6 +99,8 @@ test('Apps Script: ping, pending y ack por POST con el token en el cuerpo', () =
   assert.equal(s.post({ action: 'ack', ids: 'r_000001' }).acked, 1);
   assert.equal(s.post({ action: 'ping' }).pendientes, 0);
   assert.equal(s.post({ action: 'ping', token: 'x'.repeat(48) }).error, 'unauthorized');
+  // Un POST sin acción (como el antiguo envío de mensajes desde el celular) se rechaza.
+  assert.equal(s.post({ source: 'x', text: 'Bancolombia: Compraste $1' }).error, 'bad_request');
   // GET sigue funcionando para apps anteriores a 5.2.
   assert.equal(s.ctx.doGet({ parameter: { token: TOKEN, action: 'ping' } }).ok, true);
 });
@@ -103,9 +109,9 @@ test('Apps Script: archivar lo importado viejo no mueve el cursor ni repite rowI
   const s = cargarScript();
   const viejo = new Date(Date.now() - 200 * 86400000).toISOString();
   const nuevo = new Date().toISOString();
-  s.sms('Bancolombia: A $1', viejo);
-  s.sms('Bancolombia: B $2', viejo);
-  s.sms('Bancolombia: C $3', nuevo);
+  s.correo('Bancolombia: A $1', viejo);
+  s.correo('Bancolombia: B $2', viejo);
+  s.correo('Bancolombia: C $3', nuevo);
   s.post({ action: 'ack', ids: 'r_000001,r_000002' });
   const antes = s.post({ action: 'pending', cursor: '', limit: 50 });
   assert.deepEqual(
@@ -116,8 +122,8 @@ test('Apps Script: archivar lo importado viejo no mueve el cursor ni repite rowI
   s.ctx.purgarTexto();
   assert.equal(s.hoja.getLastRow(), 2, 'solo queda la fila sin confirmar');
 
-  // Un SMS nuevo no reutiliza números ya entregados, y el cursor anterior sigue sirviendo.
-  assert.equal(s.sms('Bancolombia: D $4', nuevo).rowId, 'r_000004');
+  // Un correo nuevo no reutiliza números ya entregados, y el cursor anterior sigue sirviendo.
+  assert.equal(s.correo('Bancolombia: D $4', nuevo).rowId, 'r_000004');
   const despues = s.post({ action: 'pending', cursor: antes.cursor, limit: 50 });
   assert.deepEqual(
     despues.items.map((i) => i.rowId),
@@ -133,8 +139,8 @@ test('Apps Script: archivar lo importado viejo no mueve el cursor ni repite rowI
 
 test('Apps Script: una hoja existente sin contador continúa la numeración', () => {
   const s = cargarScript();
-  s.sms('Bancolombia: A $1', new Date().toISOString());
-  s.sms('Bancolombia: B $2', new Date().toISOString());
+  s.correo('Bancolombia: A $1', new Date().toISOString());
+  s.correo('Bancolombia: B $2', new Date().toISOString());
   s.props.delete('ULTIMO_ROW'); // como una instalación anterior a 5.2
-  assert.equal(s.sms('Bancolombia: C $3', new Date().toISOString()).rowId, 'r_000003');
+  assert.equal(s.correo('Bancolombia: C $3', new Date().toISOString()).rowId, 'r_000003');
 });
