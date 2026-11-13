@@ -108,26 +108,9 @@
   line-height: 1.3;
 }
 .week-summary .sub {
-  margin: 4px 0 10px;
+  margin: 4px 0 0;
   font-size: 13px;
   color: var(--hero-muted);
-}
-.streak-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.streak-pill {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--hero-muted);
-}
-.streak-pill b {
-  color: var(--hero-text);
-  font-weight: 800;
 }
 
 /* ---------- Navegación ---------- */
@@ -549,6 +532,15 @@ svg.trend {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* Cerrada, la fila resume en una línea; abierta, muestra el nombre completo. */
+.fila[open] .name,
+.fila[open] .cat-name,
+.fila[open] .meta {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .fila .bal,
 .fila .amt {
@@ -1178,9 +1170,7 @@ div.chip-urgente {
 .compromiso-titulo {
   font-size: 14.5px;
   font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .compromiso-detalle {
   font-size: 12.5px;
@@ -1428,13 +1418,13 @@ div.chip-urgente {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: #b9d6c8;
+  color: #c9e2d6;
 }
 .tv-deuda small {
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: #b9d6c8;
+  color: #c9e2d6;
 }
 .tv-deuda .monto {
   font-size: clamp(24px, 7.5vw, 30px);

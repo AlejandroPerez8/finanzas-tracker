@@ -18,7 +18,7 @@ import { tamanoDatos } from '../db.js';
 import { VERSION_ACTUAL } from '../services/migraciones.js';
 import { CATEGORIAS_GASTO } from '../domain/categorias.js';
 
-export const VERSION_APP = '6.0.0';
+export const VERSION_APP = '6.0.1';
 const ITERACIONES_PIN = 200000;
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 // Colores de la composición del patrimonio (distintos entre sí también para daltonismo).

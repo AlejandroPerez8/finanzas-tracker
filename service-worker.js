@@ -1,9 +1,9 @@
 // Offline primero: la app completa queda en caché. Cambia VERSION en cada entrega.
-const VERSION = '6.0.0';
+const VERSION = '6.0.1';
 const CACHE_NAME = `finanzas-tracker-${VERSION}`;
 const APP_SHELL = [
   './', './index.html', './manifest.json', './css/styles.css', './css/componentes.css',
-  './icons/icon-192.png', './icons/icon-512.png', './data/comercios.json', './fonts/manrope-latin.woff2',
+  './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-192.png', './icons/icon-maskable-512.png', './data/comercios.json', './fonts/manrope-latin.woff2',
   './js/app.js', './js/db.js', './js/tema.js',
   './js/domain/analisis.js', './js/domain/categorias.js', './js/domain/deudas.js', './js/domain/fechas.js', './js/domain/money.js', './js/domain/movimientos.js', './js/domain/presupuesto.js', './js/domain/salud.js', './js/domain/tarjetas.js',
   './js/parsers/registry.js', './js/parsers/bancolombia/comun.js', './js/parsers/bancolombia/email.js', './js/parsers/bancolombia/texto.js', './js/parsers/bancolombia/patrones.json',

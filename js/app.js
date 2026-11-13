@@ -612,7 +612,6 @@ import { iconoHtml } from './ui/iconos.js';
       : `Vas positivo en ${monthName}, bajo tu meta del ${meta} %`;
     document.getElementById('monthSub').textContent = `Entraron ${formatCOP(income)} · Salieron ${formatCOP(expense)}`;
     document.getElementById('heroFecha').textContent = fromKey(hoyKey()).toLocaleDateString('es-CO', {weekday:'short', day:'numeric', month:'short'});
-    document.getElementById('activeGoals').parentElement.lastChild.textContent = data.goals.length===1 ? ' meta' : ' metas';
     // El anillo se llena al alcanzar la meta de ahorro del mes.
     const svg = document.getElementById('wheelSvg');
     const r = 50, cx = 60, cy = 60, circ = 2*Math.PI*r;
@@ -622,17 +621,6 @@ import { iconoHtml } from './ui/iconos.js';
       <circle class="wheel-avance" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke-width="12"
         stroke-linecap="round" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${(circ*(1-frac)).toFixed(1)}"
         transform="rotate(-90 ${cx} ${cy})"/>`;
-
-    let streak = 0; let cursor = fromKey(hoyKey());
-    while(true){
-      const key = toKey(cursor);
-      const has = data.transactions.some(t=>t.date===key);
-      if(has){ streak++; cursor.setDate(cursor.getDate()-1); } else break;
-      if(streak>365) break;
-    }
-    document.getElementById('currentStreak').textContent = streak;
-    document.getElementById('currentStreak').parentElement.lastChild.textContent = streak===1 ? ' día' : ' días';
-    document.getElementById('activeGoals').textContent = data.goals.length;
 
     const banner = document.getElementById('reminderBanner');
     const bannerTime = document.getElementById('bannerTime');
