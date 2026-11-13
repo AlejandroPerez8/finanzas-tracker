@@ -129,7 +129,7 @@ try {
   await tab('Inicio');
   total = await p.textContent('#headerTotalBalance');
   ok('Confirmar la compra descuenta 89.900', total === '$910.100', total);
-  const panel = await p.textContent('#vistaPanel');
+  const panel = (await p.textContent('#vistaHoy')) + (await p.textContent('#vistaPanel'));
   ok('Aviso de efectivo sin rastrear del mes', panel.includes('Retiraste $50.000 en efectivo este mes'));
   ok('Tarjeta de salud financiera visible', panel.includes('Salud financiera'));
   if (SALIDA) await p.screenshot({ path: `${SALIDA}-inicio.png`, fullPage: true });
@@ -144,7 +144,7 @@ try {
   await p.waitForTimeout(300);
   await tab('Inicio');
   const ritmo = await p
-    .locator('#vistaPanel .ritmo')
+    .locator('#vistaHoy .ritmo')
     .textContent()
     .catch(() => '');
   ok(

@@ -1,5 +1,16 @@
 # Cambios
 
+## 6.0.1
+- **Icono nuevo** en los verdes de la app (el anterior era morado sobre negro). Incluye versión
+  adaptable (`maskable`) para que Android lo recorte sin borde blanco. El celular puede tardar en
+  cambiarlo; si no cambia, desinstala la app y vuelve a instalarla desde el navegador.
+- **Portada más limpia**: se quitan la racha de días y el contador de metas.
+- **Nombres completos al abrir una fila**: cuentas, bolsillos y movimientos con nombres largos ya no
+  quedan cortados con "…" cuando la fila está abierta; los próximos pagos muestran el nombre entero.
+- **Accesibilidad**: el texto secundario sobre el verde de la portada y de las tarjetas sube de
+  contraste (4,3:1 → 4,9:1) y los interruptores de Ajustes tienen 48 px de alto para el dedo.
+- Pruebas: `test:vivo` buscaba "Puedes gastar hoy" y el aviso de efectivo en el panel anterior.
+
 ## 6.0.0
 Rediseño completo, análisis financiero nuevo y la ingesta queda solo por correo.
 
